@@ -21,8 +21,19 @@ int main(int argc, char** argv)
     // Argument parsing
     for(int i=1; i<argc; i++)
     {
+        if(strcmp(argv[i], "--help") == 0)
+        {
+            std::cout << "Small tool to detect outliers on a uniform background." << std::endl
+                << "Options:" << std::endl
+                << "--showCam: Shows the actual camera capture" << std::endl
+                << "--showOutliers: Shows the detected and filtered outliers" << std::endl
+                << "--cam [n]: Selects the camera to use" << std::endl
+                << "--filter [n]: Uses a kernel of size [n] for filtering" << std::endl
+                << "--ip [ip]: Sends messages to the network address [ip]" << std::endl
+                << "--port [port]: Sends through the port [port]" << std::endl;
+        }
         // Show capture
-        if(strcmp(argv[i], "--showCam") == 0)
+        else if(strcmp(argv[i], "--showCam") == 0)
             lShowCamera = true;
          // Show outliers
         else if(strcmp(argv[i], "--showOutliers") == 0)
@@ -171,8 +182,7 @@ int main(int argc, char** argv)
             std::cout << lX << " " << lY << std::endl;
 
             // Send the result
-            lo_send(lNet, "/barycenter/position/", "ii", lX, lY);
-            lo_send(lNet, "/barycenter/size/", "i", lNumber);
+            lo_send(lNet, "/barycenter/", "iii", lX, lY, lNumber);
         }
 
         // Keyboard
