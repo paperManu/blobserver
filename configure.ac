@@ -20,20 +20,15 @@ if test "x${have_opencv}" = "xfalse" ; then
     AC_MSG_ERROR([Missing opencv])
 fi
 
-AC_SUBST([OPENCV_LIBS])
-AC_SUBST([OPENCV_CFLAGS])
-
 # Liblo
 PKG_CHECK_MODULES([LIBLO], [liblo >= 0.26])
 if test "x${have_liblo}" = "xfalse" ; then
     AC_MSG_ERROR([Missing liblo])
 fi
 
-AC_SUBST([LIBLO_LIB])
-AC_SUBST([LIBLO_CFLAGS])
-
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
+    man/Makefile
     ])
 AC_OUTPUT

@@ -20,3 +20,4 @@ touch ChangeLog
 fi
 
 autoreconf -fivI m4
+./configure
