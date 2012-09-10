@@ -10,6 +10,7 @@ int main(int argc, char** argv)
     int lCamNbr = 0;
     bool lShowCamera = false;
     bool lShowOutliers = false;
+    bool lVerbose = false;
     int lFilterSize = 5;
     char lAddress[20];
     char lPort[8];
@@ -30,7 +31,8 @@ int main(int argc, char** argv)
                 << "    --cam [n]: Selects the camera to use" << std::endl
                 << "    --filter [n]: Uses a kernel of size [n] for filtering" << std::endl
                 << "    --ip [ip]: Sends messages to the network address [ip]" << std::endl
-                << "    --port [port]: Sends through the port [port]" << std::endl;
+                << "    --port [port]: Sends through the port [port]" << std::endl
+                << "    --verbose: outputs values in the std output" << std::endl;
                 return 0;
         }
         // Show capture
@@ -102,6 +104,11 @@ int main(int argc, char** argv)
                 std::cout << "Wrong number of argument. Exiting." << std::endl;
                 return 1;
             }
+        }
+        // std::out output
+        else if(strcmp(argv[i], "--verbose") == 0)
+        {
+            lVerbose = true;
         }
     }
 
@@ -180,7 +187,9 @@ int main(int argc, char** argv)
                 lX = lFiltered.size[0] / 2;
                 lY = lFiltered.size[0] / 2;
             }
-            std::cout << lX << " " << lY << std::endl;
+
+            if(lVerbose)
+                std::cout << "x: " << lX << " - y: " << lY << " - size: " << lNumber << std::endl;
 
             // Send the result
             lo_send(lNet, "/barycenter/", "iii", lX, lY, lNumber);
