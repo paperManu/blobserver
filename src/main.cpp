@@ -8,7 +8,7 @@ int main(int argc, char** argv)
 {
     // Argument variables
     int lCamNbr = 0;
-    bool lShowCamera = false;
+    bool lShowCamera = true;
     bool lShowOutliers = false;
     bool lVerbose = false;
     int lFilterSize = 5;
@@ -26,21 +26,20 @@ int main(int argc, char** argv)
         {
             std::cout << "Small tool to detect outliers on a uniform background." << std::endl
                 << "Options:" << std::endl
-                << "    --showCam: Shows the actual camera capture" << std::endl
-                << "    --showOutliers: Shows the detected and filtered outliers" << std::endl
+                << "    --hide: Do not show the camera output" << std::endl
                 << "    --cam [n]: Selects the camera to use" << std::endl
                 << "    --filter [n]: Uses a kernel of size [n] for filtering" << std::endl
                 << "    --ip [ip]: Sends messages to the network address [ip]" << std::endl
                 << "    --port [port]: Sends through the port [port]" << std::endl
-                << "    --verbose: outputs values in the std output" << std::endl;
+                << "    --verbose: outputs values in the std output" << std::endl
+                << "During execution:" << std::endl
+                << "    q: Quit the program" << std::endl
+                << "    w: Switch between camera and the outlier view" << std::endl;
                 return 0;
         }
         // Show capture
-        else if(strcmp(argv[i], "--showCam") == 0)
-            lShowCamera = true;
-         // Show outliers
-        else if(strcmp(argv[i], "--showOutliers") == 0)
-            lShowOutliers = true;
+        else if(strcmp(argv[i], "--hide") == 0)
+            lShowCamera = false;
         // Camera selection
         else if(strcmp(argv[i], "--cam") == 0)
         {
@@ -141,7 +140,7 @@ int main(int argc, char** argv)
         if(lCamBuffer.size[0] > 0 && lCamBuffer.size[1] > 0)
         {
             if(lShowCamera)
-                imshow("Camera", lCamBuffer);
+                imshow("Barycenter", lCamBuffer);
 
             // Eliminate the outliers : calculate the mean and std dev
             lOutlier = Mat::zeros(lCamBuffer.size[0], lCamBuffer.size[1], CV_8U);
@@ -160,7 +159,7 @@ int main(int argc, char** argv)
             dilate(lEroded, lFiltered, Mat(), Point(-1, -1), lFilterSize);
 
             if(lShowOutliers)
-                imshow("mean", lFiltered);
+                imshow("Barycenter", lFiltered);
 
             // Calculate the barycenter of the outliers
             int lNumber = 0;
@@ -199,6 +198,11 @@ int main(int argc, char** argv)
         char lKey = waitKey(5);
         if(lKey == 'q')
             lContinue = false;
+        if(lKey == 'w')
+        {
+            lShowCamera = !lShowCamera;
+            lShowOutliers = !lShowOutliers;
+        }
     }
 
     return 0;
