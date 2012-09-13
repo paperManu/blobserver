@@ -165,10 +165,10 @@ int main(int argc, char** argv)
             int lNumber = 0;
             int lX=0, lY=0;
 
-            for(int x=0; x<lFiltered.size[0]; x++)
-                for(int y=0; y<lFiltered.size[1]; y++)
+            for(int x=0; x<lFiltered.size[1]; x++)
+                for(int y=0; y<lFiltered.size[0]; y++)
                 {
-                    if(lFiltered.at<uchar>(x, y) == 255)
+                    if(lFiltered.at<uchar>(y, x) == 255)
                     {
                         lX += x;
                         lY += y;
@@ -183,7 +183,7 @@ int main(int argc, char** argv)
             }
             else
             {
-                lX = lFiltered.size[0] / 2;
+                lX = lFiltered.size[1] / 2;
                 lY = lFiltered.size[0] / 2;
             }
 

@@ -12,7 +12,6 @@ depcomp
 install-sh
 libtool
 ltmain.sh
-m4/
 man/Makefile
 man/Makefile.in
 missing
