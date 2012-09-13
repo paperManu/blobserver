@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT(BARYCENTER, 0.0.9, emmanueldurand@gmail.com)
+AC_INIT(BLOBSERVER, 0.0.9, emmanueldurand@gmail.com)
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE()
@@ -15,7 +15,7 @@ AC_PROG_CC
 AC_HEADER_STDC
 
 # OpenCV
-PKG_CHECK_MODULES([OPENCV], [opencv >= 2.4])
+PKG_CHECK_MODULES([OPENCV], [opencv >= 2.3])
 if test "x${have_opencv}" = "xfalse" ; then
     AC_MSG_ERROR([Missing opencv])
 fi

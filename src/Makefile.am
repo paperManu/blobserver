@@ -1,12 +1,12 @@
-bin_PROGRAMS = barycenter
+bin_PROGRAMS = blobserver
 
-barycenter_SOURCES = \
+blobserver_SOURCES = \
     main.cpp
 
-barycenter_CXXFLAGS = \
+blobserver_CXXFLAGS = \
     $(OPENCV_CFLAGS) \
     $(LIBLO_CFLAGS)
 
-barycenter_LDADD = \
+blobserver_LDADD = \
     $(OPENCV_LIBS) \
     $(LIBLO_LIBS)
