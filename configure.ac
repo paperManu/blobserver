@@ -14,6 +14,12 @@ AC_PROG_CC
 # Check for header files
 AC_HEADER_STDC
 
+# GLib
+PKG_CHECK_MODULES([GLIB], glib-2.0, have_glib=true, have_glib=false)
+if test "x${have_glib}" = "xfalse" ; then
+    AC_MSG_ERROR([Missing glib])
+fi
+
 # OpenCV
 PKG_CHECK_MODULES([OPENCV], [opencv >= 2.3])
 if test "x${have_opencv}" = "xfalse" ; then

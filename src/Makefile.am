@@ -4,9 +4,11 @@ blobserver_SOURCES = \
     main.cpp
 
 blobserver_CXXFLAGS = \
+	$(GLIB_CFLAGS) \
     $(OPENCV_CFLAGS) \
     $(LIBLO_CFLAGS)
 
 blobserver_LDADD = \
+	$(GLIB_LIBS) \
     $(OPENCV_LIBS) \
     $(LIBLO_LIBS)

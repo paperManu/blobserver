@@ -1,165 +1,161 @@
 #include <iostream>
+#include "glib.h"
 #include "opencv2/opencv.hpp"
 #include "lo/lo.h"
 
-using namespace cv;
+static gboolean gHide = FALSE;
+static gint gCamNbr = 0;
+static gint gFilterSize = 3;
+static GString* gIpAddress = NULL;
+static GString* gIpPort = NULL;
+static gboolean gVerbose = FALSE;
 
-int main(int argc, char** argv)
+static GOptionEntry gEntries[] =
 {
-    // Argument variables
-    int lCamNbr = 0;
-    bool lShowCamera = true;
-    bool lShowOutliers = false;
-    bool lVerbose = false;
-    int lFilterSize = 5;
-    char lAddress[20];
-    char lPort[8];
+    {"hide", 0, 0, G_OPTION_ARG_NONE, &gHide, "Hides the camera output", NULL},
+    {"cam", 'c', 0, G_OPTION_ARG_INT, &gCamNbr, "Selects which camera to use", NULL},
+    {"filter", 'f', 0, G_OPTION_ARG_INT, &gFilterSize, "Specifies the size of the filtering kernel to use", NULL},
+    {"ip", 'i', 0, G_OPTION_ARG_STRING_ARRAY, &gIpAddress, "Specifies the ip address to send messages to", NULL}, 
+    {"port", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &gIpPort, "Specifies the port to send messages to", NULL},
+    {"verbose", 'v', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
+    {NULL}
+};
 
-    strcpy(lAddress, "127.0.0.1");
-    strcpy(lPort, "9000");
+/*****************/
+class App
+{
+    public:
+        // Constructor and destructor
+        App();
+        ~App();
 
-    /******************/
-    // Argument parsing
-    for(int i=1; i<argc; i++)
+        // Arguments parser
+        int parseArgs(int argc, char **argv);
+
+        // Initialization, depending on arguments
+        int init();
+
+        // Main loop
+        int loop();
+
+    private:
+        // Attributes
+        // liblo related
+        lo_address mOscAddress;
+
+        // opencv related
+        cv::VideoCapture mCamera;
+        cv::Mat mCameraBuffer;
+
+        // Methods
+};
+
+
+/*****************/
+App::App()
+{
+}
+
+
+/*****************/
+App::~App()
+{
+}
+
+/*****************/
+int App::parseArgs(int argc, char** argv)
+{
+    GError *error = NULL;
+    GOptionContext* context;
+
+    context = g_option_context_new("- blobserver, sends blobs through OSC");
+    g_option_context_add_main_entries(context, gEntries, NULL);
+
+    if(!g_option_context_parse(context, &argc, &argv, &error))
     {
-        if(strcmp(argv[i], "--help") == 0)
-        {
-            std::cout << "Small tool to detect outliers on a uniform background." << std::endl
-                << "Options:" << std::endl
-                << "    --hide: Do not show the camera output" << std::endl
-                << "    --cam [n]: Selects the camera to use" << std::endl
-                << "    --filter [n]: Uses a kernel of size [n] for filtering" << std::endl
-                << "    --ip [ip]: Sends messages to the network address [ip]" << std::endl
-                << "    --port [port]: Sends through the port [port]" << std::endl
-                << "    --verbose: outputs values in the std output" << std::endl
-                << "During execution:" << std::endl
-                << "    q: Quit the program" << std::endl
-                << "    w: Switch between camera and the outlier view" << std::endl;
-                return 0;
-        }
-        // Show capture
-        else if(strcmp(argv[i], "--hide") == 0)
-            lShowCamera = false;
-        // Camera selection
-        else if(strcmp(argv[i], "--cam") == 0)
-        {
-            if(i+1 < argc)
-            {
-                int lTmp = atoi(argv[i+1]);
-                if(lTmp < 0)
-                    lTmp = 0;
-                lCamNbr = lTmp;
-
-                i++;
-            }
-            else
-            {
-                std::cout << "Wrong number of argument. Exiting." << std::endl;
-                return 1;
-            }
-        }
-        // Filtering size
-        else if(strcmp(argv[i], "--filter") == 0)
-        {
-            if(i+1 < argc)
-            {
-                int lTmp = atoi(argv[i+1]);
-                if(lFilterSize < 1)
-                    lFilterSize = 1;
-                lFilterSize = lTmp;
-
-                i++;
-            }
-            else
-            {
-                std::cout << "Wrong number of argument. Exiting." << std::endl;
-                return 1;
-            }
-        }
-        // Output OSC address
-        else if(strcmp(argv[i], "--ip") == 0)
-        {
-            if(i+1 < argc)
-            {
-                strcpy(lAddress, argv[i+1]);
-                i++;
-            }
-            else
-            {
-                std::cout << "Wrong number of argument. Exiting." << std::endl;
-                return 1;
-            }
-        }
-        // Output OSC port
-        else if(strcmp(argv[i], "--port") == 0)
-        {
-            if(i+1 < argc)
-            {
-                strcpy(lPort, argv[i+1]);
-                i++;
-            }
-            else
-            {
-                std::cout << "Wrong number of argument. Exiting." << std::endl;
-                return 1;
-            }
-        }
-        // std::out output
-        else if(strcmp(argv[i], "--verbose") == 0)
-        {
-            lVerbose = true;
-        }
-    }
-
-    // OSC parameters
-    lo_address lNet = lo_address_new(lAddress, lPort);
-
-    /******************/
-    // Camera allocation
-    VideoCapture lCamera(lCamNbr);
-    if(!lCamera.isOpened())
-    {
-        std::cout << "Error while opening camera number " << lCamNbr << ". Exiting." << std::endl;
+        std::cout << "Error while parsing options: " << error->message << std::endl;
         return 1;
     }
 
-    // Buffers
-    Mat lCamBuffer;
-    Mat lMean, lStdDev;
-    Mat lOutlier, lEroded, lFiltered;
+    return 0;
+}
 
-    /***********/
-    // Main loop
-    bool lContinue = true;
-    while(lContinue)
+/*****************/
+int App::init()
+{
+    // Initialize camera
+    if(!mCamera.open(gCamNbr))
+    {
+        std::cout << "Error while opening camera number " << gCamNbr << ". Exiting." << std::endl;
+        return 1;
+    }
+    // Get a first frame to initialize the buffer
+    mCamera.read(mCameraBuffer);
+
+    // Initialize OSC
+    if(gIpAddress != NULL)
+    {
+        std::cout << "IP specified: " << gIpAddress->str << std::endl;
+    }
+    else
+    {
+        std::cout << "No IP specified, using localhost" << std::endl;
+    }
+
+    if(gIpPort != NULL)
+    {
+        std::cout << "Using port number " << gIpPort->str << std::endl;
+    }
+    else
+    {
+        gIpPort = g_string_new("9000");
+        std::cout << "No port specified, using 9000" << std::endl;
+    }
+
+    mOscAddress = lo_address_new(gIpAddress->str, gIpPort->str);
+
+    return 0;
+}
+
+/*****************/
+int App::loop()
+{
+    cv::Mat lMean, lStdDev;
+    cv::Mat lOutlier, lEroded, lFiltered;
+
+    bool lShowCamera = !gHide;
+    bool lShowOutliers = false;
+
+    bool loop = true;
+    while(loop)
     {
         // Frame capture
-        lCamera.read(lCamBuffer);
+        mCamera.read(mCameraBuffer);
 
         // If the frame seems valid
-        if(lCamBuffer.size[0] > 0 && lCamBuffer.size[1] > 0)
+        if(mCameraBuffer.size[0] > 0 && mCameraBuffer.size[0] > 0)
         {
-            if(lShowCamera)
-                imshow("Barycenter", lCamBuffer);
+            if(gHide == FALSE)
+                cv::imshow("blobserver", mCameraBuffer);
 
             // Eliminate the outliers : calculate the mean and std dev
-            lOutlier = Mat::zeros(lCamBuffer.size[0], lCamBuffer.size[1], CV_8U);
+            lOutlier = cv::Mat::zeros(mCameraBuffer.size[0], mCameraBuffer.size[1], CV_8U);
             lEroded = lOutlier.clone();
             lFiltered = lOutlier.clone();
-            cvtColor(lCamBuffer, lOutlier, CV_RGB2GRAY);
+            cv::cvtColor(mCameraBuffer, lOutlier, CV_RGB2GRAY);
 
-            meanStdDev(lCamBuffer, lMean, lStdDev);
-            absdiff(lOutlier, lMean.at<double>(0), lOutlier);
+            cv::meanStdDev(mCameraBuffer, lMean, lStdDev);
+            cv::absdiff(lOutlier, lMean.at<double>(0), lOutlier);
 
             // Detect pixels far from the mean (> 2*stddev)
-            threshold(lOutlier, lOutlier, 2*lStdDev.at<double>(0), 255, THRESH_BINARY);
+            cv::threshold(lOutlier, lOutlier, 2*lStdDev.at<double>(0), 255, cv::THRESH_BINARY);
 
             // Erode and dilate to suppress noise
-            erode(lOutlier, lEroded, Mat(), Point(-1, -1), lFilterSize);
-            dilate(lEroded, lFiltered, Mat(), Point(-1, -1), lFilterSize);
+            cv::erode(lOutlier, lEroded, cv::Mat(), cv::Point(-1, -1), gFilterSize);
+            cv::dilate(lEroded, lFiltered, cv::Mat(), cv::Point(-1, -1), gFilterSize);
 
             if(lShowOutliers)
-                imshow("Barycenter", lFiltered);
+                cv::imshow("Barycenter", lFiltered);
 
             // Calculate the barycenter of the outliers
             int lNumber = 0;
@@ -175,7 +171,7 @@ int main(int argc, char** argv)
                         lNumber++;
                     }
                 }
-    
+
             if(lNumber > 0)
             {
                 lX /= lNumber;
@@ -187,17 +183,16 @@ int main(int argc, char** argv)
                 lY = lFiltered.size[0] / 2;
             }
 
-            if(lVerbose)
+            if(gVerbose)
                 std::cout << "x: " << lX << " - y: " << lY << " - size: " << lNumber << std::endl;
 
             // Send the result
-            lo_send(lNet, "/barycenter/", "iii", lX, lY, lNumber);
+            lo_send(mOscAddress, "/blobserver/", "iii", lX, lY, lNumber);
         }
 
-        // Keyboard
-        char lKey = waitKey(5);
+        char lKey = cv::waitKey(5);
         if(lKey == 'q')
-            lContinue = false;
+            loop = false;
         if(lKey == 'w')
         {
             lShowCamera = !lShowCamera;
@@ -206,4 +201,22 @@ int main(int argc, char** argv)
     }
 
     return 0;
+}
+
+/*****************/
+int main(int argc, char** argv)
+{
+    App theApp;
+    int ret;
+
+    ret = theApp.parseArgs(argc, argv);
+    if(ret != 0)
+        return ret;
+
+    ret = theApp.init();
+    if(ret != 0)
+        return ret;
+
+    ret = theApp.loop();
+    return ret;
 }
