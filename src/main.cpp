@@ -279,6 +279,7 @@ cv::Mat App::detectLightSpots()
 {
     cv::Mat lMean, lStdDev;
     cv::Mat lOutlier, lLight;
+    cv::Mat lEroded;
     std::vector<cv::KeyPoint> lKeyPoints;
 
     // Eliminate the outliers : calculate the mean and std dev
@@ -295,6 +296,9 @@ cv::Mat App::detectLightSpots()
     cv::threshold(lOutlier, lOutlier, 2*lStdDev.at<double>(0), 255, cv::THRESH_BINARY);
     // Combinaison of both previous conditions
     cv::bitwise_and(lOutlier, lLight, lLight);
+    // Erode and dilate to suppress noise
+    cv::erode(lLight, lEroded, cv::Mat(), cv::Point(-1, -1), gFilterSize);
+    cv::dilate(lEroded, lLight, cv::Mat(), cv::Point(-1, -1), gFilterSize);
 
     // Now we have to detect blobs
     mLightBlobDetector->detect(lLight, lKeyPoints);
