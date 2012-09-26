@@ -14,6 +14,9 @@ static GString* gIpAddress = NULL;
 static GString* gIpPort = NULL;
 static gboolean gTcp = FALSE;
 
+static gboolean gOutliers = FALSE;
+static gboolean gLight = FALSE;
+
 static GOptionEntry gEntries[] =
 {
     {"hide", 0, 0, G_OPTION_ARG_NONE, &gHide, "Hides the camera output", NULL},
@@ -23,6 +26,8 @@ static GOptionEntry gEntries[] =
     {"port", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &gIpPort, "Specifies the port to send messages to", NULL},
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
     {"verbose", 'v', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
+    {"outliers", 0, 0, G_OPTION_ARG_NONE, &gOutliers, "Detects the outliers (luminance wise) and outputs their mean position", NULL},
+    {"light", 0, 0, G_OPTION_ARG_NONE, &gLight, "Detects light zone, extract them as blobs and outputs their position and size", NULL},
     {NULL}
 };
 
@@ -117,6 +122,7 @@ int App::init()
     }
     else
     {
+        gIpAddress = g_string_new("127.0.0.1");
         std::cout << "No IP specified, using localhost" << std::endl;
     }
 
@@ -148,27 +154,51 @@ int App::init()
 /*****************/
 int App::loop()
 {
-    cv::Mat lOutput;
-
     bool lShowCamera = !gHide;
-    bool lShowOutliers = false;
+    int lSourceNumber = 0;
 
     bool loop = true;
     while(loop)
     {
+        int lTotalBuffers = 1; // starting at 1, because there is at least the camera buffer
+        std::vector<cv::Mat> lBuffers;
+        std::vector<std::string> lBufferNames;
+
         // Frame capture
         mCamera.read(mCameraBuffer);
+        // cv::Mat are not copied when not specified, so the bandwidth usage
+        // of the following operation is minimal
+        lBuffers.push_back(mCameraBuffer);
+        lBufferNames.push_back(std::string("camera"));
 
         // If the frame seems valid
         if(mCameraBuffer.size[0] > 0 && mCameraBuffer.size[0] > 0)
         {
+            // Camera capture
             if(lShowCamera)
                 cv::imshow("blobserver", mCameraBuffer);
 
-            lOutput = detectMeanOutliers();
+            // Informations extraction
+            if(gOutliers)
+            {
+                lBuffers.push_back(detectMeanOutliers());
+                lBufferNames.push_back(std::string("mean outliers"));
+                lTotalBuffers += 1;
+            }
 
-            if(lShowOutliers)
-                cv::imshow("blobserver", lOutput);
+            if(gLight)
+            {
+                lBuffers.push_back(detectLightSpots());
+                lBufferNames.push_back(std::string("light blobs"));
+                lTotalBuffers += 1;
+            }
+
+            if(lShowCamera)
+            {
+                cv::putText(lBuffers[lSourceNumber], lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
+                    cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
+                cv::imshow("blobserver", lBuffers[lSourceNumber]);
+            }
         }
 
         char lKey = cv::waitKey(5);
@@ -176,8 +206,8 @@ int App::loop()
             loop = false;
         if(lKey == 'w')
         {
-            lShowCamera = !lShowCamera;
-            lShowOutliers = !lShowOutliers;
+            lSourceNumber = (lSourceNumber+1)%lTotalBuffers;
+            std::cout << "Buffer displayed: " << lBufferNames[lSourceNumber] << std::endl;
         }
     }
 
@@ -233,7 +263,10 @@ cv::Mat App::detectMeanOutliers()
     }
 
     if(gVerbose)
+    {
+        std::cout << "--- Outliers detection:" << std::endl;
         std::cout << "x: " << lX << " - y: " << lY << " - size: " << lNumber << std::endl;
+    }
 
     // Send the result
     lo_send(mOscAddress, "/blobserver/meanOutliers/", "iii", lX, lY, lNumber);
@@ -246,7 +279,7 @@ cv::Mat App::detectLightSpots()
 {
     cv::Mat lMean, lStdDev;
     cv::Mat lOutlier, lLight;
-    cv::vector<cv::KeyPoint> lKeyPoints;
+    std::vector<cv::KeyPoint> lKeyPoints;
 
     // Eliminate the outliers : calculate the mean and std dev
     lOutlier = cv::Mat::zeros(mCameraBuffer.size[0], mCameraBuffer.size[1], CV_8U);
@@ -257,7 +290,7 @@ cv::Mat App::detectLightSpots()
     cv::absdiff(lOutlier, lMean.at<double>(0), lOutlier);
 
     // Detect pixels which values are superior to the mean
-    cv::threshold(mCameraBuffer, lLight, lMean.at<double>(0), 255, cv::THRESH_BINARY);
+    cv::threshold(lOutlier, lLight, lMean.at<double>(0), 255, cv::THRESH_BINARY);
     // Detect pixels far from the mean (> 2*stddev)
     cv::threshold(lOutlier, lOutlier, 2*lStdDev.at<double>(0), 255, cv::THRESH_BINARY);
     // Combinaison of both previous conditions
@@ -265,6 +298,26 @@ cv::Mat App::detectLightSpots()
 
     // Now we have to detect blobs
     mLightBlobDetector->detect(lLight, lKeyPoints);
+
+    if(gVerbose)
+        std::cout << "--- Light blobs detection:" << std::endl;
+
+    // And we send and print them
+    for(int i=0; i<lKeyPoints.size(); ++i)
+    {
+        int lX, lY, lSize;
+        lX = (int)(lKeyPoints[i].pt.x);
+        lY = (int)(lKeyPoints[i].pt.y);
+        lSize = (int)(lKeyPoints[i].size);
+
+        if(gVerbose)
+            std::cout << "Blob #" << i << " - x=" << lX << " - y=" << lY << " - size=" << lSize << std::endl;
+
+        // Send the result through OSC
+        lo_send(mOscAddress, "/blobserver/lightSpots/", "iiii", i, lX, lY, lSize);
+    }
+
+    return lLight;
 }
 
 /*****************/
