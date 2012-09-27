@@ -1,4 +1,5 @@
 #include <iostream>
+#include <limits>
 #include "glib.h"
 #include "opencv2/opencv.hpp"
 #include "lo/lo.h"
@@ -31,7 +32,115 @@ static GOptionEntry gEntries[] =
     {NULL}
 };
 
-/*****************/
+/********************/
+int factorial(int n)
+{
+    int lValue = 1;
+    for(int i=n; i>0; i--)
+        lValue *= i;
+    return lValue;
+}
+
+/************************************/
+// Blob class, with tracking features
+class Blob
+{
+    public:
+        Blob();
+        ~Blob();
+
+        void init(cv::KeyPoint pNewBlob);
+        cv::KeyPoint predict();
+        void setNewMeasures(cv::KeyPoint pNewBlob);
+        
+        cv::KeyPoint getBlob();
+        bool isUpdated();
+
+    private:
+        bool updated;
+        cv::KeyPoint mBlob;
+        cv::KalmanFilter mFilter;
+};
+
+/*************/
+Blob::Blob()
+{
+    updated = false;
+
+    mBlob.pt.x = 0.0;
+    mBlob.pt.y = 0.0;
+    mBlob.size = 0.0;
+
+    // We are filtering a 3 variables state, and
+    // we have a measure for all of them
+    mFilter.init(3, 3);
+
+    mFilter.transitionMatrix = *(cv::Mat_<float>(3, 3) << 1,0,0, 0,1,0, 0,0,1);
+    setIdentity(mFilter.measurementMatrix);
+    setIdentity(mFilter.processNoiseCov, cv::Scalar::all(1e-5));
+    setIdentity(mFilter.measurementNoiseCov, cv::Scalar::all(1e-5));
+    setIdentity(mFilter.errorCovPost, cv::Scalar::all(1));
+}
+
+/*************/
+Blob::~Blob()
+{
+}
+
+/*************/
+void Blob::init(cv::KeyPoint pNewBlob)
+{
+    mFilter.statePre.at<float>(0) = pNewBlob.pt.x;
+    mFilter.statePre.at<float>(1) = pNewBlob.pt.y;
+    mFilter.statePre.at<float>(2) = pNewBlob.size;
+}
+
+/*************/
+cv::KeyPoint Blob::predict()
+{
+    cv::Mat lPrediction;
+    cv::KeyPoint lKeyPoint;
+
+    lPrediction = mFilter.predict();
+    lKeyPoint.pt.x = lPrediction.at<float>(0);
+    lKeyPoint.pt.y = lPrediction.at<float>(1);
+    lKeyPoint.size = lPrediction.at<float>(2);
+
+    updated = false;
+    
+    return lKeyPoint;
+}
+
+/*************/
+void Blob::setNewMeasures(cv::KeyPoint pNewBlob)
+{
+    cv::Mat lMeasures = cv::Mat::zeros(3, 1, CV_32F);
+    lMeasures.at<float>(0) = pNewBlob.pt.x;
+    lMeasures.at<float>(1) = pNewBlob.pt.y;
+    lMeasures.at<float>(2) = pNewBlob.size;
+
+    cv::Mat lEstimation = mFilter.correct(lMeasures);
+    mBlob.pt.x = lEstimation.at<float>(0);
+    mBlob.pt.y = lEstimation.at<float>(1);
+    mBlob.size = lEstimation.at<float>(2);
+
+    updated = true;
+}
+
+/*************/
+cv::KeyPoint Blob::getBlob()
+{
+    return mBlob;
+}
+
+/*************/
+bool Blob::isUpdated()
+{
+    return updated;
+}
+
+/*****************************/
+// Definition of the app class
 class App
 {
     public:
@@ -57,7 +166,8 @@ class App
         cv::VideoCapture mCamera;
         cv::Mat mCameraBuffer;
 
-        cv::SimpleBlobDetector* mLightBlobDetector;
+        cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
+        std::vector<Blob> mLightBlobs; // Vector of detected and tracked blobs
 
         // Methods
         // Various filter and detection modes availables
@@ -69,6 +179,13 @@ class App
         // Detects light spots, and outputs each one of their position
         // and size
         cv::Mat detectLightSpots();
+       
+        // This function returns the configuration (element from x linked to element from y)
+        // which gives the lowest sum, according the the pDistances. Returns a matrix with the
+        // same dimensions as pDistances, filled with 0 and 255
+        cv::Mat getLeastSumConfiguration(cv::Mat* pDistances);
+        // This function is called by the previous one, and should not be called by itself
+        cv::Mat getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv::Mat pAttributed, float &pSum);
 };
 
 
@@ -303,6 +420,76 @@ cv::Mat App::detectLightSpots()
     // Now we have to detect blobs
     mLightBlobDetector->detect(lLight, lKeyPoints);
 
+    // We want to track them
+    // First we update all the previous blobs we detected,
+    // and keep their predicted new position
+    for(int i=0; i<mLightBlobs.size(); ++i)
+        mLightBlobs[i].predict();
+    
+    // Then we compare all these prediction with real measures and
+    // associate them together
+    cv::Mat lConfiguration;
+    std::cout << "--- Number of blobs: " << mLightBlobs.size() << std::endl;
+    std::cout << "--- Number of key points: " << lKeyPoints.size() << std::endl;
+    if(mLightBlobs.size() != 0)
+    {
+        cv::Mat lTrackMat = cv::Mat::zeros(lKeyPoints.size(), mLightBlobs.size(), CV_32F);
+
+        // Compute the squared distance between all new blobs, and all tracked ones
+        for(int i=0; i<lKeyPoints.size(); ++i)
+        {
+            for(int j=0; j<mLightBlobs.size(); ++j)
+            {
+                cv::KeyPoint keyPoint = lKeyPoints[i];
+                cv::KeyPoint blob = mLightBlobs[i].getBlob();
+
+                float lDistance = pow(keyPoint.pt.x - blob.pt.x, 2.0)
+                    + pow(keyPoint.pt.y - blob.pt.y, 2.0)
+                    + pow(keyPoint.size - blob.size, 2.0);
+
+                lTrackMat.at<float>(i, j) = lDistance;
+            }
+        }
+
+        // We associate each tracked blobs with the fittest blob, using a least square approach
+        lConfiguration = getLeastSumConfiguration(&lTrackMat);
+    }
+
+    cv::Mat lAttributedKeypoints = cv::Mat::zeros(lKeyPoints.size(), 1, CV_8U);
+    std::vector<Blob>::iterator lBlob = mLightBlobs.begin();
+    for(int i=0; i<lConfiguration.rows; ++i)
+    {
+        int lIndex = lConfiguration.at<uchar>(i);
+        // We update the blobs which we were able to track
+        if(lIndex < 255)
+        {
+            lBlob->setNewMeasures(lKeyPoints[lIndex]);
+            lBlob++;
+            lAttributedKeypoints.at<uchar>(i) = 255;
+        }
+    }
+    // We delete the blobs we couldn't track
+    //for(lBlob = mLightBlobs.begin(); lBlob != mLightBlobs.end(); lBlob++)
+    for(int i=0; i<mLightBlobs.size(); i++)
+    {
+        if(!mLightBlobs[i].isUpdated())
+        {
+            mLightBlobs.erase(mLightBlobs.begin()+i);
+            i--;
+        }
+    }
+    // And we create new blobs for the new objects detected
+    for(int i=0; i<lAttributedKeypoints.rows; ++i)
+    {
+        int lIndex = lAttributedKeypoints.at<uchar>(i);
+        if(lIndex == 0)
+        {
+            Blob lNewBlob;
+            lNewBlob.init(lKeyPoints[lIndex]);
+            mLightBlobs.push_back(lNewBlob);
+        }
+    }
+
     if(gVerbose)
         std::cout << "--- Light blobs detection:" << std::endl;
 
@@ -321,7 +508,65 @@ cv::Mat App::detectLightSpots()
         lo_send(mOscAddress, "/blobserver/lightSpots/", "iiii", i, lX, lY, lSize);
     }
 
+    // DEBUG
+    for(int i=0; i<mLightBlobs.size(); ++i)
+    {
+        int lX, lY, lS;
+        cv::KeyPoint keyPoint = mLightBlobs[i].getBlob();
+        lX = (int)(keyPoint.pt.x);
+        lY = (int)(keyPoint.pt.y);
+        lS = (int)(keyPoint.size);
+        
+        std::cout << "Blob #" << i << " - x=" << lX << " - y=" << lY << " - size=" << lS << std::endl;
+    }
+
     return lLight;
+}
+
+/*****************/
+cv::Mat App::getLeastSumConfiguration(cv::Mat* pDistances)
+{
+    float lMinSum = 0.f;
+    cv::Mat lConfiguration = cv::Mat::ones(mLightBlobs.size(), 1, CV_8U)*255;
+    cv::Mat lAttributed = cv::Mat::zeros(pDistances->rows, 1, CV_8U);
+
+    lConfiguration = getLeastSumForLevel(lConfiguration, pDistances, 0, lAttributed, lMinSum);
+
+    return lConfiguration;
+}
+
+/*****************/
+cv::Mat App::getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv::Mat pAttributed, float &pSum)
+{
+    float lMinSum = std::numeric_limits<float>::max();
+    cv::Mat lAttributed;
+    cv::Mat lConfig;
+
+    for(int i=0; i<pAttributed.rows; i++)
+    {
+        if(pAttributed.at<uchar>(i, 0) == 0)
+        {
+            lAttributed = pAttributed.clone();
+            lAttributed.at<uchar>(i, 0) = 255;
+            
+            float lCurrentSum = pSum + pDistances->at<float>(i, pLevel);
+            
+            cv::Mat lCurrentConfig = pConfig.clone();
+            lCurrentConfig.at<uchar>(pLevel) = i;
+
+            if(pLevel < pDistances->cols-1)
+                lCurrentConfig = getLeastSumForLevel(pConfig, pDistances, pLevel+1, lAttributed, lCurrentSum);
+
+            if(lCurrentSum < lMinSum)
+            {
+                lMinSum = lCurrentSum;
+                lConfig = lCurrentConfig;
+            }
+        }
+    }
+
+    pSum = lMinSum;
+    return lConfig;
 }
 
 /*****************/
