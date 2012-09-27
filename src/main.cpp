@@ -1,5 +1,6 @@
 #include <iostream>
 #include <limits>
+#include <stdio.h>
 #include "glib.h"
 #include "opencv2/opencv.hpp"
 #include "lo/lo.h"
@@ -10,6 +11,7 @@ static gboolean gVerbose = FALSE;
 static gint gCamNbr = 0;
 
 static gint gFilterSize = 3;
+static gchar* gDetectionLevel = NULL;
 
 static GString* gIpAddress = NULL;
 static GString* gIpPort = NULL;
@@ -21,12 +23,13 @@ static gboolean gLight = FALSE;
 static GOptionEntry gEntries[] =
 {
     {"hide", 0, 0, G_OPTION_ARG_NONE, &gHide, "Hides the camera output", NULL},
+    {"verbose", 'v', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
     {"cam", 'c', 0, G_OPTION_ARG_INT, &gCamNbr, "Selects which camera to use", NULL},
     {"filter", 'f', 0, G_OPTION_ARG_INT, &gFilterSize, "Specifies the size of the filtering kernel to use", NULL},
+    {"level", 'l', 0, G_OPTION_ARG_STRING, &gDetectionLevel, "If applicable, specifies the detection level to use", NULL},
     {"ip", 'i', 0, G_OPTION_ARG_STRING_ARRAY, &gIpAddress, "Specifies the ip address to send messages to", NULL}, 
     {"port", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &gIpPort, "Specifies the port to send messages to", NULL},
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
-    {"verbose", 'v', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
     {"outliers", 0, 0, G_OPTION_ARG_NONE, &gOutliers, "Detects the outliers (luminance wise) and outputs their mean position", NULL},
     {"light", 0, 0, G_OPTION_ARG_NONE, &gLight, "Detects light zone, extract them as blobs and outputs their position and size", NULL},
     {NULL}
@@ -163,6 +166,8 @@ class App
         lo_address mOscAddress;
 
         // opencv related
+        float mDetectionLevel;
+
         cv::VideoCapture mCamera;
         cv::Mat mCameraBuffer;
 
@@ -185,13 +190,15 @@ class App
         // same dimensions as pDistances, filled with 0 and 255
         cv::Mat getLeastSumConfiguration(cv::Mat* pDistances);
         // This function is called by the previous one, and should not be called by itself
+        // (it is part of a recursive algorithm)
         cv::Mat getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv::Mat pAttributed, float &pSum);
 };
 
 
 /*****************/
 App::App()
-    :mLightBlobDetector(NULL)
+    :mLightBlobDetector(NULL),
+    mDetectionLevel(2.f)
 {
 }
 
@@ -215,6 +222,9 @@ int App::parseArgs(int argc, char** argv)
         std::cout << "Error while parsing options: " << error->message << std::endl;
         return 1;
     }
+
+    if(gDetectionLevel != NULL)
+        mDetectionLevel = (float)g_ascii_strtod(gDetectionLevel, NULL);
 
     return 0;
 }
@@ -347,7 +357,7 @@ cv::Mat App::detectMeanOutliers()
     cv::absdiff(lOutlier, lMean.at<double>(0), lOutlier);
 
     // Detect pixels far from the mean (> 2*stddev)
-    cv::threshold(lOutlier, lOutlier, 2*lStdDev.at<double>(0), 255, cv::THRESH_BINARY);
+    cv::threshold(lOutlier, lOutlier, mDetectionLevel*lStdDev.at<double>(0), 255, cv::THRESH_BINARY);
 
     // Erode and dilate to suppress noise
     cv::erode(lOutlier, lEroded, cv::Mat(), cv::Point(-1, -1), gFilterSize);
@@ -410,7 +420,7 @@ cv::Mat App::detectLightSpots()
     // Detect pixels which values are superior to the mean
     cv::threshold(lOutlier, lLight, lMean.at<double>(0), 255, cv::THRESH_BINARY);
     // Detect pixels far from the mean (> 2*stddev)
-    cv::threshold(lOutlier, lOutlier, 2*lStdDev.at<double>(0), 255, cv::THRESH_BINARY);
+    cv::threshold(lOutlier, lOutlier, mDetectionLevel*lStdDev.at<double>(0), 255, cv::THRESH_BINARY);
     // Combinaison of both previous conditions
     cv::bitwise_and(lOutlier, lLight, lLight);
     // Erode and dilate to suppress noise
@@ -429,8 +439,6 @@ cv::Mat App::detectLightSpots()
     // Then we compare all these prediction with real measures and
     // associate them together
     cv::Mat lConfiguration;
-    std::cout << "--- Number of blobs: " << mLightBlobs.size() << std::endl;
-    std::cout << "--- Number of key points: " << lKeyPoints.size() << std::endl;
     if(mLightBlobs.size() != 0)
     {
         cv::Mat lTrackMat = cv::Mat::zeros(lKeyPoints.size(), mLightBlobs.size(), CV_32F);
@@ -441,7 +449,7 @@ cv::Mat App::detectLightSpots()
             for(int j=0; j<mLightBlobs.size(); ++j)
             {
                 cv::KeyPoint keyPoint = lKeyPoints[i];
-                cv::KeyPoint blob = mLightBlobs[i].getBlob();
+                cv::KeyPoint blob = mLightBlobs[j].getBlob();
 
                 float lDistance = pow(keyPoint.pt.x - blob.pt.x, 2.0)
                     + pow(keyPoint.pt.y - blob.pt.y, 2.0)
@@ -457,10 +465,10 @@ cv::Mat App::detectLightSpots()
 
     cv::Mat lAttributedKeypoints = cv::Mat::zeros(lKeyPoints.size(), 1, CV_8U);
     std::vector<Blob>::iterator lBlob = mLightBlobs.begin();
+    // We update the blobs which we were able to track
     for(int i=0; i<lConfiguration.rows; ++i)
     {
         int lIndex = lConfiguration.at<uchar>(i);
-        // We update the blobs which we were able to track
         if(lIndex < 255)
         {
             lBlob->setNewMeasures(lKeyPoints[lIndex]);
@@ -497,27 +505,22 @@ cv::Mat App::detectLightSpots()
     for(int i=0; i<lKeyPoints.size(); ++i)
     {
         int lX, lY, lSize;
-        lX = (int)(lKeyPoints[i].pt.x);
-        lY = (int)(lKeyPoints[i].pt.y);
-        lSize = (int)(lKeyPoints[i].size);
-
-        if(gVerbose)
-            std::cout << "Blob #" << i << " - x=" << lX << " - y=" << lY << " - size=" << lSize << std::endl;
-
-        // Send the result through OSC
-        lo_send(mOscAddress, "/blobserver/lightSpots/", "iiii", i, lX, lY, lSize);
-    }
-
-    // DEBUG
-    for(int i=0; i<mLightBlobs.size(); ++i)
-    {
-        int lX, lY, lS;
         cv::KeyPoint keyPoint = mLightBlobs[i].getBlob();
         lX = (int)(keyPoint.pt.x);
         lY = (int)(keyPoint.pt.y);
-        lS = (int)(keyPoint.size);
-        
-        std::cout << "Blob #" << i << " - x=" << lX << " - y=" << lY << " - size=" << lS << std::endl;
+        lSize = (int)(keyPoint.size);
+
+        if(gVerbose)
+        {
+            std::cout << "Blob #" << i << " - x=" << lX << " - y=" << lY << " - size=" << lSize << std::endl;
+            // Print the blob number on the blob
+            char lNbrStr[8];
+            sprintf(lNbrStr, "%i", i);
+            cv::putText(lLight, lNbrStr, cv::Point(lX, lY), cv::FONT_HERSHEY_COMPLEX, 0.66, cv::Scalar(0.0, 255.0, 0.0, 255.0));
+        }
+
+        // Send the result through OSC
+        lo_send(mOscAddress, "/blobserver/lightSpots/", "iiii", i, lX, lY, lSize);
     }
 
     return lLight;
@@ -531,7 +534,7 @@ cv::Mat App::getLeastSumConfiguration(cv::Mat* pDistances)
     cv::Mat lAttributed = cv::Mat::zeros(pDistances->rows, 1, CV_8U);
 
     lConfiguration = getLeastSumForLevel(lConfiguration, pDistances, 0, lAttributed, lMinSum);
-
+    
     return lConfiguration;
 }
 
@@ -544,18 +547,19 @@ cv::Mat App::getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLeve
 
     for(int i=0; i<pAttributed.rows; i++)
     {
-        if(pAttributed.at<uchar>(i, 0) == 0)
+        if(pAttributed.at<uchar>(i) == 0)
         {
             lAttributed = pAttributed.clone();
-            lAttributed.at<uchar>(i, 0) = 255;
+            lAttributed.at<uchar>(i) = 255;
             
             float lCurrentSum = pSum + pDistances->at<float>(i, pLevel);
             
             cv::Mat lCurrentConfig = pConfig.clone();
             lCurrentConfig.at<uchar>(pLevel) = i;
 
+
             if(pLevel < pDistances->cols-1)
-                lCurrentConfig = getLeastSumForLevel(pConfig, pDistances, pLevel+1, lAttributed, lCurrentSum);
+                lCurrentConfig = getLeastSumForLevel(lCurrentConfig, pDistances, pLevel+1, lAttributed, lCurrentSum);
 
             if(lCurrentSum < lMinSum)
             {
