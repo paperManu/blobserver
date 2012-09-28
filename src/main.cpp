@@ -52,6 +52,8 @@ class Blob
         Blob();
         ~Blob();
 
+        int getId() {return mId;};
+
         void init(cv::KeyPoint pNewBlob);
         cv::KeyPoint predict();
         void setNewMeasures(cv::KeyPoint pNewBlob);
@@ -63,11 +65,17 @@ class Blob
         bool updated;
         cv::KeyPoint mBlob;
         cv::KalmanFilter mFilter;
+
+        int mId;
 };
 
 /*************/
 Blob::Blob()
 {
+    static int lIdCounter = 0;
+    lIdCounter++;
+    mId = lIdCounter;
+
     updated = false;
 
     mBlob.pt.x = 0.0;
@@ -96,6 +104,8 @@ void Blob::init(cv::KeyPoint pNewBlob)
     mFilter.statePre.at<float>(0) = pNewBlob.pt.x;
     mFilter.statePre.at<float>(1) = pNewBlob.pt.y;
     mFilter.statePre.at<float>(2) = pNewBlob.size;
+
+    mBlob = pNewBlob;
 }
 
 /*************/
@@ -191,7 +201,7 @@ class App
         cv::Mat getLeastSumConfiguration(cv::Mat* pDistances);
         // This function is called by the previous one, and should not be called by itself
         // (it is part of a recursive algorithm)
-        cv::Mat getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv::Mat pAttributed, float &pSum);
+        cv::Mat getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv::Mat pAttributed, float &pSum, int pShift);
 };
 
 
@@ -430,7 +440,7 @@ cv::Mat App::detectLightSpots()
     // Now we have to detect blobs
     mLightBlobDetector->detect(lLight, lKeyPoints);
 
-    // We want to track them
+    // --- We want to track them
     // First we update all the previous blobs we detected,
     // and keep their predicted new position
     for(int i=0; i<mLightBlobs.size(); ++i)
@@ -473,17 +483,17 @@ cv::Mat App::detectLightSpots()
         {
             lBlob->setNewMeasures(lKeyPoints[lIndex]);
             lBlob++;
-            lAttributedKeypoints.at<uchar>(i) = 255;
+            lAttributedKeypoints.at<uchar>(lIndex) = 255;
         }
     }
     // We delete the blobs we couldn't track
     //for(lBlob = mLightBlobs.begin(); lBlob != mLightBlobs.end(); lBlob++)
-    for(int i=0; i<mLightBlobs.size(); i++)
+    for(int i=0; i<lConfiguration.rows; ++i)
     {
-        if(!mLightBlobs[i].isUpdated())
+        int lIndex = lConfiguration.at<uchar>(i);
+        if(lIndex == 255)
         {
             mLightBlobs.erase(mLightBlobs.begin()+i);
-            i--;
         }
     }
     // And we create new blobs for the new objects detected
@@ -493,16 +503,17 @@ cv::Mat App::detectLightSpots()
         if(lIndex == 0)
         {
             Blob lNewBlob;
-            lNewBlob.init(lKeyPoints[lIndex]);
+            lNewBlob.init(lKeyPoints[i]);
             mLightBlobs.push_back(lNewBlob);
         }
     }
+    // --- end of the tracking
 
     if(gVerbose)
         std::cout << "--- Light blobs detection:" << std::endl;
 
     // And we send and print them
-    for(int i=0; i<lKeyPoints.size(); ++i)
+    for(int i=0; i<mLightBlobs.size(); ++i)
     {
         int lX, lY, lSize;
         cv::KeyPoint keyPoint = mLightBlobs[i].getBlob();
@@ -512,15 +523,15 @@ cv::Mat App::detectLightSpots()
 
         if(gVerbose)
         {
-            std::cout << "Blob #" << i << " - x=" << lX << " - y=" << lY << " - size=" << lSize << std::endl;
+            std::cout << &(mLightBlobs[i]) << " - Blob #" << mLightBlobs[i].getId() << " - x=" << lX << " - y=" << lY << " - size=" << lSize << std::endl;
             // Print the blob number on the blob
             char lNbrStr[8];
-            sprintf(lNbrStr, "%i", i);
-            cv::putText(lLight, lNbrStr, cv::Point(lX, lY), cv::FONT_HERSHEY_COMPLEX, 0.66, cv::Scalar(0.0, 255.0, 0.0, 255.0));
+            sprintf(lNbrStr, "%i", mLightBlobs[i].getId());
+            cv::putText(lLight, lNbrStr, cv::Point(lX, lY), cv::FONT_HERSHEY_COMPLEX, 0.66, cv::Scalar(128.0, 128.0, 128.0, 128.0));
         }
 
         // Send the result through OSC
-        lo_send(mOscAddress, "/blobserver/lightSpots/", "iiii", i, lX, lY, lSize);
+        lo_send(mOscAddress, "/blobserver/lightSpots/", "iiii", mLightBlobs[i].getId(), lX, lY, lSize);
     }
 
     return lLight;
@@ -533,34 +544,57 @@ cv::Mat App::getLeastSumConfiguration(cv::Mat* pDistances)
     cv::Mat lConfiguration = cv::Mat::ones(mLightBlobs.size(), 1, CV_8U)*255;
     cv::Mat lAttributed = cv::Mat::zeros(pDistances->rows, 1, CV_8U);
 
-    lConfiguration = getLeastSumForLevel(lConfiguration, pDistances, 0, lAttributed, lMinSum);
-    
+    lConfiguration = getLeastSumForLevel(lConfiguration, pDistances, 0, lAttributed, lMinSum, 0);
+
     return lConfiguration;
 }
 
 /*****************/
-cv::Mat App::getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv::Mat pAttributed, float &pSum)
+cv::Mat App::getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv::Mat pAttributed, float &pSum, int pShift)
 {
-    float lMinSum = std::numeric_limits<float>::max();
-    cv::Mat lAttributed;
-    cv::Mat lConfig;
+    // If we lost one or more blobs, we will need to shift the remaining blobs to test all
+    // the possible combinations
+    int lLevelRemaining = pConfig.rows - (pLevel+1);
+    int lMaxShift = std::max(0, std::min(pConfig.rows - pDistances->rows - pShift, lLevelRemaining));
 
-    for(int i=0; i<pAttributed.rows; i++)
+    float lMinSum = std::numeric_limits<float>::max();
+    float lCurrentSum;
+    cv::Mat lAttributed;
+    cv::Mat lConfig, lCurrentConfig;
+
+    // We try without shifting anything
+    for(int i=0; i<pAttributed.rows + lMaxShift; i++)
     {
-        if(pAttributed.at<uchar>(i) == 0)
-        {
+
+        // If we do not shift
+        if(pAttributed.at<uchar>(i) == 0 && i < pAttributed.rows)
+        {    
             lAttributed = pAttributed.clone();
+            lCurrentConfig = pConfig.clone();
+
             lAttributed.at<uchar>(i) = 255;
-            
-            float lCurrentSum = pSum + pDistances->at<float>(i, pLevel);
-            
-            cv::Mat lCurrentConfig = pConfig.clone();
+            lCurrentSum = pSum + pDistances->at<float>(i, pLevel);
             lCurrentConfig.at<uchar>(pLevel) = i;
 
+            if(lLevelRemaining > 0)
+                lCurrentConfig = getLeastSumForLevel(lCurrentConfig, pDistances, pLevel+1, lAttributed, lCurrentSum, pShift);
 
-            if(pLevel < pDistances->cols-1)
-                lCurrentConfig = getLeastSumForLevel(lCurrentConfig, pDistances, pLevel+1, lAttributed, lCurrentSum);
+            if(lCurrentSum < lMinSum)
+            {
+                lMinSum = lCurrentSum;
+                lConfig = lCurrentConfig;
+            }
+        }    
+        // if we shift, don't attribute this keypoint to any blob
+        else if(i >= pAttributed.rows)
+        {
+            lAttributed = pAttributed.clone();
+            lCurrentConfig = pConfig.clone();
+            lCurrentSum = pSum;
 
+            if(lLevelRemaining > 0)
+                lCurrentConfig = getLeastSumForLevel(lCurrentConfig, pDistances, pLevel+1, lAttributed, lCurrentSum, pShift+1);
+            
             if(lCurrentSum < lMinSum)
             {
                 lMinSum = lCurrentSum;
@@ -569,8 +603,15 @@ cv::Mat App::getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLeve
         }
     }
 
-    pSum = lMinSum;
-    return lConfig;
+    if(lMinSum < std::numeric_limits<float>::max())
+    {
+        pSum = lMinSum;
+        return lConfig;
+    }
+    else
+    {
+        return pConfig;
+    }
 }
 
 /*****************/
