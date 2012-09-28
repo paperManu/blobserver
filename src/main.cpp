@@ -35,15 +35,6 @@ static GOptionEntry gEntries[] =
     {NULL}
 };
 
-/********************/
-int factorial(int n)
-{
-    int lValue = 1;
-    for(int i=n; i>0; i--)
-        lValue *= i;
-    return lValue;
-}
-
 /************************************/
 // Blob class, with tracking features
 class Blob
