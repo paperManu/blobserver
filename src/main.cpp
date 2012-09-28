@@ -4,6 +4,7 @@
 #include "glib.h"
 #include "opencv2/opencv.hpp"
 #include "lo/lo.h"
+#include "gst/gst.h"
 
 static gboolean gHide = FALSE;
 static gboolean gVerbose = FALSE;
@@ -152,11 +153,8 @@ class App
         App();
         ~App();
 
-        // Arguments parser
-        int parseArgs(int argc, char **argv);
-
         // Initialization, depending on arguments
-        int init();
+        int init(int argc, char** argv);
 
         // Main loop
         int loop();
@@ -176,6 +174,9 @@ class App
         std::vector<Blob> mLightBlobs; // Vector of detected and tracked blobs
 
         // Methods
+        // Arguments parser
+        int parseArgs(int argc, char **argv);
+        
         // Various filter and detection modes availables
         
         // Detects outliers based on the mean and std dev, and
@@ -209,30 +210,17 @@ App::~App()
 {
 }
 
-/*****************/
-int App::parseArgs(int argc, char** argv)
-{
-    GError *error = NULL;
-    GOptionContext* context;
 
-    context = g_option_context_new("- blobserver, sends blobs through OSC");
-    g_option_context_add_main_entries(context, gEntries, NULL);
-
-    if(!g_option_context_parse(context, &argc, &argv, &error))
-    {
-        std::cout << "Error while parsing options: " << error->message << std::endl;
-        return 1;
-    }
-
-    if(gDetectionLevel != NULL)
-        mDetectionLevel = (float)g_ascii_strtod(gDetectionLevel, NULL);
-
-    return 0;
-}
 
 /*****************/
-int App::init()
+int App::init(int argc, char** argv)
 {
+    // Parse arguments
+    parseArgs(argc, argv);
+
+    // Initialize GStreamer
+    gst_init(&argc, &argv);
+
     // Initialize camera
     mCamera.open(gCamNbr);
     if(!mCamera.isOpened())
@@ -338,6 +326,28 @@ int App::loop()
             std::cout << "Buffer displayed: " << lBufferNames[lSourceNumber] << std::endl;
         }
     }
+
+    return 0;
+}
+
+/*****************/
+int App::parseArgs(int argc, char** argv)
+{
+    GError *error = NULL;
+    GOptionContext* context;
+
+    context = g_option_context_new("- blobserver, sends blobs through OSC");
+    g_option_context_add_main_entries(context, gEntries, NULL);
+    g_option_context_add_group(context, gst_init_get_option_group());
+
+    if(!g_option_context_parse(context, &argc, &argv, &error))
+    {
+        std::cout << "Error while parsing options: " << error->message << std::endl;
+        return 1;
+    }
+
+    if(gDetectionLevel != NULL)
+        mDetectionLevel = (float)g_ascii_strtod(gDetectionLevel, NULL);
 
     return 0;
 }
@@ -611,11 +621,11 @@ int main(int argc, char** argv)
     App theApp;
     int ret;
 
-    ret = theApp.parseArgs(argc, argv);
-    if(ret != 0)
-        return ret;
+    //ret = theApp.parseArgs(argc, argv);
+    //if(ret != 0)
+    //    return ret;
 
-    ret = theApp.init();
+    ret = theApp.init(argc, argv);
     if(ret != 0)
         return ret;
 
