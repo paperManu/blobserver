@@ -2,7 +2,11 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT(BLOBSERVER, 0.0.9, emmanueldurand@gmail.com)
+AC_INIT([BLOBSERVER],
+        [0.0.9],
+        [http://code.sat.qc.ca/redmine/projects/blobserver/issues],
+        [blobserver],
+        [http://code.sat.qc.ca/redmine/projects/blobserver])
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE()
@@ -44,3 +48,4 @@ AC_CONFIG_FILES([
     man/Makefile
     ])
 AC_OUTPUT
+
