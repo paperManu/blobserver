@@ -27,10 +27,9 @@ Installation
 Here is how to build and install it on Debian GNU/Linux or Ubuntu Precise::
 
   sudo apt-get install help2man gettext automake bison build-essential flex libtool 
-  sudo apt-get install liblog4cpp5-dev
-  sudo apt-get install libglib2.0-dev libboost-all-dev liblo0-dev liblog4cpp5-dev
-  sudo apt-get install gstreamer0.10-plugins-bad gstreamer0.10-plugins-base gstreamer0.10-plugins-good gstreamer0.10-plugins-ugly
-  sudo apt-get install libavc1394-dev libdc1394-22-dev libdv4-dev libgstreamer-plugins-base0.10-dev libgstreamer0.10-dev 
+  sudo apt-get install libglib2.0-dev liblo0-dev
+  sudo apt-get install libgstreamer0.10-dev 
+  sudo apt-get install libopencv-dev
   ./autogen.sh
   ./configure
   make
