@@ -1,0 +1,38 @@
+Blobserver
+==========
+
+About
+-----
+Blob detection server
+
+License
+-------
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License and GNU General Public License as published by the Free Software Foundation; either version 3 of the Licenses, or (at your option) any later version.
+
+Authors
+-------
+* Emmanuel Durand <emmanueldurand@gmail.com>
+
+Project URL
+-----------
+http://code.sat.qc.ca/redmine/projects/blobserver
+
+Sponsors
+--------
+This project is made possible thanks to the Society for Arts and Technologies. [SAT] http://www.sat.qc.ca/
+Thanks to the Ministère du Développement économique, de l'Innovation et de l'Exportation du Québec (MDEIE).
+
+Installation
+------------
+Here is how to build and install it on Debian GNU/Linux or Ubuntu Precise::
+
+  sudo apt-get install help2man gettext automake bison build-essential flex libtool 
+  sudo apt-get install libglib2.0-dev liblo0-dev
+  sudo apt-get install libgstreamer0.10-dev 
+  sudo apt-get install libopencv-dev
+  ./autogen.sh
+  ./configure
+  make
+  sudo make install
+  sudo ldconfig
+

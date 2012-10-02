@@ -1,0 +1,17 @@
+[DESCRIPTION]
+Blob detection server
+
+[INTERACTIVE USAGE]
+Press control-q to quit.
+
+[AUTHOR]
+Emmanuel Durand
+
+[HISTORY]
+2012 - Written by Emmanuel Durand
+
+[REPORTING BUGS]
+See http://code.sat.qc.ca/redmine/projects/blobserver/issues/new
+
+[SEE ALSO]
+scenic(1), dc-ctl(1)
