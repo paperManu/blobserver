@@ -1,4 +1,7 @@
+*.1
+*.o
 *.swp
+*~
 Makefile
 Makefile.in
 aclocal.m4
@@ -18,5 +21,4 @@ missing
 src/.deps/
 src/Makefile
 src/Makefile.in
-src/barycenter
-src/barycenter-main.o
+src/blobserver
