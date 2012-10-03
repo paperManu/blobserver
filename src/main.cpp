@@ -25,6 +25,7 @@
 #include <iostream>
 #include <limits>
 #include <stdio.h>
+#include <memory>
 #include "glib.h"
 #include "opencv2/opencv.hpp"
 #include "lo/lo.h"
@@ -67,21 +68,31 @@ static GOptionEntry gEntries[] =
 class Blob
 {
     public:
+    // A struct to describe blobs
+    struct properties
+    {
+        cv::Point position;
+        cv::Point speed;
+        float size;
+    };
+
+    public:
         Blob();
         ~Blob();
 
         int getId() {return mId;};
 
-        void init(cv::KeyPoint pNewBlob);
-        cv::KeyPoint predict();
-        void setNewMeasures(cv::KeyPoint pNewBlob);
+        void init(properties pNewBlob);
+        properties predict();
+        void setNewMeasures(properties pNewBlob);
         
-        cv::KeyPoint getBlob();
+        properties getBlob();
         bool isUpdated();
 
     private:
         bool updated;
-        cv::KeyPoint mBlob;
+        
+        properties mProperties;
         cv::KalmanFilter mFilter;
 
         int mId;
@@ -96,15 +107,17 @@ Blob::Blob()
 
     updated = false;
 
-    mBlob.pt.x = 0.0;
-    mBlob.pt.y = 0.0;
-    mBlob.size = 0.0;
+    mProperties.position.x = 0.0;
+    mProperties.position.y = 0.0;
+    mProperties.size = 0.0;
+    mProperties.speed.x = 0.0;
+    mProperties.speed.y = 0.0;
 
     // We are filtering a 3 variables state, and
     // we have a measure for all of them
-    mFilter.init(3, 3);
+    mFilter.init(5, 3, 0);
 
-    mFilter.transitionMatrix = *(cv::Mat_<float>(3, 3) << 1,0,0, 0,1,0, 0,0,1);
+    mFilter.transitionMatrix = *(cv::Mat_<float>(5, 5) << 1,0,0,1,0, 0,1,0,0,1, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1);
     setIdentity(mFilter.measurementMatrix);
     setIdentity(mFilter.processNoiseCov, cv::Scalar::all(1e-5));
     setIdentity(mFilter.measurementNoiseCov, cv::Scalar::all(1e-5));
@@ -117,51 +130,58 @@ Blob::~Blob()
 }
 
 /*************/
-void Blob::init(cv::KeyPoint pNewBlob)
+void Blob::init(properties pNewBlob)
 {
-    mFilter.statePre.at<float>(0) = pNewBlob.pt.x;
-    mFilter.statePre.at<float>(1) = pNewBlob.pt.y;
+    mFilter.statePre.at<float>(0) = pNewBlob.position.x;
+    mFilter.statePre.at<float>(1) = pNewBlob.position.y;
     mFilter.statePre.at<float>(2) = pNewBlob.size;
+    mFilter.statePre.at<float>(3) = 0.f;
+    mFilter.statePre.at<float>(4) = 0.f;
 
-    mBlob = pNewBlob;
+    mProperties = pNewBlob;
 }
 
 /*************/
-cv::KeyPoint Blob::predict()
+Blob::properties Blob::predict()
 {
     cv::Mat lPrediction;
-    cv::KeyPoint lKeyPoint;
+    properties lProperties;
 
     lPrediction = mFilter.predict();
-    lKeyPoint.pt.x = lPrediction.at<float>(0);
-    lKeyPoint.pt.y = lPrediction.at<float>(1);
-    lKeyPoint.size = lPrediction.at<float>(2);
+
+    lProperties.position.x = lPrediction.at<float>(0);
+    lProperties.position.y = lPrediction.at<float>(1);
+    lProperties.size = lPrediction.at<float>(2);
+    lProperties.speed.x = lPrediction.at<float>(3);
+    lProperties.speed.x = lPrediction.at<float>(4);
 
     updated = false;
     
-    return lKeyPoint;
+    return lProperties;
 }
 
 /*************/
-void Blob::setNewMeasures(cv::KeyPoint pNewBlob)
+void Blob::setNewMeasures(properties pNewBlob)
 {
     cv::Mat lMeasures = cv::Mat::zeros(3, 1, CV_32F);
-    lMeasures.at<float>(0) = pNewBlob.pt.x;
-    lMeasures.at<float>(1) = pNewBlob.pt.y;
+    lMeasures.at<float>(0) = pNewBlob.position.x;
+    lMeasures.at<float>(1) = pNewBlob.position.y;
     lMeasures.at<float>(2) = pNewBlob.size;
 
     cv::Mat lEstimation = mFilter.correct(lMeasures);
-    mBlob.pt.x = lEstimation.at<float>(0);
-    mBlob.pt.y = lEstimation.at<float>(1);
-    mBlob.size = lEstimation.at<float>(2);
+    mProperties.position.x = lEstimation.at<float>(0);
+    mProperties.position.y = lEstimation.at<float>(1);
+    mProperties.size = lEstimation.at<float>(2);
+    mProperties.speed.x = lEstimation.at<float>(3);
+    mProperties.speed.y = lEstimation.at<float>(4);
 
     updated = true;
 }
 
 /*************/
-cv::KeyPoint Blob::getBlob()
+Blob::properties Blob::getBlob()
 {
-    return mBlob;
+    return mProperties;
 }
 
 /*************/
@@ -175,9 +195,9 @@ bool Blob::isUpdated()
 class App
 {
     public:
-        // Constructor and destructor
-        App();
         ~App();
+
+        static std::shared_ptr<App> getInstance();
 
         // Initialization, depending on arguments
         int init(int argc, char** argv);
@@ -187,8 +207,14 @@ class App
 
     private:
         // Attributes
+        // Singleton
+        static std::shared_ptr<App> mInstance;
+
+        int mMaxTrackedBlobs;
+
         // liblo related
         lo_address mOscAddress;
+        lo_server_thread mOscServer;
 
         // opencv related
         float mDetectionLevel;
@@ -200,8 +226,16 @@ class App
         std::vector<Blob> mLightBlobs; // Vector of detected and tracked blobs
 
         // Methods
+        App();
+
         // Arguments parser
         int parseArgs(int argc, char **argv);
+
+        // OSC related, server side
+        static void oscError(int num, const char* msg, const char* path);
+        static int oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
+        static int oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
+        static int oscHandlerSetFilter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         
         // Various filter and detection modes availables
         
@@ -222,11 +256,13 @@ class App
         cv::Mat getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv::Mat pAttributed, float &pSum, int pShift);
 };
 
+std::shared_ptr<App> App::mInstance(nullptr);
 
 /*****************/
 App::App()
-    :mLightBlobDetector(NULL),
-    mDetectionLevel(2.f)
+    :mLightBlobDetector (NULL),
+    mDetectionLevel (2.f),
+    mMaxTrackedBlobs (16)
 {
 }
 
@@ -236,7 +272,13 @@ App::~App()
 {
 }
 
-
+/*****************/
+std::shared_ptr<App> App::getInstance()
+{
+    if(App::mInstance.get() == nullptr)
+        App::mInstance.reset(new App);
+    return App::mInstance;
+}
 
 /*****************/
 int App::init(int argc, char** argv)
@@ -245,7 +287,6 @@ int App::init(int argc, char** argv)
     int ret = parseArgs(argc, argv);
     if(ret)
         return ret;
-
 
     // Initialize GStreamer
     gst_init(&argc, &argv);
@@ -261,6 +302,7 @@ int App::init(int argc, char** argv)
     mCamera.read(mCameraBuffer);
 
     // Initialize OSC
+    // Client
     if(gIpAddress != NULL)
     {
         std::cout << "IP specified: " << gIpAddress->str << std::endl;
@@ -281,10 +323,19 @@ int App::init(int argc, char** argv)
         std::cout << "No port specified, using 9000" << std::endl;
     }
 
+    int lNetProto;
     if(gTcp)
-        mOscAddress = lo_address_new_with_proto(LO_TCP, gIpAddress->str, gIpPort->str);
+        lNetProto = LO_TCP;
     else
-        mOscAddress = lo_address_new_with_proto(LO_UDP, gIpAddress->str, gIpPort->str);
+        lNetProto = LO_UDP;
+
+    mOscAddress = lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str);
+
+    // Server
+    mOscServer = lo_server_thread_new_with_proto("7770", lNetProto, App::oscError);
+    lo_server_thread_add_method(mOscServer, "/blobserver/connect", "ss", App::oscHandlerConnect, NULL);
+    lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", "s", App::oscHandlerDisconnect, NULL);
+    lo_server_thread_add_method(mOscServer, "/blobserver/filter", "s", App::oscHandlerSetFilter, NULL);
 
     // Initialize a few other things
     // Set mLightDetector to indeed detect light
@@ -357,6 +408,30 @@ int App::loop()
     }
 
     return 0;
+}
+
+/*****************/
+void App::oscError(int num, const char* msg, const char* path)
+{
+    std::cout << "liblo server error " << num << " in path " << path << ": " << msg << std::endl;
+}
+
+/*****************/
+int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
+{
+
+}
+
+/*****************/
+int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
+{
+
+}
+
+/*****************/
+int App::oscHandlerSetFilter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
+{
+
 }
 
 /*****************/
@@ -478,6 +553,20 @@ cv::Mat App::detectLightSpots()
 
     // Now we have to detect blobs
     mLightBlobDetector->detect(lLight, lKeyPoints);
+    
+    // We use Blob::properties, not cv::KeyPoints
+    std::vector<Blob::properties> lProperties;
+    for(int i = 0; i < std::min((int)(lKeyPoints.size()), mMaxTrackedBlobs); ++i)
+    {
+        Blob::properties properties;
+        properties.position.x = lKeyPoints[i].pt.x;
+        properties.position.y = lKeyPoints[i].pt.y;
+        properties.size = lKeyPoints[i].size;
+        properties.speed.x = 0.f;
+        properties.speed.y = 0.f;
+
+        lProperties.push_back(properties);
+    }
 
     // --- We want to track them
     // First we update all the previous blobs we detected,
@@ -497,12 +586,12 @@ cv::Mat App::detectLightSpots()
         {
             for(int j = 0; j < mLightBlobs.size(); ++j)
             {
-                cv::KeyPoint keyPoint = lKeyPoints[i];
-                cv::KeyPoint blob = mLightBlobs[j].getBlob();
+                Blob::properties properties = lProperties[i];
+                Blob::properties blob = mLightBlobs[j].getBlob();
 
-                float lDistance = pow(keyPoint.pt.x - blob.pt.x, 2.0)
-                    + pow(keyPoint.pt.y - blob.pt.y, 2.0)
-                    + pow(keyPoint.size - blob.size, 2.0);
+                float lDistance = pow(properties.position.x - blob.position.x, 2.0)
+                    + pow(properties.position.y - blob.position.y, 2.0)
+                    + pow(properties.size - blob.size, 2.0);
 
                 lTrackMat.at<float>(i, j) = lDistance;
             }
@@ -512,7 +601,7 @@ cv::Mat App::detectLightSpots()
         lConfiguration = getLeastSumConfiguration(&lTrackMat);
     }
 
-    cv::Mat lAttributedKeypoints = cv::Mat::zeros(lKeyPoints.size(), 1, CV_8U);
+    cv::Mat lAttributedKeypoints = cv::Mat::zeros(lProperties.size(), 1, CV_8U);
     std::vector<Blob>::iterator lBlob = mLightBlobs.begin();
     // We update the blobs which we were able to track
     for(int i = 0; i < lConfiguration.rows; ++i)
@@ -520,7 +609,7 @@ cv::Mat App::detectLightSpots()
         int lIndex = lConfiguration.at<uchar>(i);
         if(lIndex < 255)
         {
-            lBlob->setNewMeasures(lKeyPoints[lIndex]);
+            lBlob->setNewMeasures(lProperties[lIndex]);
             lBlob++;
             lAttributedKeypoints.at<uchar>(lIndex) = 255;
         }
@@ -542,7 +631,7 @@ cv::Mat App::detectLightSpots()
         if(lIndex == 0)
         {
             Blob lNewBlob;
-            lNewBlob.init(lKeyPoints[i]);
+            lNewBlob.init(lProperties[i]);
             mLightBlobs.push_back(lNewBlob);
         }
     }
@@ -554,15 +643,17 @@ cv::Mat App::detectLightSpots()
     // And we send and print them
     for(int i = 0; i < mLightBlobs.size(); ++i)
     {
-        int lX, lY, lSize;
-        cv::KeyPoint keyPoint = mLightBlobs[i].getBlob();
-        lX = (int)(keyPoint.pt.x);
-        lY = (int)(keyPoint.pt.y);
-        lSize = (int)(keyPoint.size);
+        int lX, lY, lSize, ldX, ldY;
+        Blob::properties properties = mLightBlobs[i].getBlob();
+        lX = (int)(properties.position.x);
+        lY = (int)(properties.position.y);
+        lSize = (int)(properties.size);
+        ldX = (int)(properties.speed.x);
+        ldY = (int)(properties.speed.y);
 
         if(gVerbose)
         {
-            std::cout << &(mLightBlobs[i]) << " - Blob #" << mLightBlobs[i].getId() << " - x=" << lX << " - y=" << lY << " - size=" << lSize << std::endl;
+            std::cout << &(mLightBlobs[i]) << " - Blob #" << mLightBlobs[i].getId() << " - x=" << lX << " - y=" << lY << " - size=" << lSize << " - dX = " << ldX << " - dY = " << ldY<< std::endl;
             // Print the blob number on the blob
             char lNbrStr[8];
             sprintf(lNbrStr, "%i", mLightBlobs[i].getId());
@@ -570,7 +661,7 @@ cv::Mat App::detectLightSpots()
         }
 
         // Send the result through OSC
-        lo_send(mOscAddress, "/blobserver/lightSpots/", "iiii", lX, lY, lSize, mLightBlobs[i].getId());
+        lo_send(mOscAddress, "/blobserver/lightSpots/", "iiiiii", lX, lY, lSize, ldX, ldY, mLightBlobs[i].getId());
     }
 
     return lLight;
@@ -656,17 +747,17 @@ cv::Mat App::getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLeve
 /*****************/
 int main(int argc, char** argv)
 {
-    App theApp;
+    std::shared_ptr<App> theApp = App::getInstance();
     int ret;
 
     //ret = theApp.parseArgs(argc, argv);
     //if(ret != 0)
     //    return ret;
 
-    ret = theApp.init(argc, argv);
+    ret = theApp->init(argc, argv);
     if(ret != 0)
         return ret;
 
-    ret = theApp.loop();
+    ret = theApp->loop();
     return ret;
 }

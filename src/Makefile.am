@@ -4,6 +4,7 @@ blobserver_SOURCES = \
     main.cpp
 
 blobserver_CXXFLAGS = \
+    -std=gnu++0x \
 	$(GLIB_CFLAGS) \
     $(OPENCV_CFLAGS) \
     $(LIBLO_CFLAGS) \
