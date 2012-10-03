@@ -305,7 +305,7 @@ int App::loop()
         std::vector<std::string> lBufferNames;
 
         // Frame capture
-        mCamera.read(mCameraBuffer);
+        mCamera.read( mCameraBuffer );
         // cv::Mat are not copied when not specified, so the bandwidth usage
         // of the following operation is minimal
         lBuffers.push_back(mCameraBuffer);
@@ -392,7 +392,7 @@ cv::Mat App::detectMeanOutliers()
     cv::absdiff(lOutlier, lMean.at<double>(0), lOutlier);
 
     // Detect pixels far from the mean (> 2*stddev)
-    cv::threshold(lOutlier, lOutlier, mDetectionLevel*lStdDev.at<double>(0), 255, cv::THRESH_BINARY);
+    cv::threshold(lOutlier, lOutlier, mDetectionLevel * lStdDev.at<double>(0), 255, cv::THRESH_BINARY);
 
     // Erode and dilate to suppress noise
     cv::erode(lOutlier, lEroded, cv::Mat(), cv::Point(-1, -1), gFilterSize);
@@ -400,10 +400,10 @@ cv::Mat App::detectMeanOutliers()
 
     // Calculate the barycenter of the outliers
     int lNumber = 0;
-    int lX=0, lY=0;
+    int lX = 0, lY = 0;
 
-    for(int x=0; x<lFiltered.size[1]; x++)
-        for(int y=0; y<lFiltered.size[0]; y++)
+    for(int x = 0; x < lFiltered.size[1]; ++x)
+        for(int y = 0; y < lFiltered.size[0]; ++y)
         {
             if(lFiltered.at<uchar>(y, x) == 255)
             {
@@ -454,10 +454,13 @@ cv::Mat App::detectLightSpots()
 
     // Detect pixels which values are superior to the mean
     cv::threshold(lOutlier, lLight, lMean.at<double>(0), 255, cv::THRESH_BINARY);
-    // Detect pixels far from the mean (> 2*stddev)
-    cv::threshold(lOutlier, lOutlier, mDetectionLevel*lStdDev.at<double>(0), 255, cv::THRESH_BINARY);
+    
+    // Detect pixels far from the mean (> 2*stddev by default)
+    cv::threshold(lOutlier, lOutlier, mDetectionLevel * lStdDev.at<double>(0), 255, cv::THRESH_BINARY);
+    
     // Combinaison of both previous conditions
     cv::bitwise_and(lOutlier, lLight, lLight);
+
     // Erode and dilate to suppress noise
     cv::erode(lLight, lEroded, cv::Mat(), cv::Point(-1, -1), gFilterSize);
     cv::dilate(lEroded, lLight, cv::Mat(), cv::Point(-1, -1), gFilterSize);
@@ -468,7 +471,7 @@ cv::Mat App::detectLightSpots()
     // --- We want to track them
     // First we update all the previous blobs we detected,
     // and keep their predicted new position
-    for(int i=0; i<mLightBlobs.size(); ++i)
+    for(int i = 0; i < mLightBlobs.size(); ++i)
         mLightBlobs[i].predict();
     
     // Then we compare all these prediction with real measures and
@@ -479,9 +482,9 @@ cv::Mat App::detectLightSpots()
         cv::Mat lTrackMat = cv::Mat::zeros(lKeyPoints.size(), mLightBlobs.size(), CV_32F);
 
         // Compute the squared distance between all new blobs, and all tracked ones
-        for(int i=0; i<lKeyPoints.size(); ++i)
+        for(int i = 0; i < lKeyPoints.size(); ++i)
         {
-            for(int j=0; j<mLightBlobs.size(); ++j)
+            for(int j = 0; j < mLightBlobs.size(); ++j)
             {
                 cv::KeyPoint keyPoint = lKeyPoints[i];
                 cv::KeyPoint blob = mLightBlobs[j].getBlob();
@@ -501,7 +504,7 @@ cv::Mat App::detectLightSpots()
     cv::Mat lAttributedKeypoints = cv::Mat::zeros(lKeyPoints.size(), 1, CV_8U);
     std::vector<Blob>::iterator lBlob = mLightBlobs.begin();
     // We update the blobs which we were able to track
-    for(int i=0; i<lConfiguration.rows; ++i)
+    for(int i = 0; i < lConfiguration.rows; ++i)
     {
         int lIndex = lConfiguration.at<uchar>(i);
         if(lIndex < 255)
@@ -513,7 +516,7 @@ cv::Mat App::detectLightSpots()
     }
     // We delete the blobs we couldn't track
     //for(lBlob = mLightBlobs.begin(); lBlob != mLightBlobs.end(); lBlob++)
-    for(int i=0; i<lConfiguration.rows; ++i)
+    for(int i = 0; i < lConfiguration.rows; ++i)
     {
         int lIndex = lConfiguration.at<uchar>(i);
         if(lIndex == 255)
@@ -522,7 +525,7 @@ cv::Mat App::detectLightSpots()
         }
     }
     // And we create new blobs for the new objects detected
-    for(int i=0; i<lAttributedKeypoints.rows; ++i)
+    for(int i = 0; i < lAttributedKeypoints.rows; ++i)
     {
         int lIndex = lAttributedKeypoints.at<uchar>(i);
         if(lIndex == 0)
@@ -538,7 +541,7 @@ cv::Mat App::detectLightSpots()
         std::cout << "--- Light blobs detection:" << std::endl;
 
     // And we send and print them
-    for(int i=0; i<mLightBlobs.size(); ++i)
+    for(int i = 0; i < mLightBlobs.size(); ++i)
     {
         int lX, lY, lSize;
         cv::KeyPoint keyPoint = mLightBlobs[i].getBlob();
@@ -579,7 +582,7 @@ cv::Mat App::getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLeve
 {
     // If we lost one or more blobs, we will need to shift the remaining blobs to test all
     // the possible combinations
-    int lLevelRemaining = pConfig.rows - (pLevel+1);
+    int lLevelRemaining = pConfig.rows - (pLevel + 1);
     int lMaxShift = std::max(0, std::min(pConfig.rows - pDistances->rows - pShift, lLevelRemaining));
 
     float lMinSum = std::numeric_limits<float>::max();
@@ -588,7 +591,7 @@ cv::Mat App::getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLeve
     cv::Mat lConfig, lCurrentConfig;
 
     // We try without shifting anything
-    for(int i=0; i<pAttributed.rows + lMaxShift; i++)
+    for(int i = 0; i < pAttributed.rows + lMaxShift; ++i)
     {
 
         // If we do not shift
@@ -602,7 +605,7 @@ cv::Mat App::getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLeve
             lCurrentConfig.at<uchar>(pLevel) = i;
 
             if(lLevelRemaining > 0)
-                lCurrentConfig = getLeastSumForLevel(lCurrentConfig, pDistances, pLevel+1, lAttributed, lCurrentSum, pShift);
+                lCurrentConfig = getLeastSumForLevel(lCurrentConfig, pDistances, pLevel + 1, lAttributed, lCurrentSum, pShift);
 
             if(lCurrentSum < lMinSum)
             {
@@ -618,7 +621,7 @@ cv::Mat App::getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLeve
             lCurrentSum = pSum;
 
             if(lLevelRemaining > 0)
-                lCurrentConfig = getLeastSumForLevel(lCurrentConfig, pDistances, pLevel+1, lAttributed, lCurrentSum, pShift+1);
+                lCurrentConfig = getLeastSumForLevel(lCurrentConfig, pDistances, pLevel + 1, lAttributed, lCurrentSum, pShift + 1);
             
             if(lCurrentSum < lMinSum)
             {
