@@ -30,6 +30,7 @@
 #include "lo/lo.h"
 #include "gst/gst.h"
 
+static gboolean gVersion = FALSE;
 static gboolean gHide = FALSE;
 static gboolean gVerbose = FALSE;
 
@@ -47,6 +48,7 @@ static gboolean gLight = FALSE;
 
 static GOptionEntry gEntries[] =
 {
+    {"version", 0, 0, G_OPTION_ARG_NONE, &gVersion, "Shows version of this software", NULL},
     {"hide", 0, 0, G_OPTION_ARG_NONE, &gHide, "Hides the camera output", NULL},
     {"verbose", 'v', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
     {"cam", 'c', 0, G_OPTION_ARG_INT, &gCamNbr, "Selects which camera to use", NULL},
@@ -240,7 +242,10 @@ App::~App()
 int App::init(int argc, char** argv)
 {
     // Parse arguments
-    parseArgs(argc, argv);
+    int ret = parseArgs(argc, argv);
+    if(ret)
+        return ret;
+
 
     // Initialize GStreamer
     gst_init(&argc, &argv);
@@ -372,6 +377,12 @@ int App::parseArgs(int argc, char** argv)
 
     if(gDetectionLevel != NULL)
         mDetectionLevel = (float)g_ascii_strtod(gDetectionLevel, NULL);
+
+    if(gVersion)
+    {
+        std::cout << PACKAGE_TARNAME << " " << PACKAGE_VERSION << std::endl;
+        return 1;
+    }
 
     return 0;
 }
@@ -559,7 +570,7 @@ cv::Mat App::detectLightSpots()
         }
 
         // Send the result through OSC
-        lo_send(mOscAddress, "/blobserver/lightSpots/", "iiii", mLightBlobs[i].getId(), lX, lY, lSize);
+        lo_send(mOscAddress, "/blobserver/lightSpots/", "iiii", lX, lY, lSize, mLightBlobs[i].getId());
     }
 
     return lLight;

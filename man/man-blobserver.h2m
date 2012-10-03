@@ -2,7 +2,23 @@
 Blob detection server
 
 [INTERACTIVE USAGE]
-Press control-q to quit.
+Press control-q to quit, w to swap between the camera capture and the various filtering available.
+
+[OSC INTERFACE]
+The OSC messages sent depend on the filter used. These messages are sent to the address and port specified by the corresponding commandline options, or to localhost:9000 if nothing is specified.
+
+- outliers:
+Send messages to "/blobserver/outliers/", in the form of three floats : 
+    x position
+    y position
+    total number of outliers (pixels).
+
+- light:
+Send messages to "/blobserver/lightSpots/". One message is sent per tracked blob, with the following float values :
+    x position
+    y position
+    size (radius) of the light blob
+    id of the blob
 
 [AUTHOR]
 Emmanuel Durand
