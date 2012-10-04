@@ -107,6 +107,9 @@ class App
         cv::VideoCapture mCamera;
         cv::Mat mCameraBuffer;
 
+        // filter related
+        std::map<int, int> mFiltersUsage;
+
         cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
         std::vector<LightSpot> mLightBlobs; // Vector of detected and tracked blobs
 
@@ -190,43 +193,45 @@ int App::init(int argc, char** argv)
         std::cout << "Error while opening camera number " << gCamNbr << ". Exiting." << std::endl;
         return 1;
     }
+
+    mFiltersUsage[BLOB_FILTER_OUTLIERS] = 0;
+    mFiltersUsage[BLOB_FILTER_LIGHT] = 0;
+
     // Get a first frame to initialize the buffer
     mCamera.read(mCameraBuffer);
 
     // Initialize OSC
-    // Client
-    if(gIpAddress != NULL)
-    {
-        std::cout << "IP specified: " << gIpAddress->str << std::endl;
-    }
-    else
-    {
-        gIpAddress = g_string_new("127.0.0.1");
-        std::cout << "No IP specified, using localhost" << std::endl;
-    }
-
-    if(gIpPort != NULL)
-    {
-        std::cout << "Using port number " << gIpPort->str << std::endl;
-    }
-    else
-    {
-        gIpPort = g_string_new("9000");
-        std::cout << "No port specified, using 9000" << std::endl;
-    }
-
     int lNetProto;
     if(gTcp)
         lNetProto = LO_TCP;
     else
         lNetProto = LO_UDP;
+    // Client
+    if(gIpAddress != NULL)
+    {
+        std::cout << "IP specified: " << gIpAddress->str << std::endl;
 
-    client lClient;
-    lClient.address = lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str);
-    lClient.filters = BLOB_FILTER_OUTLIERS | BLOB_FILTER_LIGHT;
-    mClients.push_back(lClient);
+        if(gIpPort != NULL)
+        {
+            std::cout << "Using port number " << gIpPort->str << std::endl;
+        }
+        else
+        {
+            gIpPort = g_string_new("9000");
+            std::cout << "No port specified, using 9000" << std::endl;
+        }
 
-    mOscAddresses.push_back(lClient.address);
+        client lClient;
+        lClient.address = lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str);
+        lClient.filters = BLOB_FILTER_OUTLIERS | BLOB_FILTER_LIGHT;
+
+        mFiltersUsage[BLOB_FILTER_OUTLIERS]++;
+        mFiltersUsage[BLOB_FILTER_LIGHT]++;
+
+        mClients.push_back(lClient);
+
+        mOscAddresses.push_back(lClient.address);
+    }
 
     // Server
     mOscServer = lo_server_thread_new_with_proto("9001", lNetProto, App::oscError);
@@ -274,14 +279,14 @@ int App::loop()
                 cv::imshow("blobserver", mCameraBuffer);
 
             // Informations extraction
-            if(gOutliers)
+            if(mFiltersUsage[BLOB_FILTER_OUTLIERS] > 0)
             {
                 lBuffers.push_back(detectMeanOutliers());
                 lBufferNames.push_back(std::string("mean outliers"));
                 lTotalBuffers += 1;
             }
 
-            if(gLight)
+            if(mFiltersUsage[BLOB_FILTER_LIGHT] > 0)
             {
                 lBuffers.push_back(detectLightSpots());
                 lBufferNames.push_back(std::string("light blobs"));
@@ -387,6 +392,11 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
             theApp->mClients.erase(it);
             std::cout << "Connection from address " << &argv[0]->s << " closed." << std::endl;
 
+            if(it->filters & BLOB_FILTER_OUTLIERS)
+                theApp->mFiltersUsage[BLOB_FILTER_OUTLIERS]--;
+            if(it->filters & BLOB_FILTER_LIGHT)
+                theApp->mFiltersUsage[BLOB_FILTER_LIGHT]--;
+
             --it;
         }
     }
@@ -415,9 +425,15 @@ int App::oscHandlerSetFilter(const char* path, const char* types, lo_arg** argv,
         if(strcmp(lo_address_get_url(it->address), lo_address_get_url(address)) == 0)
         {
             if((it->filters && filter) == true)
+            {
+                theApp->mFiltersUsage[filter]--;
                 it->filters -= filter;
+            }
             else
+            {
+                theApp->mFiltersUsage[filter]++;
                 it->filters += filter;
+            }
         }
     }
 
@@ -479,6 +495,9 @@ int App::parseArgs(int argc, char** argv)
         std::cout << PACKAGE_TARNAME << " " << PACKAGE_VERSION << std::endl;
         return 1;
     }
+
+    mFiltersUsage[BLOB_FILTER_OUTLIERS] += gOutliers;
+    mFiltersUsage[BLOB_FILTER_LIGHT] += gLight;
 
     return 0;
 }
@@ -780,10 +799,6 @@ int main(int argc, char** argv)
 {
     std::shared_ptr<App> theApp = App::getInstance();
     int ret;
-
-    //ret = theApp.parseArgs(argc, argv);
-    //if(ret != 0)
-    //    return ret;
 
     ret = theApp->init(argc, argv);
     if(ret != 0)
