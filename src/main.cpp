@@ -190,11 +190,20 @@ bool Blob::isUpdated()
     return updated;
 }
 
+#define BLOB_FILTER_OUTLIERS    0x0001
+#define BLOB_FILTER_LIGHT       0x0002
+
 /*****************************/
 // Definition of the app class
 class App
 {
     public:
+        struct client
+        {
+            lo_address address;
+            int filters;
+        };
+        
         ~App();
 
         static std::shared_ptr<App> getInstance();
@@ -213,7 +222,8 @@ class App
         int mMaxTrackedBlobs;
 
         // liblo related
-        lo_address mOscAddress;
+        std::vector<client> mClients;
+        std::vector<lo_address> mOscAddresses;
         lo_server_thread mOscServer;
 
         // opencv related
@@ -233,10 +243,14 @@ class App
 
         // OSC related, server side
         static void oscError(int num, const char* msg, const char* path);
+        static int oscGenericHandler(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerSetFilter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         
+        // OSC related, client side
+        void oscSend(const char* path, int filter, const char* types, lo_arg* argv);
+
         // Various filter and detection modes availables
         
         // Detects outliers based on the mean and std dev, and
@@ -329,13 +343,20 @@ int App::init(int argc, char** argv)
     else
         lNetProto = LO_UDP;
 
-    mOscAddress = lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str);
+    client lClient;
+    lClient.address = lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str);
+    lClient.filters = BLOB_FILTER_OUTLIERS | BLOB_FILTER_LIGHT;
+    mClients.push_back(lClient);
+
+    mOscAddresses.push_back(lClient.address);
 
     // Server
-    mOscServer = lo_server_thread_new_with_proto("7770", lNetProto, App::oscError);
-    lo_server_thread_add_method(mOscServer, "/blobserver/connect", "ss", App::oscHandlerConnect, NULL);
+    mOscServer = lo_server_thread_new_with_proto("9001", lNetProto, App::oscError);
+    lo_server_thread_add_method(mOscServer, "/blobserver/connect", "si", App::oscHandlerConnect, NULL);
     lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", "s", App::oscHandlerDisconnect, NULL);
-    lo_server_thread_add_method(mOscServer, "/blobserver/filter", "s", App::oscHandlerSetFilter, NULL);
+    lo_server_thread_add_method(mOscServer, "/blobserver/filter", "ss", App::oscHandlerSetFilter, NULL);
+    lo_server_thread_add_method(mOscServer, NULL, NULL, App::oscGenericHandler, NULL);
+    lo_server_thread_start(mOscServer);
 
     // Initialize a few other things
     // Set mLightDetector to indeed detect light
@@ -417,21 +438,143 @@ void App::oscError(int num, const char* msg, const char* path)
 }
 
 /*****************/
+int App::oscGenericHandler(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
+{
+    if(gVerbose)
+    {
+        std::cout << "Unhandled message received:" << std::endl;
+
+        for(int i = 0; i < argc; ++i)
+        {
+            lo_arg_pp((lo_type)(types[i]), argv[i]);
+        }
+
+        std::cout << std::endl;
+    }
+}
+
+/*****************/
 int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
+    char port[8];
+    sprintf(port, "%i", argv[1]->i);
 
+    lo_address address = lo_address_new(&argv[0]->s, port);
+
+    int error = lo_address_errno(address);
+    if(error != 0)
+    {
+        std::cout << "Wrong address received, error " << error << std::endl;
+        return 1;
+    }
+    else
+    {
+        std::shared_ptr<App> theApp = App::getInstance();
+
+        // Check if we don't have any connection from the same address
+        bool isPresent = false;
+        for(std::vector<client>::iterator it = theApp->mClients.begin(); it != theApp->mClients.end(); ++it)
+        {
+            if(strcmp(lo_address_get_url(it->address), lo_address_get_url(address)) == 0)
+            {
+                isPresent = true;
+            }
+        }
+
+        if(!isPresent)
+        {
+            client lClient;
+            lClient.address = address;
+            lClient.filters = 0;
+            theApp->mClients.push_back(lClient);
+
+            std::cout << "Connection accepted from address " << &argv[0]->s << std::endl;
+        }
+        
+        return 0;
+    }
 }
 
 /*****************/
 int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
+    std::shared_ptr<App> theApp = App::getInstance();
+    lo_address address = lo_address_new(&argv[0]->s, "9000");
 
+    for(std::vector<client>::iterator it = theApp->mClients.begin(); it != theApp->mClients.end(); ++it)
+    {
+        if(strcmp(lo_address_get_url(it->address), lo_address_get_url(address)) == 0)
+        {
+            lo_address_free(it->address);
+            theApp->mClients.erase(it);
+            std::cout << "Connection from address " << &argv[0]->s << " closed." << std::endl;
+
+            --it;
+        }
+    }
+
+    lo_address_free(address);
+
+    return 0;
 }
 
 /*****************/
 int App::oscHandlerSetFilter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
+    std::shared_ptr<App> theApp = App::getInstance();
+    lo_address address = lo_address_new(&argv[0]->s, "9000");
 
+    int filter;
+    if(strcmp(&argv[1]->s, "outliers") == 0)
+        filter = BLOB_FILTER_OUTLIERS;
+    else if(strcmp(&argv[1]->s, "light") == 0)
+        filter = BLOB_FILTER_LIGHT;
+    else
+        return 1;
+
+    for(std::vector<client>::iterator it = theApp->mClients.begin(); it != theApp->mClients.end(); ++it)
+    {
+        if(strcmp(lo_address_get_url(it->address), lo_address_get_url(address)) == 0)
+        {
+            if((it->filters && filter) == true)
+                it->filters -= filter;
+            else
+                it->filters += filter;
+        }
+    }
+
+    lo_address_free(address);
+
+    return 0;
+}
+
+/*****************/
+void App::oscSend(const char* path, int filter, const char* types = NULL, lo_arg* argv = NULL)
+{
+    // Message creation
+    if(types == NULL || argv == NULL)
+        return;
+
+    lo_message message = lo_message_new();
+
+    char c;
+    for(int i = 0, c = types[i]; c != '\0'; ++i, c = types[i]) 
+    {
+        switch(c)
+        {
+        case LO_INT32:
+            lo_message_add_int32(message, argv[i].i);
+            break;
+        default:
+            std::cout << "Unrecognized OSC type: '" << c << "'" << std::endl;
+        }
+    }
+
+    for(std::vector<client>::iterator it = mClients.begin(); it != mClients.end(); ++it)
+    {
+        if((it->filters && filter) == true)
+            lo_send_message(it->address, path, message);
+    }
 }
 
 /*****************/
@@ -517,7 +660,11 @@ cv::Mat App::detectMeanOutliers()
     }
 
     // Send the result
-    lo_send(mOscAddress, "/blobserver/meanOutliers/", "iii", lX, lY, lNumber);
+    lo_arg args[3];
+    args[0].i = lX;
+    args[1].i = lY;
+    args[2].i = lNumber;
+    oscSend("/blobserver/meanOutliers/", BLOB_FILTER_OUTLIERS, "iii", args);
 
     return lFiltered;
 }
@@ -661,7 +808,14 @@ cv::Mat App::detectLightSpots()
         }
 
         // Send the result through OSC
-        lo_send(mOscAddress, "/blobserver/lightSpots/", "iiiiii", lX, lY, lSize, ldX, ldY, mLightBlobs[i].getId());
+        lo_arg args[6];
+        args[0].i = lX;
+        args[1].i = lY;
+        args[2].i = lSize;
+        args[3].i = ldX;
+        args[4].i = ldY;
+        args[5].i = mLightBlobs[i].getId();
+        oscSend("/blobserver/lightSpots/", BLOB_FILTER_LIGHT, "iiiiii", args);
     }
 
     return lLight;
