@@ -31,7 +31,7 @@
 #include "lo/lo.h"
 #include "gst/gst.h"
 
-#include "blob.h"
+#include "blob_lightSpot.h"
 
 static gboolean gVersion = FALSE;
 static gboolean gHide = FALSE;
@@ -108,7 +108,7 @@ class App
         cv::Mat mCameraBuffer;
 
         cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
-        std::vector<Blob> mLightBlobs; // Vector of detected and tracked blobs
+        std::vector<LightSpot> mLightBlobs; // Vector of detected and tracked blobs
 
         // Methods
         App();
@@ -136,6 +136,9 @@ class App
         // and size
         cv::Mat detectLightSpots();
        
+        // This function tracks the blobs through frames
+        //template <class T> void trackBlobs(std::vector<Blob::properties> pProperties, std::vector<T> pBlobs);
+
         // This function returns the configuration (element from x linked to element from y)
         // which gives the lowest sum, according the the pDistances. Returns a matrix with the
         // same dimensions as pDistances, filled with 0 and 255
@@ -609,13 +612,7 @@ cv::Mat App::detectLightSpots()
             for(int j = 0; j < mLightBlobs.size(); ++j)
             {
                 Blob::properties properties = lProperties[i];
-                Blob::properties blob = mLightBlobs[j].getBlob();
-
-                float lDistance = pow(properties.position.x - blob.position.x, 2.0)
-                    + pow(properties.position.y - blob.position.y, 2.0)
-                    + pow(properties.size - blob.size, 2.0);
-
-                lTrackMat.at<float>(i, j) = lDistance;
+                lTrackMat.at<float>(i, j) = mLightBlobs[j].getDistanceFromPrediction(properties);
             }
         }
 
@@ -624,7 +621,7 @@ cv::Mat App::detectLightSpots()
     }
 
     cv::Mat lAttributedKeypoints = cv::Mat::zeros(lProperties.size(), 1, CV_8U);
-    std::vector<Blob>::iterator lBlob = mLightBlobs.begin();
+    std::vector<LightSpot>::iterator lBlob = mLightBlobs.begin();
     // We update the blobs which we were able to track
     for(int i = 0; i < lConfiguration.rows; ++i)
     {
@@ -652,7 +649,7 @@ cv::Mat App::detectLightSpots()
         int lIndex = lAttributedKeypoints.at<uchar>(i);
         if(lIndex == 0)
         {
-            Blob lNewBlob;
+            LightSpot lNewBlob;
             lNewBlob.init(lProperties[i]);
             mLightBlobs.push_back(lNewBlob);
         }
@@ -695,6 +692,11 @@ cv::Mat App::detectLightSpots()
 
     return lLight;
 }
+
+/*****************/
+/*template<class T> void trackBlobs(std::vector<Blob::properties> pProperties, std::vector<T> pBlobs)
+{
+}*/
 
 /*****************/
 cv::Mat App::getLeastSumConfiguration(cv::Mat* pDistances)

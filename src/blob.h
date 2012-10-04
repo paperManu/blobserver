@@ -43,17 +43,20 @@ class Blob
 
         int getId() {return mId;};
 
-        void init(properties pNewBlob);
-        properties predict();
-        void setNewMeasures(properties pNewBlob);
+        virtual void init(properties pNewBlob) {};
+        virtual properties predict() {};
+        virtual void setNewMeasures(properties pNewBlob) {};
+        virtual float getDistanceFromPrediction(properties pBlob) {};
         
         properties getBlob();
         bool isUpdated();
 
-    private:
+    protected:
         bool updated;
         
         properties mProperties;
+        properties mPrediction;
+
         cv::KalmanFilter mFilter;
 
         int mId;

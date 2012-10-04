@@ -2,7 +2,8 @@ bin_PROGRAMS = blobserver
 
 blobserver_SOURCES = \
     main.cpp \
-    blob.cpp
+    blob.cpp \
+    blob_lightSpot.cpp
 
 blobserver_CXXFLAGS = \
     -std=gnu++0x \
