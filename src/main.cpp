@@ -137,7 +137,7 @@ class App
         cv::Mat detectLightSpots();
        
         // This function tracks the blobs through frames
-        //template <class T> void trackBlobs(std::vector<Blob::properties> pProperties, std::vector<T> pBlobs);
+        template <class T> void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs);
 
         // This function returns the configuration (element from x linked to element from y)
         // which gives the lowest sum, according the the pDistances. Returns a matrix with the
@@ -593,68 +593,8 @@ cv::Mat App::detectLightSpots()
         lProperties.push_back(properties);
     }
 
-    // --- We want to track them
-    // First we update all the previous blobs we detected,
-    // and keep their predicted new position
-    for(int i = 0; i < mLightBlobs.size(); ++i)
-        mLightBlobs[i].predict();
-    
-    // Then we compare all these prediction with real measures and
-    // associate them together
-    cv::Mat lConfiguration;
-    if(mLightBlobs.size() != 0)
-    {
-        cv::Mat lTrackMat = cv::Mat::zeros(lKeyPoints.size(), mLightBlobs.size(), CV_32F);
-
-        // Compute the squared distance between all new blobs, and all tracked ones
-        for(int i = 0; i < lKeyPoints.size(); ++i)
-        {
-            for(int j = 0; j < mLightBlobs.size(); ++j)
-            {
-                Blob::properties properties = lProperties[i];
-                lTrackMat.at<float>(i, j) = mLightBlobs[j].getDistanceFromPrediction(properties);
-            }
-        }
-
-        // We associate each tracked blobs with the fittest blob, using a least square approach
-        lConfiguration = getLeastSumConfiguration(&lTrackMat);
-    }
-
-    cv::Mat lAttributedKeypoints = cv::Mat::zeros(lProperties.size(), 1, CV_8U);
-    std::vector<LightSpot>::iterator lBlob = mLightBlobs.begin();
-    // We update the blobs which we were able to track
-    for(int i = 0; i < lConfiguration.rows; ++i)
-    {
-        int lIndex = lConfiguration.at<uchar>(i);
-        if(lIndex < 255)
-        {
-            lBlob->setNewMeasures(lProperties[lIndex]);
-            lBlob++;
-            lAttributedKeypoints.at<uchar>(lIndex) = 255;
-        }
-    }
-    // We delete the blobs we couldn't track
-    //for(lBlob = mLightBlobs.begin(); lBlob != mLightBlobs.end(); lBlob++)
-    for(int i = 0; i < lConfiguration.rows; ++i)
-    {
-        int lIndex = lConfiguration.at<uchar>(i);
-        if(lIndex == 255)
-        {
-            mLightBlobs.erase(mLightBlobs.begin()+i);
-        }
-    }
-    // And we create new blobs for the new objects detected
-    for(int i = 0; i < lAttributedKeypoints.rows; ++i)
-    {
-        int lIndex = lAttributedKeypoints.at<uchar>(i);
-        if(lIndex == 0)
-        {
-            LightSpot lNewBlob;
-            lNewBlob.init(lProperties[i]);
-            mLightBlobs.push_back(lNewBlob);
-        }
-    }
-    // --- end of the tracking
+    // We want to track them
+    trackBlobs<LightSpot>(lProperties, mLightBlobs);
 
     if(gVerbose)
         std::cout << "--- Light blobs detection:" << std::endl;
@@ -694,9 +634,69 @@ cv::Mat App::detectLightSpots()
 }
 
 /*****************/
-/*template<class T> void trackBlobs(std::vector<Blob::properties> pProperties, std::vector<T> pBlobs)
+template<class T> void App::trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs)
 {
-}*/
+    // First we update all the previous blobs we detected,
+    // and keep their predicted new position
+    for(int i = 0; i < pBlobs.size(); ++i)
+        pBlobs[i].predict();
+    
+    // Then we compare all these prediction with real measures and
+    // associate them together
+    cv::Mat lConfiguration;
+    if(pBlobs.size() != 0)
+    {
+        cv::Mat lTrackMat = cv::Mat::zeros(pProperties.size(), pBlobs.size(), CV_32F);
+
+        // Compute the squared distance between all new blobs, and all tracked ones
+        for(int i = 0; i < pProperties.size(); ++i)
+        {
+            for(int j = 0; j < pBlobs.size(); ++j)
+            {
+                Blob::properties properties = pProperties[i];
+                lTrackMat.at<float>(i, j) = pBlobs[j].getDistanceFromPrediction(properties);
+            }
+        }
+
+        // We associate each tracked blobs with the fittest blob, using a least square approach
+        lConfiguration = getLeastSumConfiguration(&lTrackMat);
+    }
+
+    cv::Mat lAttributedKeypoints = cv::Mat::zeros(pProperties.size(), 1, CV_8U);
+    typename std::vector<T>::iterator lBlob = pBlobs.begin();
+    // We update the blobs which we were able to track
+    for(int i = 0; i < lConfiguration.rows; ++i)
+    {
+        int lIndex = lConfiguration.at<uchar>(i);
+        if(lIndex < 255)
+        {
+            lBlob->setNewMeasures(pProperties[lIndex]);
+            lBlob++;
+            lAttributedKeypoints.at<uchar>(lIndex) = 255;
+        }
+    }
+    // We delete the blobs we couldn't track
+    //for(lBlob = mLightBlobs.begin(); lBlob != mLightBlobs.end(); lBlob++)
+    for(int i = 0; i < lConfiguration.rows; ++i)
+    {
+        int lIndex = lConfiguration.at<uchar>(i);
+        if(lIndex == 255)
+        {
+            pBlobs.erase(pBlobs.begin()+i);
+        }
+    }
+    // And we create new blobs for the new objects detected
+    for(int i = 0; i < lAttributedKeypoints.rows; ++i)
+    {
+        int lIndex = lAttributedKeypoints.at<uchar>(i);
+        if(lIndex == 0)
+        {
+            T lNewBlob;
+            lNewBlob.init(pProperties[i]);
+            pBlobs.push_back(lNewBlob);
+        }
+    }
+}
 
 /*****************/
 cv::Mat App::getLeastSumConfiguration(cv::Mat* pDistances)
