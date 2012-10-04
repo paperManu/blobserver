@@ -1,7 +1,8 @@
 bin_PROGRAMS = blobserver
 
 blobserver_SOURCES = \
-    main.cpp
+    main.cpp \
+    blob.cpp
 
 blobserver_CXXFLAGS = \
     -std=gnu++0x \

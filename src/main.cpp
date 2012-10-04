@@ -31,6 +31,8 @@
 #include "lo/lo.h"
 #include "gst/gst.h"
 
+#include "blob.h"
+
 static gboolean gVersion = FALSE;
 static gboolean gHide = FALSE;
 static gboolean gVerbose = FALSE;
@@ -62,133 +64,6 @@ static GOptionEntry gEntries[] =
     {"light", 0, 0, G_OPTION_ARG_NONE, &gLight, "Detects light zone, extract them as blobs and outputs their position and size", NULL},
     {NULL}
 };
-
-/************************************/
-// Blob class, with tracking features
-class Blob
-{
-    public:
-    // A struct to describe blobs
-    struct properties
-    {
-        cv::Point position;
-        cv::Point speed;
-        float size;
-    };
-
-    public:
-        Blob();
-        ~Blob();
-
-        int getId() {return mId;};
-
-        void init(properties pNewBlob);
-        properties predict();
-        void setNewMeasures(properties pNewBlob);
-        
-        properties getBlob();
-        bool isUpdated();
-
-    private:
-        bool updated;
-        
-        properties mProperties;
-        cv::KalmanFilter mFilter;
-
-        int mId;
-};
-
-/*************/
-Blob::Blob()
-{
-    static int lIdCounter = 0;
-    lIdCounter++;
-    mId = lIdCounter;
-
-    updated = false;
-
-    mProperties.position.x = 0.0;
-    mProperties.position.y = 0.0;
-    mProperties.size = 0.0;
-    mProperties.speed.x = 0.0;
-    mProperties.speed.y = 0.0;
-
-    // We are filtering a 3 variables state, and
-    // we have a measure for all of them
-    mFilter.init(5, 3, 0);
-
-    mFilter.transitionMatrix = *(cv::Mat_<float>(5, 5) << 1,0,0,1,0, 0,1,0,0,1, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1);
-    setIdentity(mFilter.measurementMatrix);
-    setIdentity(mFilter.processNoiseCov, cv::Scalar::all(1e-5));
-    setIdentity(mFilter.measurementNoiseCov, cv::Scalar::all(1e-5));
-    setIdentity(mFilter.errorCovPost, cv::Scalar::all(1));
-}
-
-/*************/
-Blob::~Blob()
-{
-}
-
-/*************/
-void Blob::init(properties pNewBlob)
-{
-    mFilter.statePre.at<float>(0) = pNewBlob.position.x;
-    mFilter.statePre.at<float>(1) = pNewBlob.position.y;
-    mFilter.statePre.at<float>(2) = pNewBlob.size;
-    mFilter.statePre.at<float>(3) = 0.f;
-    mFilter.statePre.at<float>(4) = 0.f;
-
-    mProperties = pNewBlob;
-}
-
-/*************/
-Blob::properties Blob::predict()
-{
-    cv::Mat lPrediction;
-    properties lProperties;
-
-    lPrediction = mFilter.predict();
-
-    lProperties.position.x = lPrediction.at<float>(0);
-    lProperties.position.y = lPrediction.at<float>(1);
-    lProperties.size = lPrediction.at<float>(2);
-    lProperties.speed.x = lPrediction.at<float>(3);
-    lProperties.speed.x = lPrediction.at<float>(4);
-
-    updated = false;
-    
-    return lProperties;
-}
-
-/*************/
-void Blob::setNewMeasures(properties pNewBlob)
-{
-    cv::Mat lMeasures = cv::Mat::zeros(3, 1, CV_32F);
-    lMeasures.at<float>(0) = pNewBlob.position.x;
-    lMeasures.at<float>(1) = pNewBlob.position.y;
-    lMeasures.at<float>(2) = pNewBlob.size;
-
-    cv::Mat lEstimation = mFilter.correct(lMeasures);
-    mProperties.position.x = lEstimation.at<float>(0);
-    mProperties.position.y = lEstimation.at<float>(1);
-    mProperties.size = lEstimation.at<float>(2);
-    mProperties.speed.x = lEstimation.at<float>(3);
-    mProperties.speed.y = lEstimation.at<float>(4);
-
-    updated = true;
-}
-
-/*************/
-Blob::properties Blob::getBlob()
-{
-    return mProperties;
-}
-
-/*************/
-bool Blob::isUpdated()
-{
-    return updated;
-}
 
 #define BLOB_FILTER_OUTLIERS    0x0001
 #define BLOB_FILTER_LIGHT       0x0002
@@ -525,9 +400,9 @@ int App::oscHandlerSetFilter(const char* path, const char* types, lo_arg** argv,
     lo_address address = lo_address_new(&argv[0]->s, "9000");
 
     int filter;
-    if(strcmp(&argv[1]->s, "outliers") == 0)
+    if(strcmp(&argv[1]->s, "meanOutliers") == 0)
         filter = BLOB_FILTER_OUTLIERS;
-    else if(strcmp(&argv[1]->s, "light") == 0)
+    else if(strcmp(&argv[1]->s, "lightSpots") == 0)
         filter = BLOB_FILTER_LIGHT;
     else
         return 1;
