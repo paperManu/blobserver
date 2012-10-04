@@ -67,6 +67,7 @@ static GOptionEntry gEntries[] =
 
 #define BLOB_FILTER_OUTLIERS    0x0001
 #define BLOB_FILTER_LIGHT       0x0002
+#define BLOB_FILTER_COLOR       0x0004
 
 /*****************************/
 // Definition of the app class
@@ -138,6 +139,9 @@ class App
         // Detects light spots, and outputs each one of their position
         // and size
         cv::Mat detectLightSpots();
+
+        // Detects color blobs, and outputs datas about them
+        cv::Mat detectColorBlobs();
        
         // This function tracks the blobs through frames
         template <class T> void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs);
@@ -246,6 +250,12 @@ int App::init(int argc, char** argv)
     cv::SimpleBlobDetector::Params lParams;
     lParams.filterByColor = true;
     lParams.blobColor = 255;
+    lParams.minCircularity = 0.1f;
+    lParams.maxCircularity = 1.f;
+    lParams.minInertiaRatio = 0.f;
+    lParams.maxInertiaRatio = 1.f;
+    lParams.minArea = 0.f;
+    lParams.maxArea = 65535.f;
     mLightBlobDetector = new cv::SimpleBlobDetector(lParams);
     
     return 0;
@@ -650,6 +660,14 @@ cv::Mat App::detectLightSpots()
     }
 
     return lLight;
+}
+
+/*****************/
+cv::Mat App::detectColorBlobs()
+{
+    cv::Mat lMatBlobs;
+
+    return lMatBlobs;
 }
 
 /*****************/
