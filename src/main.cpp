@@ -65,9 +65,10 @@ static GOptionEntry gEntries[] =
     {NULL}
 };
 
-#define BLOB_FILTER_OUTLIERS    0x0001
-#define BLOB_FILTER_LIGHT       0x0002
-#define BLOB_FILTER_COLOR       0x0004
+#define BLOB_NO_FILTER          0x0001
+#define BLOB_FILTER_OUTLIERS    0x0002
+#define BLOB_FILTER_LIGHT       0x0004
+#define BLOB_FILTER_COLOR       0x0008
 
 /*****************************/
 // Definition of the app class
@@ -381,6 +382,8 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             lClient.filters = 0;
             theApp->mClients.push_back(lClient);
 
+            lo_send(address, "/blobserver/connect", "s", "Connected");
+
             std::cout << "Connection accepted from address " << &argv[0]->s << std::endl;
         }
         
@@ -401,6 +404,8 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
             lo_address_free(it->address);
             theApp->mClients.erase(it);
             std::cout << "Connection from address " << &argv[0]->s << " closed." << std::endl;
+
+            lo_send(address, "/blobserver/disconnect", "s", "Disconnected");
 
             if(it->filters & BLOB_FILTER_OUTLIERS)
                 theApp->mFiltersUsage[BLOB_FILTER_OUTLIERS]--;
@@ -438,11 +443,19 @@ int App::oscHandlerSetFilter(const char* path, const char* types, lo_arg** argv,
             {
                 theApp->mFiltersUsage[filter]--;
                 it->filters -= filter;
+
+                std::string lPath = "/blobserver/";
+                lPath += &argv[1]->s;
+                lo_send(address, lPath.c_str(), "s", "Deactivated");
             }
             else
             {
                 theApp->mFiltersUsage[filter]++;
                 it->filters += filter;
+
+                std::string lPath = "/blobserver/";
+                lPath += &argv[1]->s;
+                lo_send(address, lPath.c_str(), "s", "Activated");
             }
         }
     }
@@ -476,7 +489,10 @@ void App::oscSend(const char* path, int filter, const char* types = NULL, lo_arg
 
     for(std::vector<client>::iterator it = mClients.begin(); it != mClients.end(); ++it)
     {
-        if((it->filters && filter) == true)
+        // If it is juste a normal message, not related to filters
+        if(filter == BLOB_NO_FILTER)
+            lo_send_message(it->address, path, message);
+        else if((it->filters && filter) == true)
             lo_send_message(it->address, path, message);
     }
 }
@@ -571,7 +587,7 @@ cv::Mat App::detectMeanOutliers()
     args[0].i = lX;
     args[1].i = lY;
     args[2].i = lNumber;
-    oscSend("/blobserver/meanOutliers/", BLOB_FILTER_OUTLIERS, "iii", args);
+    oscSend("/blobserver/meanOutliers", BLOB_FILTER_OUTLIERS, "iii", args);
 
     return lFiltered;
 }
@@ -656,7 +672,7 @@ cv::Mat App::detectLightSpots()
         args[3].i = ldX;
         args[4].i = ldY;
         args[5].i = mLightBlobs[i].getId();
-        oscSend("/blobserver/lightSpots/", BLOB_FILTER_LIGHT, "iiiiii", args);
+        oscSend("/blobserver/lightSpots", BLOB_FILTER_LIGHT, "iiiiii", args);
     }
 
     return lLight;
