@@ -23,9 +23,10 @@ msc
     ...;
 
     # Receiving blobs from the server
+    b->a [ label = "/blobserver/startFrame FrameNbr" ];
     b->a [ label = "/blobserver/FilterName X Y Size Id..." ];
-    ...;
     b->a [ label = "/blobserver/FilterName X Y Size Id..." ];
+    b->a [ label = "/blobserver/endFrame FrameNbr" ];
     ...;
 
     # Deselecting filter

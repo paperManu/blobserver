@@ -24,12 +24,6 @@ if test "x${have_glib}" = "xfalse" ; then
     AC_MSG_ERROR([Missing glib])
 fi
 
-# GStreamer
-PKG_CHECK_MODULES([GSTREAMER], gstreamer-0.10)
-if test "x${have_gstreamer}" = "xfalse" ; then
-    AC_MSG_ERROR([Missing gstreamer])
-fi
-
 # OpenCV
 PKG_CHECK_MODULES([OPENCV], [opencv >= 2.3])
 if test "x${have_opencv}" = "xfalse" ; then

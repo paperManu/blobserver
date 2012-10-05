@@ -162,7 +162,7 @@ std::shared_ptr<App> App::mInstance(nullptr);
 App::App()
     :mLightBlobDetector (NULL),
     mDetectionLevel (2.f),
-    mMaxTrackedBlobs (16)
+    mMaxTrackedBlobs (8)
 {
 }
 
@@ -265,6 +265,8 @@ int App::init(int argc, char** argv)
 /*****************/
 int App::loop()
 {
+    int frameNbr = 0;
+
     bool lShowCamera = !gHide;
     int lSourceNumber = 0;
 
@@ -289,6 +291,11 @@ int App::loop()
             if(lShowCamera)
                 cv::imshow("blobserver", mCameraBuffer);
 
+            // Evaluating a new frame
+            lo_arg arg[1];
+            arg[0].i = frameNbr;
+            oscSend("/blobserver/startFrame", BLOB_NO_FILTER, "i", arg);
+
             // Informations extraction
             if(mFiltersUsage[BLOB_FILTER_OUTLIERS] > 0)
             {
@@ -310,6 +317,9 @@ int App::loop()
                     cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
                 cv::imshow("blobserver", lBuffers[lSourceNumber]);
             }
+
+            // End of frame
+            oscSend("/blobserver/endFrame", BLOB_NO_FILTER, "i", arg);
         }
 
         char lKey = cv::waitKey(5);
@@ -320,6 +330,8 @@ int App::loop()
             lSourceNumber = (lSourceNumber+1)%lTotalBuffers;
             std::cout << "Buffer displayed: " << lBufferNames[lSourceNumber] << std::endl;
         }
+
+        frameNbr++;
     }
 
     return 0;
@@ -781,24 +793,27 @@ cv::Mat App::getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLeve
     {
 
         // If we do not shift
-        if(pAttributed.at<uchar>(i) == 0 && i < pAttributed.rows)
-        {    
-            lAttributed = pAttributed.clone();
-            lCurrentConfig = pConfig.clone();
+        if(i < pAttributed.rows)
+        {
+            if(pAttributed.at<uchar>(i) == 0)
+            {    
+                lAttributed = pAttributed.clone();
+                lCurrentConfig = pConfig.clone();
 
-            lAttributed.at<uchar>(i) = 255;
-            lCurrentSum = pSum + pDistances->at<float>(i, pLevel);
-            lCurrentConfig.at<uchar>(pLevel) = i;
+                lAttributed.at<uchar>(i) = 255;
+                lCurrentSum = pSum + pDistances->at<float>(i, pLevel);
+                lCurrentConfig.at<uchar>(pLevel) = i;
 
-            if(lLevelRemaining > 0)
-                lCurrentConfig = getLeastSumForLevel(lCurrentConfig, pDistances, pLevel + 1, lAttributed, lCurrentSum, pShift);
+                if(lLevelRemaining > 0)
+                    lCurrentConfig = getLeastSumForLevel(lCurrentConfig, pDistances, pLevel + 1, lAttributed, lCurrentSum, pShift);
 
-            if(lCurrentSum < lMinSum)
-            {
-                lMinSum = lCurrentSum;
-                lConfig = lCurrentConfig;
+                if(lCurrentSum < lMinSum)
+                {
+                    lMinSum = lCurrentSum;
+                    lConfig = lCurrentConfig;
+                }
             }
-        }    
+        }
         // if we shift, don't attribute this keypoint to any blob
         else if(i >= pAttributed.rows)
         {
