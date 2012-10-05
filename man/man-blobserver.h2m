@@ -2,11 +2,27 @@
 Blob detection server
 
 [INTERACTIVE USAGE]
-Press control-q to quit, w to swap between the camera capture and the various filtering available.
+If the camera window is not hidden (with the --hide command line option):
+Press q to quit, w to swap between the camera capture and the various filtering available.
+
+[DESCRIPTION]
+Some of the detection methods are applying a morphological operation (erode / dilate) to get rid of noise. The size of this filtering is set through the kernel size with the --filter option. A value of 3 is the default and should be good for most usage, but a higher value might be useful when used with a camera set to a high sensibility or in bad lighting conditions.
+
+As of today, two filters are available.
+
+- outliers detection:
+    Detects pixels which are far from the mean luminance of the captured image. The --level option sets the threshold to use, as a factor of the standard deviation. Default value is set at 2. The output is the mean position of those outliers pixels, as well as their total number.
+
+- light blobs detection:
+    Detects light blobs, after a filtering similar to the outliers detection except that it only keeps pixels lighter than the mean luminance value. Outputs the position, size and speed of every detected blobs, associated with an id: blobs are tracked through frames.
 
 [OSC INTERFACE]
-The OSC messages sent depend on the filter used. These messages are sent to the address and port specified by the corresponding commandline options, or to localhost:9000 if nothing is specified.
+The OSC messages sent depend on the filter used. These messages are sent to client which suscribed to the server, as well as to the IP address specified by the --ip command line option.
 
+For general information regarding the protocol used, you can refer to the graph one can build with the following command line, assuming it is typed at the root of the sources:
+mscgen -T png -i protocol.msc -o protocol.png
+
+The following informations are given for each different filter:
 - outliers:
 Send messages to "/blobserver/outliers/", in the form of three floats : 
     x position
@@ -18,7 +34,19 @@ Send messages to "/blobserver/lightSpots/". One message is sent per tracked blob
     x position
     y position
     size (radius) of the light blob
+    x speed
+    y speed
     id of the blob
+    
+[EXAMPLES]
+blobserver --light --outliers
+    Runs blobserver in interactive mode with light blobs and outliers detection. User can switch between camera and both detection with 'w'.
+
+./blobserver --hide
+    Runs blobserver in server mode, waiting for connections
+
+blobserver --light --ip 192.168.0.1 --port 9000
+    Same as previous, but sends right from the start data from the light blob detection to the specified IP address.
 
 [AUTHOR]
 Emmanuel Durand
