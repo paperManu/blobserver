@@ -29,7 +29,7 @@
 #include "glib.h"
 #include "opencv2/opencv.hpp"
 #include "lo/lo.h"
-#include "gst/gst.h"
+//#include "gst/gst.h"
 
 #include "blob_lightSpot.h"
 
@@ -188,7 +188,7 @@ int App::init(int argc, char** argv)
         return ret;
 
     // Initialize GStreamer
-    gst_init(&argc, &argv);
+    //gst_init(&argc, &argv);
 
     // Initialize camera
     mCamera.open(gCamNbr);
@@ -489,7 +489,7 @@ int App::parseArgs(int argc, char** argv)
 
     context = g_option_context_new("- blobserver, sends blobs through OSC");
     g_option_context_add_main_entries(context, gEntries, NULL);
-    g_option_context_add_group(context, gst_init_get_option_group());
+    //g_option_context_add_group(context, gst_init_get_option_group());
 
     if(!g_option_context_parse(context, &argc, &argv, &error))
     {
