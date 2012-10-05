@@ -1,0 +1,44 @@
+# OSC protocol description for blobserver
+# mscgen -T png -i protocol.msc -o protocol.png
+
+msc
+{
+    # arcgradient = 8;
+
+    a [label="client"], b [label="server"];
+
+    # First connection
+    a->b [ label = "/blobserver/connect \"IP\" Port" ];
+    b->a [ label = "/blobserver/connect \"Connected\"" ];
+    ...;
+
+    # Re-asking connection
+    a->b [ label = "/blobserver/connect \"IP\" Port" ];
+    b->a [ label = "/blobserver/connect \"Connected\"" ];
+    ...;
+
+    # Selecting desired filter
+    a->b [ label = "/blobserver/filter \"IP\" \"FilterName\"" ];
+    b->a [ label = "/blobserver/FilterName \"Activated\"" ];
+    ...;
+
+    # Receiving blobs from the server
+    b->a [ label = "/blobserver/FilterName X Y Size Id..." ];
+    ...;
+    b->a [ label = "/blobserver/FilterName X Y Size Id..." ];
+    ...;
+
+    # Deselecting filter
+    a->b [ label = "/blobserver/filter \"IP\" \"FilterName\"" ];
+    b->a [ label = "/blobserver/FilterName \"Deactivated\"" ];
+    ...;
+
+    # Deconnection
+    a->b [ label = "/blobserver/disconnect \"IP\"" ];
+    b->a [ label = "/blobserver/disconnect \"Disconnected\"" ];
+    ...;
+
+    # Re-disconnecting
+    a->b [ label = "/blobserver/disconnect \"IP\"" ];
+    b->a [ label = "/blobserver/disconnect \"Disconnected\"" ];
+}
