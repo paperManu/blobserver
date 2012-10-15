@@ -3,9 +3,8 @@ Blobserver release notes
 
 Blobserver 0.2.2 (2012-??-??)
 -----------------------------
-New features:
-
-New prototypes and documentation:
+Bug fixed:
+* Corrected an issue which prevented "make install" to work
 
 Blobserver 0.2.0 (2012-10-15)
 -----------------------------
