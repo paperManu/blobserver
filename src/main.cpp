@@ -38,6 +38,9 @@ static gboolean gHide = FALSE;
 static gboolean gVerbose = FALSE;
 
 static gint gCamNbr = 0;
+static gint gWidth = 0;
+static gint gHeight = 0;
+static gdouble gFramerate = 0.0;
 
 static gint gFilterSize = 3;
 static gchar* gDetectionLevel = NULL;
@@ -49,12 +52,16 @@ static gboolean gTcp = FALSE;
 static gboolean gOutliers = FALSE;
 static gboolean gLight = FALSE;
 
+// TODO: add entries for width, height and framerate
 static GOptionEntry gEntries[] =
 {
     {"version", 0, 0, G_OPTION_ARG_NONE, &gVersion, "Shows version of this software", NULL},
     {"hide", 0, 0, G_OPTION_ARG_NONE, &gHide, "Hides the camera window", NULL},
     {"verbose", 'v', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
     {"cam", 'c', 0, G_OPTION_ARG_INT, &gCamNbr, "Selects which camera to use, as detected by OpenCV", NULL},
+    {"width", 'w', 0, G_OPTION_ARG_INT, &gWidth, "Specifie the desired width for the camera capture", NULL},
+    {"height", 'h', 0, G_OPTION_ARG_INT, &gHeight, "Specifie the desired height for the camera capture", NULL},
+    {"fps", 0, 0, G_OPTION_ARG_DOUBLE, &gFramerate, "Specifie the desired framerate for the camera capture", NULL},
     {"filter", 'f', 0, G_OPTION_ARG_INT, &gFilterSize, "Specifies the size of the filtering kernel to use", NULL},
     {"level", 'l', 0, G_OPTION_ARG_STRING, &gDetectionLevel, "If applicable, specifies the detection level to use", NULL},
     {"ip", 'i', 0, G_OPTION_ARG_STRING_ARRAY, &gIpAddress, "Specifies the ip address to send messages to", NULL}, 
@@ -198,6 +205,13 @@ int App::init(int argc, char** argv)
         std::cout << "Error while opening camera number " << gCamNbr << ". Exiting." << std::endl;
         return 1;
     }
+
+    if(gWidth > 0)
+        mCamera.set(CV_CAP_PROP_FRAME_WIDTH, gWidth);
+    if(gHeight > 0)
+        mCamera.set(CV_CAP_PROP_FRAME_HEIGHT, gHeight);
+    if(gFramerate > 0.0)
+        mCamera.set(CV_CAP_PROP_FPS, gFramerate);
 
     mFiltersUsage[BLOB_FILTER_OUTLIERS] = 0;
     mFiltersUsage[BLOB_FILTER_LIGHT] = 0;
