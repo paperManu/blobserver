@@ -5,6 +5,13 @@ blobserver_SOURCES = \
     blob.cpp \
     blob_lightSpot.cpp
 
+blobserver_includedir = \
+    $(top_builddir)/src
+
+blobserver_include_HEADERS = \
+    blob.h \
+    blob_lightSpot.h
+
 blobserver_CXXFLAGS = \
     -std=gnu++0x \
 	$(GLIB_CFLAGS) \
