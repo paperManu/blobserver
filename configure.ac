@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.68)
 AC_INIT([BLOBSERVER],
-        [0.0.9],
+        [0.2.0],
         [http://code.sat.qc.ca/redmine/projects/blobserver/issues],
         [blobserver],
         [http://code.sat.qc.ca/redmine/projects/blobserver])
