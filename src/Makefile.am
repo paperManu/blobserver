@@ -3,11 +3,13 @@ bin_PROGRAMS = blobserver
 blobserver_SOURCES = \
     main.cpp \
     blob.cpp \
-    blob_lightSpot.cpp
+    blob_lightSpot.cpp \
+    blob_singleBlob.cpp
 
 noinst_HEADERS = \
     blob.h \
-    blob_lightSpot.h
+    blob_lightSpot.h \
+    blob_singleBlob.h
 
 blobserver_CXXFLAGS = \
     -std=gnu++0x \

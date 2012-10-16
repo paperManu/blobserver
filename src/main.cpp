@@ -32,6 +32,7 @@
 //#include "gst/gst.h"
 
 #include "blob_lightSpot.h"
+#include "blob_singleBlob.h"
 
 static gboolean gVersion = FALSE;
 static gboolean gHide = FALSE;
@@ -121,6 +122,7 @@ class App
 
         cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
         std::vector<LightSpot> mLightBlobs; // Vector of detected and tracked blobs
+        SingleBlob mMeanBlob; // blob for the mean outlier detection
 
         // Methods
         App();
@@ -213,6 +215,7 @@ int App::init(int argc, char** argv)
     if(gFramerate > 0.0)
         mCamera.set(CV_CAP_PROP_FPS, gFramerate);
 
+    // Initialize filters
     mFiltersUsage[BLOB_FILTER_OUTLIERS] = 0;
     mFiltersUsage[BLOB_FILTER_LIGHT] = 0;
 
@@ -602,10 +605,36 @@ cv::Mat App::detectMeanOutliers()
         lY = lFiltered.size[0] / 2;
     }
 
+    // Filtering
+    static bool isInitialized = false;
+
+    Blob::properties props;
+    props.position.x = lX;
+    props.position.y = lY;
+    props.size = lNumber;
+
+    if(!isInitialized)
+    {
+        mMeanBlob.init(props);
+        isInitialized = true;
+    }
+    else
+    {
+        mMeanBlob.predict();
+        mMeanBlob.setNewMeasures(props);
+        props = mMeanBlob.getBlob();
+    }
+
+    lX = (int)(props.position.x);
+    lY = (int)(props.position.y);
+    lNumber = (int)(props.size);
+    int lSpeedX = (int)(props.speed.x);
+    int lSpeedY = (int)(props.speed.y);
+
     if(gVerbose)
     {
         std::cout << "--- Outliers detection:" << std::endl;
-        std::cout << "x: " << lX << " - y: " << lY << " - size: " << lNumber << std::endl;
+        std::cout << "x: " << lX << " - y: " << lY << " - size: " << lNumber << " - speedX: " << lSpeedX << " - speedY: " << lSpeedY << std::endl;
     }
 
     // Send the result
