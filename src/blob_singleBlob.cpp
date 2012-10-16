@@ -15,8 +15,8 @@ SingleBlob::SingleBlob()
 
     mFilter.transitionMatrix = *(cv::Mat_<float>(5, 5) << 1,0,0,1,0, 0,1,0,0,1, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1);
     setIdentity(mFilter.measurementMatrix);
-    setIdentity(mFilter.processNoiseCov, cv::Scalar::all(1e-3));
-    setIdentity(mFilter.measurementNoiseCov, cv::Scalar::all(1e-3));
+    setIdentity(mFilter.processNoiseCov, cv::Scalar::all(1e-6));
+    setIdentity(mFilter.measurementNoiseCov, cv::Scalar::all(1e-4));
     setIdentity(mFilter.errorCovPost, cv::Scalar::all(1));
 }
 

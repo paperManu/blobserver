@@ -594,8 +594,10 @@ cv::Mat App::detectMeanOutliers()
             }
         }
 
+    bool isDetected = false;
     if(lNumber > 0)
     {
+        isDetected = true;
         lX /= lNumber;
         lY /= lNumber;
     }
@@ -638,11 +640,13 @@ cv::Mat App::detectMeanOutliers()
     }
 
     // Send the result
-    lo_arg args[3];
+    lo_arg args[5];
     args[0].i = lX;
     args[1].i = lY;
     args[2].i = lNumber;
-    oscSend("/blobserver/meanOutliers", BLOB_FILTER_OUTLIERS, "iii", args);
+    args[3].i = lSpeedX;
+    args[4].i = lSpeedY;
+    oscSend("/blobserver/meanOutliers", BLOB_FILTER_OUTLIERS, "iiiii", args);
 
     return lFiltered;
 }
