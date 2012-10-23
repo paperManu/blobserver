@@ -45,6 +45,7 @@ class Blob
         ~Blob();
 
         int getId() {return mId;};
+        virtual void setParameter(std::string pParam, float pValue) {};
 
         virtual void init(properties pNewBlob) {};
         virtual properties predict() {};

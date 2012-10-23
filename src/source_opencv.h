@@ -18,19 +18,31 @@
  */
 
 /*
- * @singleBlob.h
- * The lightSpots base class.
+ * @source_opencv.h
+ * The Source_OpenCV class.
  */
 
-#include "blob.h"
+#ifndef SOURCE_OPENCV_H
+#define SOURCE_OPENCV_H
 
-class SingleBlob : public Blob
+#include "source.h"
+
+class Source_OpenCV : public Source
 {
     public:
-        SingleBlob();
+        Source_OpenCV();
 
-        void init(properties pNewblob);
-        properties predict();
-        void setNewMeasures(properties pNewBlob);
-        float getDistanceFromPrediction(properties pBlob);
+        bool connect();
+        bool disconnect();
+        bool grabFrame();
+        cv::Mat retrieveFrame();
+        void setParameter(const char* pParam, float pValue);
+
+    private:
+        cv::VideoCapture mCamera;
+        cv::Mat mBuffer;
+
+        int mCameraNbr;
 };
+
+#endif // SOURCE_OPENCV_H

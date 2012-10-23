@@ -17,20 +17,24 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * @lightspot.h
- * The lightSpots base class.
+/*
+ * @blob_2D.h
+ * The blob_2D class.
  */
 
 #include "blob.h"
 
-class LightSpot : public Blob
+class Blob2D : public Blob
 {
     public:
-        LightSpot();
+        Blob2D();
+
+        void setParameter(const char* pParam, float pValue);
 
         void init(properties pNewblob);
         properties predict();
         void setNewMeasures(properties pNewBlob);
         float getDistanceFromPrediction(properties pBlob);
+
+    private:
 };

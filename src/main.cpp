@@ -31,8 +31,8 @@
 #include "lo/lo.h"
 //#include "gst/gst.h"
 
-#include "blob_lightSpot.h"
-#include "blob_singleBlob.h"
+#include "blob_2D.h"
+#include "source_opencv.h"
 
 static gboolean gVersion = FALSE;
 static gboolean gHide = FALSE;
@@ -114,15 +114,15 @@ class App
         // opencv related
         float mDetectionLevel;
 
-        cv::VideoCapture mCamera;
+        Source* mSource;
         cv::Mat mCameraBuffer;
 
         // filter related
         std::map<int, int> mFiltersUsage;
 
         cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
-        std::vector<LightSpot> mLightBlobs; // Vector of detected and tracked blobs
-        SingleBlob mMeanBlob; // blob for the mean outlier detection
+        std::vector<Blob2D> mLightBlobs; // Vector of detected and tracked blobs
+        Blob2D mMeanBlob; // blob for the mean outlier detection
 
         // Methods
         App();
@@ -201,26 +201,27 @@ int App::init(int argc, char** argv)
     //gst_init(&argc, &argv);
 
     // Initialize camera
-    mCamera.open(gCamNbr);
-    if(!mCamera.isOpened())
+    mSource = new Source_OpenCV;
+    if(!mSource->connect())
     {
         std::cout << "Error while opening camera number " << gCamNbr << ". Exiting." << std::endl;
         return 1;
     }
 
     if(gWidth > 0)
-        mCamera.set(CV_CAP_PROP_FRAME_WIDTH, gWidth);
+        mSource->setParameter("width", gWidth);
     if(gHeight > 0)
-        mCamera.set(CV_CAP_PROP_FRAME_HEIGHT, gHeight);
+        mSource->setParameter("height", gHeight);
     if(gFramerate > 0.0)
-        mCamera.set(CV_CAP_PROP_FPS, gFramerate);
+        mSource->setParameter("framerate", gFramerate);
 
     // Initialize filters
     mFiltersUsage[BLOB_FILTER_OUTLIERS] = 0;
     mFiltersUsage[BLOB_FILTER_LIGHT] = 0;
 
     // Get a first frame to initialize the buffer
-    mCamera.read(mCameraBuffer);
+    mSource->grabFrame();
+    mCameraBuffer = mSource->retrieveFrame();
 
     // Initialize OSC
     int lNetProto;
@@ -295,7 +296,8 @@ int App::loop()
         std::vector<std::string> lBufferNames;
 
         // Frame capture
-        mCamera.read( mCameraBuffer );
+        mSource->grabFrame();
+        mCameraBuffer = mSource->retrieveFrame();
         // cv::Mat are not copied when not specified, so the bandwidth usage
         // of the following operation is minimal
         lBuffers.push_back(mCameraBuffer);
@@ -698,7 +700,15 @@ cv::Mat App::detectLightSpots()
     }
 
     // We want to track them
-    trackBlobs<LightSpot>(lProperties, mLightBlobs);
+    trackBlobs<Blob2D>(lProperties, mLightBlobs);
+
+    // Make sure their covariances are correctly set
+    std::vector<Blob2D>::iterator lIt = mLightBlobs.begin();
+    for(; lIt != mLightBlobs.end(); ++lIt)
+    {
+        lIt->setParameter("processNoiseCov", 1e-5);
+        lIt->setParameter("measurementNoiseCov", 1e-5);
+    }
 
     if(gVerbose)
         std::cout << "--- Light blobs detection:" << std::endl;

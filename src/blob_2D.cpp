@@ -1,7 +1,7 @@
-#include "blob_singleBlob.h"
+#include "blob_2D.h"
 
 /*************/
-SingleBlob::SingleBlob()
+Blob2D::Blob2D()
 {
     mProperties.position.x = 0.0;
     mProperties.position.y = 0.0;
@@ -21,7 +21,22 @@ SingleBlob::SingleBlob()
 }
 
 /*************/
-void SingleBlob::init(properties pNewBlob)
+void Blob2D::setParameter(const char* pParam, float pValue)
+{
+    if (strcmp(pParam, "processNoiseCov") == 0)
+    {
+        if(pValue > 0.0)
+            setIdentity(mFilter.processNoiseCov, cv::Scalar::all(pValue));
+    }
+    else if (strcmp(pParam, "measurementNoiseCov") == 0)
+    {
+        if(pValue > 0.0)
+            setIdentity(mFilter.measurementNoiseCov, cv::Scalar::all(pValue));
+    }
+}
+
+/*************/
+void Blob2D::init(properties pNewBlob)
 {
     mFilter.statePre.at<float>(0) = pNewBlob.position.x;
     mFilter.statePre.at<float>(1) = pNewBlob.position.y;
@@ -33,7 +48,7 @@ void SingleBlob::init(properties pNewBlob)
 }
 
 /*************/
-Blob::properties SingleBlob::predict()
+Blob::properties Blob2D::predict()
 {
     cv::Mat lPrediction;
     properties lProperties;
@@ -52,7 +67,7 @@ Blob::properties SingleBlob::predict()
 }
 
 /*************/
-void SingleBlob::setNewMeasures(properties pNewBlob)
+void Blob2D::setNewMeasures(properties pNewBlob)
 {
     cv::Mat lMeasures = cv::Mat::zeros(3, 1, CV_32F);
     lMeasures.at<float>(0) = pNewBlob.position.x;
@@ -70,7 +85,7 @@ void SingleBlob::setNewMeasures(properties pNewBlob)
 }
 
 /*************/
-float SingleBlob::getDistanceFromPrediction(properties pBlob)
+float Blob2D::getDistanceFromPrediction(properties pBlob)
 {
     float distance = pow(pBlob.position.x - mPrediction.position.x, 2.0)
         + pow(pBlob.position.y - mPrediction.position.y, 2.0)
