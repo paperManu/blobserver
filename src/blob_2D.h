@@ -29,8 +29,12 @@ class Blob2D : public Blob
     public:
         Blob2D();
 
+        void setParameter(const char* pParam, float pValue);
+
         void init(properties pNewblob);
         properties predict();
         void setNewMeasures(properties pNewBlob);
         float getDistanceFromPrediction(properties pBlob);
+
+    private:
 };

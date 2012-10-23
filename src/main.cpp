@@ -699,6 +699,14 @@ cv::Mat App::detectLightSpots()
     // We want to track them
     trackBlobs<Blob2D>(lProperties, mLightBlobs);
 
+    // Make sure their covariances are correctly set
+    std::vector<Blob2D>::iterator lIt = mLightBlobs.begin();
+    for(; lIt != mLightBlobs.end(); ++lIt)
+    {
+        lIt->setParameter("processNoiseCov", 1e-5);
+        lIt->setParameter("measurementNoiseCov", 1e-5);
+    }
+
     if(gVerbose)
         std::cout << "--- Light blobs detection:" << std::endl;
 

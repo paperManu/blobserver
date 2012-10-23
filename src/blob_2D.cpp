@@ -21,6 +21,21 @@ Blob2D::Blob2D()
 }
 
 /*************/
+void Blob2D::setParameter(const char* pParam, float pValue)
+{
+    if (strcmp(pParam, "processNoiseCov") == 0)
+    {
+        if(pValue > 0.0)
+            setIdentity(mFilter.processNoiseCov, cv::Scalar::all(pValue));
+    }
+    else if (strcmp(pParam, "measurementNoiseCov") == 0)
+    {
+        if(pValue > 0.0)
+            setIdentity(mFilter.measurementNoiseCov, cv::Scalar::all(pValue));
+    }
+}
+
+/*************/
 void Blob2D::init(properties pNewBlob)
 {
     mFilter.statePre.at<float>(0) = pNewBlob.position.x;
