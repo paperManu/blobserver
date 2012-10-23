@@ -351,6 +351,8 @@ int App::loop()
         }
 
         frameNbr++;
+
+        usleep(1000);
     }
 
     return 0;
