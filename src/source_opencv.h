@@ -18,23 +18,31 @@
  */
 
 /*
- * @blob_2D.h
- * The blob_2D class.
+ * @source_opencv.h
+ * The Source_OpenCV class.
  */
 
-#include "blob.h"
+#ifndef SOURCE_OPENCV_H
+#define SOURCE_OPENCV_H
 
-class Blob2D : public Blob
+#include "source.h"
+
+class Source_OpenCV : public Source
 {
     public:
-        Blob2D();
+        Source_OpenCV();
 
+        bool connect();
+        bool disconnect();
+        bool grabFrame();
+        cv::Mat retrieveFrame();
         void setParameter(const char* pParam, float pValue);
 
-        void init(properties pNewblob);
-        properties predict();
-        void setNewMeasures(properties pNewBlob);
-        float getDistanceFromPrediction(properties pBlob);
-
     private:
+        cv::VideoCapture mCamera;
+        cv::Mat mBuffer;
+
+        int mCameraNbr;
 };
+
+#endif // SOURCE_OPENCV_H
