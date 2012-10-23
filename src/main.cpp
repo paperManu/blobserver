@@ -31,8 +31,7 @@
 #include "lo/lo.h"
 //#include "gst/gst.h"
 
-#include "blob_lightSpot.h"
-#include "blob_singleBlob.h"
+#include "blob_2D.h"
 
 static gboolean gVersion = FALSE;
 static gboolean gHide = FALSE;
@@ -121,8 +120,8 @@ class App
         std::map<int, int> mFiltersUsage;
 
         cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
-        std::vector<LightSpot> mLightBlobs; // Vector of detected and tracked blobs
-        SingleBlob mMeanBlob; // blob for the mean outlier detection
+        std::vector<Blob2D> mLightBlobs; // Vector of detected and tracked blobs
+        Blob2D mMeanBlob; // blob for the mean outlier detection
 
         // Methods
         App();
@@ -698,7 +697,7 @@ cv::Mat App::detectLightSpots()
     }
 
     // We want to track them
-    trackBlobs<LightSpot>(lProperties, mLightBlobs);
+    trackBlobs<Blob2D>(lProperties, mLightBlobs);
 
     if(gVerbose)
         std::cout << "--- Light blobs detection:" << std::endl;
