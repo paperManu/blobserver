@@ -17,17 +17,17 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * @lightspot.h
+/*
+ * @singleBlob.h
  * The lightSpots base class.
  */
 
 #include "blob.h"
 
-class LightSpot : public Blob
+class SingleBlob : public Blob
 {
     public:
-        LightSpot();
+        SingleBlob();
 
         void init(properties pNewblob);
         properties predict();

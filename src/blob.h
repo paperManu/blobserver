@@ -18,9 +18,12 @@
  */
 
 /**
- * @file
+ * @blob.h
  * The blob base class.
  */
+
+#ifndef BLOB_H
+#define BLOB_H
 
 #include "opencv2/opencv.hpp"
 
@@ -61,3 +64,5 @@ class Blob
 
         int mId;
 };
+
+#endif // BLOB_H
