@@ -34,6 +34,15 @@ atom::Message Detector_MeanOutliers::detect(cv::Mat pCapture)
     cv::erode(lOutlier, lEroded, cv::Mat(), cv::Point(-1, -1), mFilterSize);
     cv::dilate(lEroded, lFiltered, cv::Mat(), cv::Point(-1, -1), mFilterSize);
 
+    // Apply the mask
+    cv::Mat lMask = getMask(lFiltered, CV_INTER_NN);
+    for (int x = 0; x < lFiltered.cols; ++x)
+        for (int y = 0; y < lFiltered.rows; ++y)
+        {
+            if (lMask.at<uchar>(y, x) == 0)
+                lFiltered.at<uchar>(y, x) = 0;
+        }
+ 
     // Save the result in a buffer
     mOutputBuffer = lFiltered;
 
@@ -41,10 +50,10 @@ atom::Message Detector_MeanOutliers::detect(cv::Mat pCapture)
     int lNumber = 0;
     int lX = 0, lY = 0;
 
-    for(int x = 0; x < lFiltered.size[1]; ++x)
-        for(int y = 0; y < lFiltered.size[0]; ++y)
+    for (int x = 0; x < lFiltered.size[1]; ++x)
+        for (int y = 0; y < lFiltered.size[0]; ++y)
         {
-            if(lFiltered.at<uchar>(y, x) == 255)
+            if (lFiltered.at<uchar>(y, x) == 255)
             {
                 lX += x;
                 lY += y;

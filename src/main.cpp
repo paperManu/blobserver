@@ -140,27 +140,6 @@ class App
         
         // OSC related, client side
         void oscSend(const char* path, int filter, const char* types, lo_arg* argv);
-
-        // Various filter and detection modes availables
-        
-        // Detects outliers based on the mean and std dev, and
-        // outputs their mean position and total size
-        cv::Mat detectMeanOutliers();
-
-        // Detects light spots, and outputs each one of their position
-        // and size
-        cv::Mat detectLightSpots();
-
-        // This function tracks the blobs through frames
-        template <class T> void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs);
-
-        // This function returns the configuration (element from x linked to element from y)
-        // which gives the lowest sum, according the the pDistances. Returns a matrix with the
-        // same dimensions as pDistances, filled with 0 and 255
-        cv::Mat getLeastSumConfiguration(cv::Mat* pDistances);
-        // This function is called by the previous one, and should not be called by itself
-        // (it is part of a recursive algorithm)
-        cv::Mat getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv::Mat pAttributed, float &pSum, int pShift);
 };
 
 std::shared_ptr<App> App::mInstance(nullptr);

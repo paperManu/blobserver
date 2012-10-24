@@ -4,6 +4,25 @@
 Detector::Detector()
 {
     mOutputBuffer = cv::Mat::zeros(0, 0, CV_8U);
+
+    // By default, the mask is all white (all pixels are used)
+    mSourceMask = cv::Mat::ones(1, 1, CV_8U);
+}
+
+/*****************/
+void Detector::setMask(cv::Mat pMask)
+{
+    mSourceMask = pMask.clone();
+    mMask = pMask.clone();
+}
+
+/*****************/
+cv::Mat Detector::getMask(cv::Mat pCapture, int pInterpolation)
+{
+    if (pCapture.rows != mMask.rows || pCapture.cols != mMask.cols)
+        cv::resize(mSourceMask, mMask, pCapture.size(), 0, 0, pInterpolation);
+
+    return mMask;
 }
 
 /*****************/

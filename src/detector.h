@@ -42,15 +42,17 @@ class Detector
          */
         virtual atom::Message detect(cv::Mat pCapture) {};
         virtual void setParameter(atom::Message pParam) {};
+        void setMask(cv::Mat pMask);
 
         cv::Mat getOutput() {return mOutputBuffer.clone();};
 
     protected:
         cv::Mat mOutputBuffer;
 
-        // Useful functions
-        // Tracking multiples blobs through frames
+        cv::Mat getMask(cv::Mat pCapture, int pInterpolation = CV_INTER_NN);
 
+    private:
+        cv::Mat mSourceMask, mMask;
 };
 
 // Useful functions

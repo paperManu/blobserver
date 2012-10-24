@@ -53,6 +53,15 @@ atom::Message Detector_LightSpots::detect(cv::Mat pCapture)
     cv::erode(lLight, lEroded, cv::Mat(), cv::Point(-1, -1), mFilterSize);
     cv::dilate(lEroded, lLight, cv::Mat(), cv::Point(-1, -1), mFilterSize);
 
+    // Apply the mask
+    cv::Mat lMask = getMask(lLight, CV_INTER_NN);
+    for (int x = 0; x < lLight.cols; ++x)
+        for (int y = 0; y < lLight.rows; ++y)
+        {
+            if (lMask.at<uchar>(y, x) == 0)
+                lLight.at<uchar>(y, x) = 0;
+        }
+
     // Now we have to detect blobs
     mLightBlobDetector->detect(lLight, lKeyPoints);
     
