@@ -18,28 +18,32 @@
  */
 
 /*
- * @blob_2D.h
- * The blob_2D class.
+ * @detector_lightSpots.h
+ * The Detector_LightSpots class.
  */
 
-#ifndef BLOB_2D_H
-#define BLOB_2D_H
+#ifndef DETECTOR_LIGHTSPOTS_H
+#define DETECTOR_LIGHTSPOTS_H
 
-#include "blob.h"
+#include "detector.h"
+#include "blob_2D.h"
 
-class Blob2D : public Blob
+class Detector_LightSpots : public Detector
 {
     public:
-        Blob2D();
+        Detector_LightSpots();
 
-        void setParameter(const char* pParam, float pValue);
-
-        void init(properties pNewblob);
-        properties predict();
-        void setNewMeasures(properties pNewBlob);
-        float getDistanceFromPrediction(properties pBlob);
+        atom::Message detect(cv::Mat pCapture);
+        void setParameter(atom::Message pMessage);
 
     private:
+        cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
+        std::vector<Blob2D> mLightBlobs; // Vector of detected and tracked blobs
+
+        int mMaxTrackedBlobs;
+        float mDetectionLevel;
+        int mFilterSize;
+        float mProcessNoiseCov, mMeasurementNoiseCov;
 };
 
-#endif // BLOB_2D_H
+#endif // DETECTOR_LIGHTSPOTS_H

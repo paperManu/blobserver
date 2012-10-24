@@ -36,6 +36,12 @@ if test "x${have_liblo}" = "xfalse" ; then
     AC_MSG_ERROR([Missing liblo])
 fi
 
+# LibAtom
+PKG_CHECK_MODULES([LIBATOM], atom-0.1)
+if test "x${have_atom}" = "xfalse" ; then
+    AC_MSG_ERROR([Missing atom])
+fi
+
 # GNU help2man creates man pages from --help output; in many cases, this
 # is sufficient, and obviates the need to maintain man pages separately.
 # However, this means invoking executables, which we generally cannot do

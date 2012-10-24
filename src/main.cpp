@@ -33,6 +33,8 @@
 
 #include "blob_2D.h"
 #include "source_opencv.h"
+#include "detector_meanOutliers.h"
+#include "detector_lightSpots.h"
 
 static gboolean gVersion = FALSE;
 static gboolean gHide = FALSE;
@@ -120,9 +122,8 @@ class App
         // filter related
         std::map<int, int> mFiltersUsage;
 
-        cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
-        std::vector<Blob2D> mLightBlobs; // Vector of detected and tracked blobs
-        Blob2D mMeanBlob; // blob for the mean outlier detection
+        Detector_MeanOutliers mMeanOutliersDetector;
+        Detector_LightSpots mLightSpotsDetector;
 
         // Methods
         App();
@@ -139,38 +140,13 @@ class App
         
         // OSC related, client side
         void oscSend(const char* path, int filter, const char* types, lo_arg* argv);
-
-        // Various filter and detection modes availables
-        
-        // Detects outliers based on the mean and std dev, and
-        // outputs their mean position and total size
-        cv::Mat detectMeanOutliers();
-
-        // Detects light spots, and outputs each one of their position
-        // and size
-        cv::Mat detectLightSpots();
-
-        // Detects color blobs, and outputs datas about them
-        cv::Mat detectColorBlobs();
-       
-        // This function tracks the blobs through frames
-        template <class T> void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs);
-
-        // This function returns the configuration (element from x linked to element from y)
-        // which gives the lowest sum, according the the pDistances. Returns a matrix with the
-        // same dimensions as pDistances, filled with 0 and 255
-        cv::Mat getLeastSumConfiguration(cv::Mat* pDistances);
-        // This function is called by the previous one, and should not be called by itself
-        // (it is part of a recursive algorithm)
-        cv::Mat getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv::Mat pAttributed, float &pSum, int pShift);
 };
 
 std::shared_ptr<App> App::mInstance(nullptr);
 
 /*****************/
 App::App()
-    :mLightBlobDetector (NULL),
-    mDetectionLevel (2.f),
+    :mDetectionLevel (2.f),
     mMaxTrackedBlobs (8)
 {
 }
@@ -264,19 +240,6 @@ int App::init(int argc, char** argv)
     lo_server_thread_add_method(mOscServer, NULL, NULL, App::oscGenericHandler, NULL);
     lo_server_thread_start(mOscServer);
 
-    // Initialize a few other things
-    // Set mLightDetector to indeed detect light
-    cv::SimpleBlobDetector::Params lParams;
-    lParams.filterByColor = true;
-    lParams.blobColor = 255;
-    lParams.minCircularity = 0.1f;
-    lParams.maxCircularity = 1.f;
-    lParams.minInertiaRatio = 0.f;
-    lParams.maxInertiaRatio = 1.f;
-    lParams.minArea = 0.f;
-    lParams.maxArea = 65535.f;
-    mLightBlobDetector = new cv::SimpleBlobDetector(lParams);
-    
     return 0;
 }
 
@@ -304,10 +267,10 @@ int App::loop()
         lBufferNames.push_back(std::string("camera"));
 
         // If the frame seems valid
-        if(mCameraBuffer.size[0] > 0 && mCameraBuffer.size[0] > 0)
+        if (mCameraBuffer.size[0] > 0 && mCameraBuffer.size[0] > 0)
         {
             // Camera capture
-            if(lShowCamera)
+            if (lShowCamera)
                 cv::imshow("blobserver", mCameraBuffer);
 
             // Evaluating a new frame
@@ -316,21 +279,48 @@ int App::loop()
             oscSend("/blobserver/startFrame", BLOB_NO_FILTER, "i", arg);
 
             // Informations extraction
-            if(mFiltersUsage[BLOB_FILTER_OUTLIERS] > 0)
+            if (mFiltersUsage[BLOB_FILTER_OUTLIERS] > 0)
             {
-                lBuffers.push_back(detectMeanOutliers());
+                atom::Message message = mMeanOutliersDetector.detect(mCameraBuffer);
+                lBuffers.push_back(mMeanOutliersDetector.getOutput());
                 lBufferNames.push_back(std::string("mean outliers"));
                 lTotalBuffers += 1;
+
+                // Send messages
+                // TODO: this is temporary, until libatom is used correctly (for atom -> osc conversion)
+                lo_arg args[5];
+                args[0].i = atom::IntValue::convert(message[2])->getInt();
+                args[1].i = atom::IntValue::convert(message[3])->getInt();
+                args[2].i = atom::IntValue::convert(message[4])->getInt();
+                args[3].i = atom::IntValue::convert(message[5])->getInt();
+                args[4].i = atom::IntValue::convert(message[6])->getInt();
+                oscSend("/blobserver/meanOutliers", BLOB_FILTER_OUTLIERS, "iiiii", args);
             }
 
-            if(mFiltersUsage[BLOB_FILTER_LIGHT] > 0)
+            if (mFiltersUsage[BLOB_FILTER_LIGHT] > 0)
             {
-                lBuffers.push_back(detectLightSpots());
+                atom::Message message = mLightSpotsDetector.detect(mCameraBuffer);
+                lBuffers.push_back(mLightSpotsDetector.getOutput());
                 lBufferNames.push_back(std::string("light blobs"));
                 lTotalBuffers += 1;
+
+                // Send messages
+                // TODO: this is temporary, until libatom is used correctly (for atom -> osc conversion)
+                int nbr = atom::IntValue::convert(message[0])->getInt();
+                for (int i=0; i < nbr; i++)
+                {
+                    lo_arg args[6];
+                    args[0].i = atom::IntValue::convert(message[i*6+2])->getInt();
+                    args[1].i = atom::IntValue::convert(message[i*6+3])->getInt();
+                    args[2].i = atom::IntValue::convert(message[i*6+4])->getInt();
+                    args[3].i = atom::IntValue::convert(message[i*6+5])->getInt();
+                    args[4].i = atom::IntValue::convert(message[i*6+6])->getInt();
+                    args[5].i = atom::IntValue::convert(message[i*6+7])->getInt();
+                    oscSend("/blobserver/lightSpots", BLOB_FILTER_LIGHT, "iiiiii", args);
+                }
             }
 
-            if(lShowCamera)
+            if (lShowCamera)
             {
                 cv::putText(lBuffers[lSourceNumber], lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
                     cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
@@ -351,6 +341,8 @@ int App::loop()
         }
 
         frameNbr++;
+
+        usleep(1000);
     }
 
     return 0;
@@ -557,347 +549,6 @@ int App::parseArgs(int argc, char** argv)
     mFiltersUsage[BLOB_FILTER_LIGHT] += gLight;
 
     return 0;
-}
-
-/*****************/
-cv::Mat App::detectMeanOutliers()
-{
-    cv::Mat lMean, lStdDev;
-    cv::Mat lOutlier, lEroded, lFiltered;
-
-    // Eliminate the outliers : calculate the mean and std dev
-    lOutlier = cv::Mat::zeros(mCameraBuffer.size[0], mCameraBuffer.size[1], CV_8U);
-    lEroded = lOutlier.clone();
-    lFiltered = lOutlier.clone();
-    cv::cvtColor(mCameraBuffer, lOutlier, CV_RGB2GRAY);
-
-    cv::meanStdDev(mCameraBuffer, lMean, lStdDev);
-    cv::absdiff(lOutlier, lMean.at<double>(0), lOutlier);
-
-    // Detect pixels far from the mean (> 2*stddev)
-    cv::threshold(lOutlier, lOutlier, mDetectionLevel * lStdDev.at<double>(0), 255, cv::THRESH_BINARY);
-
-    // Erode and dilate to suppress noise
-    cv::erode(lOutlier, lEroded, cv::Mat(), cv::Point(-1, -1), gFilterSize);
-    cv::dilate(lEroded, lFiltered, cv::Mat(), cv::Point(-1, -1), gFilterSize);
-
-    // Calculate the barycenter of the outliers
-    int lNumber = 0;
-    int lX = 0, lY = 0;
-
-    for(int x = 0; x < lFiltered.size[1]; ++x)
-        for(int y = 0; y < lFiltered.size[0]; ++y)
-        {
-            if(lFiltered.at<uchar>(y, x) == 255)
-            {
-                lX += x;
-                lY += y;
-                lNumber++;
-            }
-        }
-
-    bool isDetected = false;
-    if(lNumber > 0)
-    {
-        isDetected = true;
-        lX /= lNumber;
-        lY /= lNumber;
-    }
-    else
-    {
-        lX = lFiltered.size[1] / 2;
-        lY = lFiltered.size[0] / 2;
-    }
-
-    // Filtering
-    static bool isInitialized = false;
-
-    Blob::properties props;
-    props.position.x = lX;
-    props.position.y = lY;
-    props.size = lNumber;
-
-    if(!isInitialized)
-    {
-        mMeanBlob.init(props);
-        isInitialized = true;
-    }
-    else
-    {
-        mMeanBlob.predict();
-        mMeanBlob.setNewMeasures(props);
-        props = mMeanBlob.getBlob();
-    }
-
-    lX = (int)(props.position.x);
-    lY = (int)(props.position.y);
-    lNumber = (int)(props.size);
-    int lSpeedX = (int)(props.speed.x);
-    int lSpeedY = (int)(props.speed.y);
-
-    if(gVerbose)
-    {
-        std::cout << "--- Outliers detection:" << std::endl;
-        std::cout << "x: " << lX << " - y: " << lY << " - size: " << lNumber << " - speedX: " << lSpeedX << " - speedY: " << lSpeedY << std::endl;
-    }
-
-    // Send the result
-    lo_arg args[5];
-    args[0].i = lX;
-    args[1].i = lY;
-    args[2].i = lNumber;
-    args[3].i = lSpeedX;
-    args[4].i = lSpeedY;
-    oscSend("/blobserver/meanOutliers", BLOB_FILTER_OUTLIERS, "iiiii", args);
-
-    return lFiltered;
-}
-
-/*****************/
-cv::Mat App::detectLightSpots()
-{
-    cv::Mat lMean, lStdDev;
-    cv::Mat lOutlier, lLight;
-    cv::Mat lEroded;
-    std::vector<cv::KeyPoint> lKeyPoints;
-
-    // Eliminate the outliers : calculate the mean and std dev
-    lOutlier = cv::Mat::zeros(mCameraBuffer.size[0], mCameraBuffer.size[1], CV_8U);
-    lLight = lOutlier.clone();
-    cv::cvtColor(mCameraBuffer, lOutlier, CV_RGB2GRAY);
-
-    cv::meanStdDev(mCameraBuffer, lMean, lStdDev);
-    cv::absdiff(lOutlier, lMean.at<double>(0), lOutlier);
-
-    // Detect pixels which values are superior to the mean
-    cv::threshold(lOutlier, lLight, lMean.at<double>(0), 255, cv::THRESH_BINARY);
-    
-    // Detect pixels far from the mean (> 2*stddev by default)
-    cv::threshold(lOutlier, lOutlier, mDetectionLevel * lStdDev.at<double>(0), 255, cv::THRESH_BINARY);
-    
-    // Combinaison of both previous conditions
-    cv::bitwise_and(lOutlier, lLight, lLight);
-
-    // Erode and dilate to suppress noise
-    cv::erode(lLight, lEroded, cv::Mat(), cv::Point(-1, -1), gFilterSize);
-    cv::dilate(lEroded, lLight, cv::Mat(), cv::Point(-1, -1), gFilterSize);
-
-    // Now we have to detect blobs
-    mLightBlobDetector->detect(lLight, lKeyPoints);
-    
-    // We use Blob::properties, not cv::KeyPoints
-    std::vector<Blob::properties> lProperties;
-    for(int i = 0; i < std::min((int)(lKeyPoints.size()), mMaxTrackedBlobs); ++i)
-    {
-        Blob::properties properties;
-        properties.position.x = lKeyPoints[i].pt.x;
-        properties.position.y = lKeyPoints[i].pt.y;
-        properties.size = lKeyPoints[i].size;
-        properties.speed.x = 0.f;
-        properties.speed.y = 0.f;
-
-        lProperties.push_back(properties);
-    }
-
-    // We want to track them
-    trackBlobs<Blob2D>(lProperties, mLightBlobs);
-
-    // Make sure their covariances are correctly set
-    std::vector<Blob2D>::iterator lIt = mLightBlobs.begin();
-    for(; lIt != mLightBlobs.end(); ++lIt)
-    {
-        lIt->setParameter("processNoiseCov", 1e-5);
-        lIt->setParameter("measurementNoiseCov", 1e-5);
-    }
-
-    if(gVerbose)
-        std::cout << "--- Light blobs detection:" << std::endl;
-
-    // And we send and print them
-    for(int i = 0; i < mLightBlobs.size(); ++i)
-    {
-        int lX, lY, lSize, ldX, ldY;
-        Blob::properties properties = mLightBlobs[i].getBlob();
-        lX = (int)(properties.position.x);
-        lY = (int)(properties.position.y);
-        lSize = (int)(properties.size);
-        ldX = (int)(properties.speed.x);
-        ldY = (int)(properties.speed.y);
-
-        if(gVerbose)
-        {
-            std::cout << &(mLightBlobs[i]) << " - Blob #" << mLightBlobs[i].getId() << " - x=" << lX << " - y=" << lY << " - size=" << lSize << " - dX = " << ldX << " - dY = " << ldY<< std::endl;
-            // Print the blob number on the blob
-            char lNbrStr[8];
-            sprintf(lNbrStr, "%i", mLightBlobs[i].getId());
-            cv::putText(lLight, lNbrStr, cv::Point(lX, lY), cv::FONT_HERSHEY_COMPLEX, 0.66, cv::Scalar(128.0, 128.0, 128.0, 128.0));
-        }
-
-        // Send the result through OSC
-        lo_arg args[6];
-        args[0].i = lX;
-        args[1].i = lY;
-        args[2].i = lSize;
-        args[3].i = ldX;
-        args[4].i = ldY;
-        args[5].i = mLightBlobs[i].getId();
-        oscSend("/blobserver/lightSpots", BLOB_FILTER_LIGHT, "iiiiii", args);
-    }
-
-    return lLight;
-}
-
-/*****************/
-cv::Mat App::detectColorBlobs()
-{
-    cv::Mat lMatBlobs;
-
-    return lMatBlobs;
-}
-
-/*****************/
-template<class T> void App::trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs)
-{
-    // First we update all the previous blobs we detected,
-    // and keep their predicted new position
-    for(int i = 0; i < pBlobs.size(); ++i)
-        pBlobs[i].predict();
-    
-    // Then we compare all these prediction with real measures and
-    // associate them together
-    cv::Mat lConfiguration;
-    if(pBlobs.size() != 0)
-    {
-        cv::Mat lTrackMat = cv::Mat::zeros(pProperties.size(), pBlobs.size(), CV_32F);
-
-        // Compute the squared distance between all new blobs, and all tracked ones
-        for(int i = 0; i < pProperties.size(); ++i)
-        {
-            for(int j = 0; j < pBlobs.size(); ++j)
-            {
-                Blob::properties properties = pProperties[i];
-                lTrackMat.at<float>(i, j) = pBlobs[j].getDistanceFromPrediction(properties);
-            }
-        }
-
-        // We associate each tracked blobs with the fittest blob, using a least square approach
-        lConfiguration = getLeastSumConfiguration(&lTrackMat);
-    }
-
-    cv::Mat lAttributedKeypoints = cv::Mat::zeros(pProperties.size(), 1, CV_8U);
-    typename std::vector<T>::iterator lBlob = pBlobs.begin();
-    // We update the blobs which we were able to track
-    for(int i = 0; i < lConfiguration.rows; ++i)
-    {
-        int lIndex = lConfiguration.at<uchar>(i);
-        if(lIndex < 255)
-        {
-            lBlob->setNewMeasures(pProperties[lIndex]);
-            lBlob++;
-            lAttributedKeypoints.at<uchar>(lIndex) = 255;
-        }
-    }
-    // We delete the blobs we couldn't track
-    //for(lBlob = mLightBlobs.begin(); lBlob != mLightBlobs.end(); lBlob++)
-    for(int i = 0; i < lConfiguration.rows; ++i)
-    {
-        int lIndex = lConfiguration.at<uchar>(i);
-        if(lIndex == 255)
-        {
-            pBlobs.erase(pBlobs.begin()+i);
-        }
-    }
-    // And we create new blobs for the new objects detected
-    for(int i = 0; i < lAttributedKeypoints.rows; ++i)
-    {
-        int lIndex = lAttributedKeypoints.at<uchar>(i);
-        if(lIndex == 0)
-        {
-            T lNewBlob;
-            lNewBlob.init(pProperties[i]);
-            pBlobs.push_back(lNewBlob);
-        }
-    }
-}
-
-/*****************/
-cv::Mat App::getLeastSumConfiguration(cv::Mat* pDistances)
-{
-    float lMinSum = 0.f;
-    cv::Mat lConfiguration = cv::Mat::ones(mLightBlobs.size(), 1, CV_8U)*255;
-    cv::Mat lAttributed = cv::Mat::zeros(pDistances->rows, 1, CV_8U);
-
-    lConfiguration = getLeastSumForLevel(lConfiguration, pDistances, 0, lAttributed, lMinSum, 0);
-
-    return lConfiguration;
-}
-
-/*****************/
-cv::Mat App::getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv::Mat pAttributed, float &pSum, int pShift)
-{
-    // If we lost one or more blobs, we will need to shift the remaining blobs to test all
-    // the possible combinations
-    int lLevelRemaining = pConfig.rows - (pLevel + 1);
-    int lMaxShift = std::max(0, std::min(pConfig.rows - pDistances->rows - pShift, lLevelRemaining));
-
-    float lMinSum = std::numeric_limits<float>::max();
-    float lCurrentSum;
-    cv::Mat lAttributed;
-    cv::Mat lConfig, lCurrentConfig;
-
-    // We try without shifting anything
-    for(int i = 0; i < pAttributed.rows + lMaxShift; ++i)
-    {
-
-        // If we do not shift
-        if(i < pAttributed.rows)
-        {
-            if(pAttributed.at<uchar>(i) == 0)
-            {    
-                lAttributed = pAttributed.clone();
-                lCurrentConfig = pConfig.clone();
-
-                lAttributed.at<uchar>(i) = 255;
-                lCurrentSum = pSum + pDistances->at<float>(i, pLevel);
-                lCurrentConfig.at<uchar>(pLevel) = i;
-
-                if(lLevelRemaining > 0)
-                    lCurrentConfig = getLeastSumForLevel(lCurrentConfig, pDistances, pLevel + 1, lAttributed, lCurrentSum, pShift);
-
-                if(lCurrentSum < lMinSum)
-                {
-                    lMinSum = lCurrentSum;
-                    lConfig = lCurrentConfig;
-                }
-            }
-        }
-        // if we shift, don't attribute this keypoint to any blob
-        else if(i >= pAttributed.rows)
-        {
-            lAttributed = pAttributed.clone();
-            lCurrentConfig = pConfig.clone();
-            lCurrentSum = pSum;
-
-            if(lLevelRemaining > 0)
-                lCurrentConfig = getLeastSumForLevel(lCurrentConfig, pDistances, pLevel + 1, lAttributed, lCurrentSum, pShift + 1);
-            
-            if(lCurrentSum < lMinSum)
-            {
-                lMinSum = lCurrentSum;
-                lConfig = lCurrentConfig;
-            }
-        }
-    }
-
-    if(lMinSum < std::numeric_limits<float>::max())
-    {
-        pSum = lMinSum;
-        return lConfig;
-    }
-    else
-    {
-        return pConfig;
-    }
 }
 
 /*****************/
