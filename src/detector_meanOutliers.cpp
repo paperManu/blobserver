@@ -8,6 +8,10 @@ Detector_MeanOutliers::Detector_MeanOutliers()
     mDetectionLevel (2.f),
     mFilterSize (3)
 {
+    mName = "mean outliers";
+    // OSC path for this detector
+    mOscPath = "/blobserver/meanOutliers";
+
     mMeanBlob.setParameter("processNoiseCov", 1e-6);
     mMeanBlob.setParameter("measurementNoiseCov", 1e-4);
 }
@@ -35,7 +39,7 @@ atom::Message Detector_MeanOutliers::detect(cv::Mat pCapture)
     cv::dilate(lEroded, lFiltered, cv::Mat(), cv::Point(-1, -1), mFilterSize);
 
     // Apply the mask
-    cv::Mat lMask = getMask(lFiltered, CV_INTER_NN);
+    cv::Mat lMask = getMask(lFiltered, CV_INTER_LINEAR);
     for (int x = 0; x < lFiltered.cols; ++x)
         for (int y = 0; y < lFiltered.rows; ++y)
         {

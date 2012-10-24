@@ -44,10 +44,14 @@ class Detector
         virtual void setParameter(atom::Message pParam) {};
         void setMask(cv::Mat pMask);
 
+        std::string getOscPath() {return mOscPath;};
+        std::string getName() {return mName;};
         cv::Mat getOutput() {return mOutputBuffer.clone();};
 
     protected:
         cv::Mat mOutputBuffer;
+        std::string mOscPath;
+        std::string mName;
 
         cv::Mat getMask(cv::Mat pCapture, int pInterpolation = CV_INTER_NN);
 

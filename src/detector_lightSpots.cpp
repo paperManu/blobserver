@@ -8,6 +8,10 @@ Detector_LightSpots::Detector_LightSpots()
     mFilterSize (3),
     mMaxTrackedBlobs (8)
 {
+    mName = "light blobs";
+    // OSC path for this detector
+    mOscPath = "/blobserver/lightSpots";
+
     mProcessNoiseCov = 1e-5;
     mMeasurementNoiseCov = 1e-5;
 
