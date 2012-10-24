@@ -18,28 +18,29 @@
  */
 
 /*
- * @blob_2D.h
- * The blob_2D class.
+ * @detector_mainOutliers.h
+ * The Detector_MainOutliers class.
  */
 
-#ifndef BLOB_2D_H
-#define BLOB_2D_H
+#ifndef DETECTOR_MEANOUTLIERS_H
+#define DETECTOR_MEANOUTLIERS_H
 
-#include "blob.h"
+#include "detector.h"
+#include "blob_2D.h"
 
-class Blob2D : public Blob
+class Detector_MeanOutliers : public Detector
 {
     public:
-        Blob2D();
+        Detector_MeanOutliers();
 
-        void setParameter(const char* pParam, float pValue);
-
-        void init(properties pNewblob);
-        properties predict();
-        void setNewMeasures(properties pNewBlob);
-        float getDistanceFromPrediction(properties pBlob);
+        atom::Message detect(cv::Mat pCapture);
+        void setParameter(atom::Message pMessage);
 
     private:
+        float mDetectionLevel; // Above std dev * mDetectionLevel, an object is detected
+        int mFilterSize;
+        Blob2D mMeanBlob;
+        bool isInitialized;
 };
 
-#endif // BLOB_2D_H
+#endif // DETECTOR_MEANOUTLIERS_H

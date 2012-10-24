@@ -5,6 +5,8 @@ blobserver_SOURCES = \
     blob.cpp \
     blob_2D.cpp \
     detector.cpp \
+    detector_meanOutliers.cpp \
+    detector_lightSpots.cpp \
     source.cpp \
     source_opencv.cpp
 
@@ -12,6 +14,8 @@ noinst_HEADERS = \
     blob.h \
     blob_2D.h \
     detector.h \
+    detector_meanOutliers.h \
+    detector_lightSpots.h \
     source.h \
     source_opencv.h
 
