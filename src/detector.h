@@ -34,28 +34,39 @@ class Detector
 {
     public:
         Detector();
+        Detector(int pParam);
+
+        static std::string getClassName() {return mClassName;}
+        static std::string getDocumentation() {return mDocumentation;}
 
         /* Detects objects in the capture given as a parameter, and returns
          * a message with informations about each blob
          * The two first values in the message are the number of blob,
          * and the size of each blob in the message
          */
-        virtual atom::Message detect(cv::Mat pCapture) {};
-        virtual void setParameter(atom::Message pParam) {};
+        virtual atom::Message detect(cv::Mat pCapture) {}
         void setMask(cv::Mat pMask);
 
-        std::string getOscPath() {return mOscPath;};
-        std::string getName() {return mName;};
-        cv::Mat getOutput() {return mOutputBuffer.clone();};
+        virtual void setParameter(atom::Message pParam) {}
+        atom::Message getParameter(atom::Message pParam);
+        
+        std::string getName() {return mName;}
+        std::string getOscPath() {return mOscPath;}
+        unsigned int getSourceNbr() {return mSourceNbr;}
+        cv::Mat getOutput() {return mOutputBuffer.clone();}
 
     protected:
         cv::Mat mOutputBuffer;
         std::string mOscPath;
         std::string mName;
+        unsigned int mSourceNbr;
 
         cv::Mat getMask(cv::Mat pCapture, int pInterpolation = CV_INTER_NN);
 
     private:
+        static std::string mClassName;
+        static std::string mDocumentation;
+
         cv::Mat mSourceMask, mMask;
 };
 

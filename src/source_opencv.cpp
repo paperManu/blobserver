@@ -1,16 +1,31 @@
 #include "source_opencv.h"
 
+std::string Source_OpenCV::mClassName = "Source_OpenCV";
+std::string Source_OpenCV::mDocumentation = "N/A";
+
 /*************/
 Source_OpenCV::Source_OpenCV()
 {
-    mCameraNbr = 0;
+    mName = mClassName;
     mBuffer = cv::Mat::zeros(0, 0, CV_8U);
+}
+
+/*************/
+Source_OpenCV::Source_OpenCV(int pParam)
+{
+    Source_OpenCV();
+}
+
+/*************/
+Source_OpenCV::~Source_OpenCV()
+{
+    disconnect();
 }
 
 /*************/
 bool Source_OpenCV::connect()
 {
-    mCamera.open(mCameraNbr);
+    mCamera.open(mSubsourceNbr);
     if (!mCamera.isOpened())
     {
         return false;
@@ -66,5 +81,9 @@ void Source_OpenCV::setParameter(const char* pParam, float pValue)
     {
         mCamera.set(CV_CAP_PROP_FPS, pValue);
         mFramerate = (unsigned int)(mCamera.get(CV_CAP_PROP_FPS));
+    }
+    else if (strcmp(pParam, "camera number") == 0)
+    {
+        mSubsourceNbr = (unsigned int)pValue;
     }
 }

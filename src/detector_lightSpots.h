@@ -32,11 +32,18 @@ class Detector_LightSpots : public Detector
 {
     public:
         Detector_LightSpots();
+        Detector_LightSpots(int pParam);
+
+        static std::string getClassName() {return mClassName;}
+        static std::string getDocumentation() {return mDocumentation;}
 
         atom::Message detect(cv::Mat pCapture);
         void setParameter(atom::Message pMessage);
 
     private:
+        static std::string mClassName;
+        static std::string mDocumentation;
+        
         cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
         std::vector<Blob2D> mLightBlobs; // Vector of detected and tracked blobs
 

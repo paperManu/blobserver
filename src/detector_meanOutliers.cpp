@@ -2,18 +2,27 @@
 
 using namespace atom;
 
+std::string Detector_MeanOutliers::mClassName = "Detector_MeanOutliers";
+std::string Detector_MeanOutliers::mDocumentation = "N/A";
+
 /*************/
 Detector_MeanOutliers::Detector_MeanOutliers()
     :isInitialized (false),
     mDetectionLevel (2.f),
     mFilterSize (3)
 {
-    mName = "mean outliers";
+    mName = mClassName;
     // OSC path for this detector
     mOscPath = "/blobserver/meanOutliers";
 
     mMeanBlob.setParameter("processNoiseCov", 1e-6);
     mMeanBlob.setParameter("measurementNoiseCov", 1e-4);
+}
+
+/*************/
+Detector_MeanOutliers::Detector_MeanOutliers(int pParam)
+{
+    Detector_MeanOutliers();
 }
 
 /*************/
@@ -106,13 +115,7 @@ atom::Message Detector_MeanOutliers::detect(cv::Mat pCapture)
     // Constructing the message
     Message message;
     // Two first values are the number and size of each (the...) blob
-    message.push_back(IntValue::create(1));
-    message.push_back(IntValue::create(5));
-    message.push_back(IntValue::create(lX));
-    message.push_back(IntValue::create(lY));
-    message.push_back(IntValue::create(lNumber));
-    message.push_back(IntValue::create(lSpeedX));
-    message.push_back(IntValue::create(lSpeedY));
+    message = createMessage("iiiiiii", 1, 5, lX, lY, lNumber, lSpeedX, lSpeedY);
 
     return message;
 }
