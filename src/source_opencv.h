@@ -50,6 +50,8 @@ class Source_OpenCV : public Source
 
         cv::VideoCapture mCamera;
         cv::Mat mBuffer;
+
+        bool mUpdated;
 };
 
 #endif // SOURCE_OPENCV_H

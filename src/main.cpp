@@ -84,6 +84,20 @@ static GOptionEntry gEntries[] =
 #define BLOB_FILTER_LIGHT       0x0004
 #define BLOB_FILTER_COLOR       0x0008
 
+/**************************/
+// lo_address in an object
+class OscClient
+{
+    public:
+        OscClient(lo_address pAddress) {mAddress = pAddress;}
+        ~OscClient() {lo_address_free(mAddress);}
+
+        lo_address get() {return mAddress;}
+
+    private:
+        lo_address mAddress;
+};
+
 /*****************************/
 // Definition of the app class
 class App
@@ -101,7 +115,7 @@ class App
         {
             std::vector<std::shared_ptr<Source>> sources;
             std::shared_ptr<Detector> detector;
-            lo_address client; // TODO: use a shared_ptr for this
+            std::shared_ptr<OscClient> client;
             unsigned int id;
             bool run;
         };
@@ -142,9 +156,6 @@ class App
         cv::Mat mMask;
 
         static unsigned int mCurrentId;
-
-        // filter related
-        std::map<int, int> mFiltersUsage;
 
         Detector_MeanOutliers mMeanOutliersDetector;
         Detector_LightSpots mLightSpotsDetector;
@@ -207,34 +218,6 @@ int App::init(int argc, char** argv)
     if(ret)
         return ret;
 
-    // Initialize GStreamer
-    //gst_init(&argc, &argv);
-
-    // Initialize camera
-    mSource.reset(new Source_OpenCV);
-    if(!mSource->connect())
-    {
-        std::cout << "Error while opening camera number " << gCamNbr << ". Exiting." << std::endl;
-        return 1;
-    }
-
-    mSources.push_back(mSource);
-   
-    if(gWidth > 0)
-        mSource->setParameter("width", gWidth);
-    if(gHeight > 0)
-        mSource->setParameter("height", gHeight);
-    if(gFramerate > 0.0)
-        mSource->setParameter("framerate", gFramerate);
-
-    // Initialize filters
-    mFiltersUsage[BLOB_FILTER_OUTLIERS] = 0;
-    mFiltersUsage[BLOB_FILTER_LIGHT] = 0;
-
-    // Get a first frame to initialize the buffer
-    mSource->grabFrame();
-    mCameraBuffer = mSource->retrieveFrame();
-
     // Initialize OSC
     int lNetProto;
     if(gTcp)
@@ -258,8 +241,30 @@ int App::init(int argc, char** argv)
             std::cout << "No port specified, using 9000" << std::endl;
         }
 
+        // Initialize camera
+        mSource.reset(new Source_OpenCV);
+        if(!mSource->connect())
+        {
+            std::cout << "Error while opening camera number " << gCamNbr << ". Exiting." << std::endl;
+            return 1;
+        }
+    
+        mSources.push_back(mSource);
+       
+        if(gWidth > 0)
+            mSource->setParameter("width", gWidth);
+        if(gHeight > 0)
+            mSource->setParameter("height", gHeight);
+        if(gFramerate > 0.0)
+            mSource->setParameter("framerate", gFramerate);
+    
+        // Get a first frame to initialize the buffer
+        mSource->grabFrame();
+        mCameraBuffer = mSource->retrieveFrame();
+
+        // Create the flows
         Flow lFlow;
-        lFlow.client = lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str);
+        lFlow.client.reset(new OscClient(lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str)));
         lFlow.sources.push_back(mSource);
         lFlow.run = true;
 
@@ -284,14 +289,10 @@ int App::init(int argc, char** argv)
         lClient.address = lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str);
         lClient.filters = BLOB_FILTER_OUTLIERS | BLOB_FILTER_LIGHT;
 
-        mFiltersUsage[BLOB_FILTER_OUTLIERS]++;
-        mFiltersUsage[BLOB_FILTER_LIGHT]++;
-
         if(mMask.total() > 0)
             mMeanOutliersDetector.setMask(mMask);
 
         mClients.push_back(lClient);
-
         mOscAddresses.push_back(lClient.address);
     }
 
@@ -336,9 +337,6 @@ int App::parseArgs(int argc, char** argv)
         return 1;
     }
 
-    mFiltersUsage[BLOB_FILTER_OUTLIERS] += gOutliers;
-    mFiltersUsage[BLOB_FILTER_LIGHT] += gLight;
-
     return 0;
 }
 
@@ -367,37 +365,36 @@ int App::loop()
     bool loop = true;
     while(loop)
     {
-        int lTotalBuffers = 1; // starting at 1, because there is at least the camera buffer
         std::vector<cv::Mat> lBuffers;
         std::vector<std::string> lBufferNames;
 
+        // First buffer is a black screen. No special reason, except we need
+        // a first buffer
+        lBuffers.push_back(cv::Mat::zeros(480, 640, CV_8UC3));
+        lBufferNames.push_back(std::string("This is Blobserver"));
+
         // Frame capture
-        mSource->grabFrame();
-        mCameraBuffer = mSource->retrieveFrame();
+        //mSource->grabFrame();
+        //mCameraBuffer = mSource->retrieveFrame();
         // cv::Mat are not copied when not specified, so the bandwidth usage
         // of the following operation is minimal
-        lBuffers.push_back(mCameraBuffer); // TODO: remove all mention of mCameraBuffer
-        lBufferNames.push_back(std::string("camera"));
+        //lBuffers.push_back(mCameraBuffer); // TODO: remove all mention of mCameraBuffer
+        //lBufferNames.push_back(std::string("camera"));
 
         // If the frame seems valid
-        if (mCameraBuffer.total() > 0)
-        {
-            // Camera capture
-            if (lShowCamera)
-                cv::imshow("blobserver", mCameraBuffer);
-
-            // Evaluating a new frame
-            lo_arg arg[1];
-            arg[0].i = frameNbr;
-            oscSend("/blobserver/startFrame", BLOB_NO_FILTER, "i", arg);
-
+        //if (mCameraBuffer.total() > 0)
+        //{
             // Grab from all the sources
             {
                 std::vector<std::shared_ptr<Source>>::const_iterator iter;
+                // First we grab, then we retrieve all frames
+                // This way, sync between frames is better
                 for (iter = mSources.begin(); iter != mSources.end(); ++iter)
                 {
                     std::shared_ptr<Source> source = (*iter);
-                    source->grabFrame(); // TODO: add the grabbed frame to the lBuffers vector
+                    source->grabFrame();
+                    lBuffers.push_back(source->retrieveFrame());
+                    lBufferNames.push_back(source->getName());
                 }
             }
 
@@ -417,15 +414,15 @@ int App::loop()
                     for (int i = 0; i < flow.sources.size(); ++i)
                         frames.push_back(flow.sources[i]->retrieveFrame());
 
-                    // Apply the detector on these (TODO: this, currently) frames
+                    // Apply the detector on these frames
+                    // TODO: specify multiple frames to the detector
                     atom::Message message = flow.detector->detect(frames[0]);
                     lBuffers.push_back(flow.detector->getOutput());
                     lBufferNames.push_back(flow.detector->getName());
-                    lTotalBuffers += 1;
 
                     // Send messages
                     // Beginning of the frame
-                    lo_send(flow.client, "/blobserver/startFrame", "ii", frameNbr, flow.id);
+                    lo_send(flow.client->get(), "/blobserver/startFrame", "ii", frameNbr, flow.id);
 
                     int nbr = atom::toInt(message[0]);
                     int size = atom::toInt(message[1]);
@@ -437,11 +434,11 @@ int App::loop()
                         
                         lo_message oscMsg = lo_message_new();
                         atom::message_build_to_lo_message(msg, oscMsg);
-                        lo_send_message(flow.client, flow.detector->getOscPath().c_str(), oscMsg);
+                        lo_send_message(flow.client->get(), flow.detector->getOscPath().c_str(), oscMsg);
                     }
 
                     // End of the frame
-                    lo_send(flow.client, "/blobserver/endFrame", "ii", frameNbr, flow.id);
+                    lo_send(flow.client->get(), "/blobserver/endFrame", "ii", frameNbr, flow.id);
                 }
             }
 
@@ -451,17 +448,15 @@ int App::loop()
                     cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
                 cv::imshow("blobserver", lBuffers[lSourceNumber]);
             }
-
-            // End of frame
-            oscSend("/blobserver/endFrame", BLOB_NO_FILTER, "i", arg);
-        }
+        //}
 
         char lKey = cv::waitKey(5);
         if(lKey == 'q')
             loop = false;
         if(lKey == 'w')
         {
-            lSourceNumber = (lSourceNumber+1)%lTotalBuffers;
+            // TODO: handle the case where a buffer is deleted and lSourceNumber becomes higher than lBuffers.size()
+            lSourceNumber = (lSourceNumber+1)%lBuffers.size();
             std::cout << "Buffer displayed: " << lBufferNames[lSourceNumber] << std::endl;
         }
 
@@ -516,20 +511,20 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         return 1;
     }
     
-    lo_address address = lo_address_new(atom::toString(message[0]).c_str(), port);
+    //lo_address address = lo_address_new(atom::toString(message[0]).c_str(), port);
+    std::shared_ptr<OscClient> address(new OscClient(lo_address_new(atom::toString(message[0]).c_str(), port)));
 
-    int error = lo_address_errno(address);
+    int error = lo_address_errno(address->get());
     if (error != 0)
     {
         std::cout << "Wrong address received, error " << error << std::endl;
-        lo_address_free(address); 
         return 1;
     }
     else
     {
         if (message.size() < 5)
         {
-            lo_send(address, "/blobserver/connect", "s", "Too few arguments");
+            lo_send(address->get(), "/blobserver/connect", "s", "Too few arguments");
             return 1; 
         }
 
@@ -542,7 +537,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         }
         catch (atom::BadTypeTagError typeError)
         {
-            lo_send(address, "/blobserver/connect", "s", "Expected a detector type at position 2");
+            lo_send(address->get(), "/blobserver/connect", "s", "Expected a detector type at position 2");
             return 1;
         }
 
@@ -552,7 +547,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             detector = theApp->mDetectorFactory.create(detectorName);
         else
         {
-            lo_send(address, "/blobserver/connect", "s", "Detector type not recognized");
+            lo_send(address->get(), "/blobserver/connect", "s", "Detector type not recognized");
             return 1;
         }
 
@@ -566,7 +561,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         {
             if (iter+1 == message.end())
             {
-                lo_send(address, "/blobserver/connect", "s", "Missing sub-source number");
+                lo_send(address->get(), "/blobserver/connect", "s", "Missing sub-source number");
                 return 1;
             }
 
@@ -579,7 +574,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             }
             catch (atom::BadTypeTagError typeError)
             {
-                lo_send(address, "/blobserver/connect", "s", "Expected integer as a sub-source number");
+                lo_send(address->get(), "/blobserver/connect", "s", "Expected integer as a sub-source number");
                 return 1;
             }
 
@@ -606,10 +601,11 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
                     error += sourceName;
                     error += " ";
                     error += sourceIndex;
-                    lo_send(address, "/blobserver/connect", "s", error.c_str());
+                    lo_send(address->get(), "/blobserver/connect", "s", error.c_str());
                     return 1;
                 }
-
+                
+                source->connect();
                 sources.push_back(source);
             }
         }
@@ -645,12 +641,11 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             theApp->mFlows.push_back(flow);
 
             // Tell the client that he is connected, and give him the flow id
-            lo_send(address, "/blobserver/connect", "si", "Connected", (int)flow.id);
+            lo_send(address->get(), "/blobserver/connect", "si", "Connected", (int)flow.id);
         }
         else
         {
-            lo_send(address, "/blobserver/connect", "s", "The specified detector needs more sources");
-            lo_address_free(address);
+            lo_send(address->get(), "/blobserver/connect", "s", "The specified detector needs more sources");
             return 1;
         }
         
@@ -667,8 +662,8 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
     atom::message_build_from_lo_args(message, types, argv, argc);
 
     std::string addressStr = atom::toString(message[0]);
-    lo_address address = lo_address_new(addressStr.c_str(), "9000");
-    int error = lo_address_errno(address);
+    std::shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
+    int error = lo_address_errno(address->get());
     if (error != 0)
     {
         std::cout << "Wrong address received, error " << error << std::endl;
@@ -677,7 +672,7 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
     
     if (message.size() != 1 && message.size() != 2)
     {
-        lo_send(address, "/blobserver/disconnect", "s", "Wrong number of arguments");
+        lo_send(address->get(), "/blobserver/disconnect", "s", "Wrong number of arguments");
         return 1;
     }
     
@@ -692,13 +687,13 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
     std::vector<Flow>::iterator flow;
     for (flow = theApp->mFlows.begin(); flow != theApp->mFlows.end();)
     {
-        if (std::string(lo_address_get_url(flow->client)) == std::string(lo_address_get_url(address)))
+        if (std::string(lo_address_get_url(flow->client->get())) == std::string(lo_address_get_url(address->get())))
         {
             if (all == true || detectorId == flow->id)
             {
                 theApp->mFlows.erase(flow);
                 std::cout << "Connection from address " << addressStr << " closed." << std::endl;
-                lo_send(address, "/blobserver/disconnect", "s", "Disconnected");
+                lo_send(address->get(), "/blobserver/disconnect", "s", "Disconnected");
             }
             else
             {
@@ -710,8 +705,6 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
             flow++;
         }
     }
-
-    lo_address_free(address);
 
     return 0;
 }

@@ -54,13 +54,17 @@ bool Source_OpenCV::disconnect()
 bool Source_OpenCV::grabFrame()
 {
     bool result = mCamera.grab();
+    mUpdated = true;
     return result;
 }
 
 /*************/
 cv::Mat Source_OpenCV::retrieveFrame()
 {
-    bool result = mCamera.retrieve(mBuffer);
+    if (mUpdated)
+        mCamera.retrieve(mBuffer);
+
+    mUpdated = false;
     return mBuffer.clone();
 }
 
