@@ -87,3 +87,43 @@ void Source_OpenCV::setParameter(const char* pParam, float pValue)
         mSubsourceNbr = (unsigned int)pValue;
     }
 }
+
+/*************/
+void Source_OpenCV::setParameter(atom::Message pParam)
+{
+    if (pParam.size() < 2)
+        return;
+
+    std::string paramName;
+    float paramValue;
+
+    try
+    {
+        paramName = atom::toString(pParam[0]);
+        paramValue = atom::toFloat(pParam[1]);
+    }
+    catch (atom::BadTypeTagError exception)
+    {
+        return;
+    }
+
+    if (paramName == "width")
+    {
+        mCamera.set(CV_CAP_PROP_FRAME_WIDTH, paramValue);
+        mWidth = (unsigned int)(mCamera.get(CV_CAP_PROP_FRAME_WIDTH));
+    }
+    else if (paramName == "height")
+    {
+        mCamera.set(CV_CAP_PROP_FRAME_HEIGHT, paramValue);
+        mHeight = (unsigned int)(mCamera.get(CV_CAP_PROP_FRAME_HEIGHT));
+    }
+    else if (paramName == "framerate")
+    {
+        mCamera.set(CV_CAP_PROP_FPS, paramValue);
+        mFramerate = (unsigned int)(mCamera.get(CV_CAP_PROP_FPS));
+    }
+    else if (paramName == "camera number")
+    {
+        mSubsourceNbr = (unsigned int)paramValue;
+    }
+}

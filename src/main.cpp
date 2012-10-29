@@ -103,6 +103,7 @@ class App
             std::shared_ptr<Detector> detector;
             lo_address client;
             unsigned int id;
+            bool run;
         };
         
         ~App();
@@ -165,7 +166,6 @@ class App
         static int oscGenericHandler(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        static int oscHandlerSetFilter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerSetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         
         // OSC related, client side
@@ -261,6 +261,7 @@ int App::init(int argc, char** argv)
         Flow lFlow;
         lFlow.client = lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str);
         lFlow.sources.push_back(mSource);
+        lFlow.run = true;
 
         if (gOutliers)
         {
@@ -296,9 +297,8 @@ int App::init(int argc, char** argv)
 
     // Server
     mOscServer = lo_server_thread_new_with_proto("9001", lNetProto, App::oscError);
-    lo_server_thread_add_method(mOscServer, "/blobserver/connect", "si", App::oscHandlerConnect, NULL);
-    lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", "s", App::oscHandlerDisconnect, NULL);
-    lo_server_thread_add_method(mOscServer, "/blobserver/filter", "ss", App::oscHandlerSetFilter, NULL);
+    lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, App::oscHandlerConnect, NULL);
+    lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", NULL, App::oscHandlerDisconnect, NULL);
     lo_server_thread_add_method(mOscServer, "/blobserver/parameter", NULL, App::oscHandlerSetParameter, NULL);
     lo_server_thread_add_method(mOscServer, NULL, NULL, App::oscGenericHandler, NULL);
     lo_server_thread_start(mOscServer);
@@ -407,6 +407,11 @@ int App::loop()
                 for (iter = mFlows.begin(); iter != mFlows.end(); ++iter)
                 {
                     Flow flow = (*iter);
+
+                    // Check if the flow is running
+                    if (flow.run == false)
+                        continue;
+
                     // Retrieve the frames from all sources in this flow
                     std::vector<cv::Mat> frames;
                     for (int i = 0; i < flow.sources.size(); ++i)
@@ -495,7 +500,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
 
-    if(message.size() < 2)
+    if (message.size() < 2)
         return 1; // TODO: add error messages for all the following returns
     
     lo_address address = lo_address_new(atom::toString(message[0]).c_str(), port);
@@ -585,6 +590,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             flow.detector = detector;
             flow.client = address;
             flow.id = theApp->getValidId();
+            flow.run = false;
 
             std::vector<std::shared_ptr<Source>>::const_iterator source;
             for (source = sources.begin(); source != sources.end(); ++source)
@@ -592,7 +598,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
                 flow.sources.push_back(*source);
 
                 // Add the sources to the mSources vector
-                // (if they are not already there
+                // (if they are not already there)
                 bool isInSources = false;
                 std::vector<std::shared_ptr<Source>>::const_iterator iter;
                 for (iter = theApp->mSources.begin(); iter != theApp->mSources.end(); ++iter)
@@ -640,68 +646,49 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
     std::shared_ptr<App> theApp = App::getInstance();
-    lo_address address = lo_address_new(&argv[0]->s, "9000");
+    
+    atom::Message message;
+    atom::message_build_from_lo_args(message, types, argv, argc);
 
-    for(std::vector<Client>::iterator it = theApp->mClients.begin(); it != theApp->mClients.end(); ++it)
-    {
-        if(strcmp(lo_address_get_url(it->address), lo_address_get_url(address)) == 0)
-        {
-            lo_address_free(it->address);
-            theApp->mClients.erase(it);
-            std::cout << "Connection from address " << &argv[0]->s << " closed." << std::endl;
-
-            lo_send(address, "/blobserver/disconnect", "s", "Disconnected");
-
-            if(it->filters & BLOB_FILTER_OUTLIERS)
-                theApp->mFiltersUsage[BLOB_FILTER_OUTLIERS]--;
-            if(it->filters & BLOB_FILTER_LIGHT)
-                theApp->mFiltersUsage[BLOB_FILTER_LIGHT]--;
-
-            --it;
-        }
-    }
-
-    lo_address_free(address);
-
-    return 0;
-}
-
-/*****************/
-int App::oscHandlerSetFilter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
-{
-    std::shared_ptr<App> theApp = App::getInstance();
-    lo_address address = lo_address_new(&argv[0]->s, "9000");
-
-    int filter;
-    if(strcmp(&argv[1]->s, "meanOutliers") == 0)
-        filter = BLOB_FILTER_OUTLIERS;
-    else if(strcmp(&argv[1]->s, "lightSpots") == 0)
-        filter = BLOB_FILTER_LIGHT;
-    else
+    if (message.size() != 1 && message.size() != 2)
         return 1;
-
-    for(std::vector<Client>::iterator it = theApp->mClients.begin(); it != theApp->mClients.end(); ++it)
+    
+    std::string addressStr = atom::toString(message[0]);
+    lo_address address = lo_address_new(addressStr.c_str(), "9000");
+    int error = lo_address_errno(address);
+    if (error != 0)
     {
-        if(strcmp(lo_address_get_url(it->address), lo_address_get_url(address)) == 0)
-        {
-            if((it->filters && filter) == true)
-            {
-                theApp->mFiltersUsage[filter]--;
-                it->filters -= filter;
+        std::cout << "Wrong address received, error " << error << std::endl;
+        return 1;
+    }
+    
+    bool all = false;
+    std::string detectorName;
+    if (message.size() == 1)
+        all = true;
+    else
+        detectorName = atom::toString(message[1]);
 
-                std::string lPath = "/blobserver/";
-                lPath += &argv[1]->s;
-                lo_send(address, lPath.c_str(), "s", "Deactivated");
+    // Delete flows related to this address, according to the parameter
+    std::vector<Flow>::iterator flow;
+    for (flow = theApp->mFlows.begin(); flow != theApp->mFlows.end();)
+    {
+        if (lo_address_get_url(flow->client) == addressStr)
+        {
+            if (all == true || detectorName == flow->detector->getName())
+            {
+                theApp->mFlows.erase(flow);
+                std::cout << "Connection from address " << addressStr << " closed." << std::endl;
+                lo_send(address, "/blobserver/disconnect", "s", "Disconnected");
             }
             else
             {
-                theApp->mFiltersUsage[filter]++;
-                it->filters += filter;
-
-                std::string lPath = "/blobserver/";
-                lPath += &argv[1]->s;
-                lo_send(address, lPath.c_str(), "s", "Activated");
+                flow++;
             }
+        }
+        else
+        {
+            flow++;
         }
     }
 
@@ -713,6 +700,59 @@ int App::oscHandlerSetFilter(const char* path, const char* types, lo_arg** argv,
 /*****************/
 int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
+    std::shared_ptr<App> theApp = App::getInstance();    
+
+    atom::Message message;
+    atom::message_build_from_lo_args(message, types, argv, argc);
+
+    // Message must contain ip address, flow id, target (detector or src), src number if applicable, parameter and value
+    // or just ip address, flow id, and start/stop
+    if (message.size() < 3)
+        return 1;
+        
+    lo_address address = lo_address_new(atom::toString(message[0]).c_str(), "9000");
+
+    // Find the flow
+    unsigned int flowId = (unsigned int)(atom::toInt(message[1]));
+    std::vector<Flow>::iterator flow;
+    for (flow = theApp->mFlows.begin(); flow != theApp->mFlows.end(); ++flow)
+    {
+        if (flow->id == flowId)
+        {
+            // If the parameter is for the detector
+            if (atom::toString(message[2]) == "Detector")
+            {
+                if (message.size() != 5)
+                    return 1;
+
+                atom::Message msg;
+                msg.push_back(message[3]);
+                msg.push_back(message[4]);
+                flow->detector->setParameter(msg);
+            }
+            // If the parameter is for one of the sources
+            else if (atom::toString(message[2]) == "Source")
+            {
+                if (message.size() != 6)
+                    return 1;
+
+                int srcNbr = atom::toInt(message[3]);
+                atom::Message msg;
+                msg.push_back(message[4]);
+                msg.push_back(message[5]);
+                flow->sources[srcNbr]->setParameter(msg);
+            }
+            else if (atom::toString(message[2]) == "Start")
+            {
+                flow->run = true;
+            }
+            else if (atom::toString(message[2]) == "Stop")
+            {
+                flow->run = false;
+            }
+        }
+    }
+
     return 0;
 }
 

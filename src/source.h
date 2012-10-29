@@ -26,6 +26,7 @@
  #define SOURCE_H
 
 #include "opencv2/opencv.hpp"
+#include "atom/message.h"
 
 class Source
 {
@@ -42,6 +43,7 @@ class Source
         virtual cv::Mat retrieveFrame() {return cv::Mat::zeros(1, 1, CV_8U);}
 
         virtual void setParameter(const char* pParam, float pValue) {}
+        virtual void setParameter(atom::Message pParam) {}
 
         std::string getName() {return mName;}
         unsigned int getWidth() {return mWidth;}

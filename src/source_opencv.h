@@ -42,6 +42,7 @@ class Source_OpenCV : public Source
         bool grabFrame();
         cv::Mat retrieveFrame();
         void setParameter(const char* pParam, float pValue);
+        void setParameter(atom::Message pParam);
 
     private:
         static std::string mClassName;
