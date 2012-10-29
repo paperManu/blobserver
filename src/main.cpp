@@ -101,7 +101,7 @@ class App
         {
             std::vector<std::shared_ptr<Source>> sources;
             std::shared_ptr<Detector> detector;
-            lo_address client;
+            lo_address client; // TODO: use a shared_ptr for this
             unsigned int id;
             bool run;
         };
@@ -424,6 +424,9 @@ int App::loop()
                     lTotalBuffers += 1;
 
                     // Send messages
+                    // Beginning of the frame
+                    lo_send(flow.client, "/blobserver/startFrame", "ii", frameNbr, flow.id);
+
                     int nbr = atom::toInt(message[0]);
                     int size = atom::toInt(message[1]);
                     for (int i = 0; i < nbr; ++i)
@@ -436,6 +439,9 @@ int App::loop()
                         atom::message_build_to_lo_message(msg, oscMsg);
                         lo_send_message(flow.client, flow.detector->getOscPath().c_str(), oscMsg);
                     }
+
+                    // End of the frame
+                    lo_send(flow.client, "/blobserver/endFrame", "ii", frameNbr, flow.id);
                 }
             }
 
@@ -494,13 +500,23 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 {
     std::shared_ptr<App> theApp = App::getInstance();
 
-    char port[8];
-    sprintf(port, "%i", argv[1]->i);
 
+    // Messge must be : ip / port / detector / source0 / subsource0 / source1 / ...
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
 
-    if (message.size() < 2)
+    char port[8];
+    try
+    {
+        int portNbr = atom::toInt(message[1]);
+        sprintf(port, "%i", portNbr);
+    }
+    catch (atom::BadTypeTagError exception)
+    {
+        return 1;
+    }
+
+    if (message.size() < 5)
         return 1; // TODO: add error messages for all the following returns
     
     lo_address address = lo_address_new(atom::toString(message[0]).c_str(), port);
@@ -509,18 +525,17 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     if (error != 0)
     {
         std::cout << "Wrong address received, error " << error << std::endl;
+        lo_address_free(address); 
         return 1;
     }
     else
     {
-        std::shared_ptr<App> theApp = App::getInstance();
-
         // Check arguments
         // First argument is the chosen detector, next ones are sources
         std::string detectorName;
         try
         {
-            detectorName = atom::toString(message[1]);
+            detectorName = atom::toString(message[2]);
         }
         catch (atom::BadTypeTagError typeError)
         {
@@ -540,14 +555,14 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         // Allocate all the sources
         std::vector<std::shared_ptr<Source>> sources;
         atom::Message::const_iterator iter;
-        for (iter = message.begin()+3; iter != message.end(); ++iter)
+        for (iter = message.begin()+3; iter != message.end(); iter+=2)
         {
             if (iter+1 == message.end())
                 return 1;
 
             std::string sourceName;
             int sourceIndex;
-            try
+            try // TODO: add cleaning if there was a problem during connection
             {
                 sourceName = atom::toString(*iter);
                 sourceIndex = atom::toInt(*(iter+1));
@@ -614,28 +629,10 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             // Tell the client that he is connected, and give him the flow id
             lo_send(address, "/blobserver/connect", "si", "Connected", (int)flow.id);
         }
-
-        // TODO: delete what comes after this
-        // Check if we don't have any connection from the same address
-        bool isPresent = false;
-        for(std::vector<Client>::iterator it = theApp->mClients.begin(); it != theApp->mClients.end(); ++it)
+        else
         {
-            if(strcmp(lo_address_get_url(it->address), lo_address_get_url(address)) == 0)
-            {
-                isPresent = true;
-            }
-        }
-
-        if(!isPresent)
-        {
-            Client lClient;
-            lClient.address = address;
-            lClient.filters = 0;
-            theApp->mClients.push_back(lClient);
-
-            lo_send(address, "/blobserver/connect", "s", "Connected");
-
-            std::cout << "Connection accepted from address " << &argv[0]->s << std::endl;
+            lo_address_free(address);
+            return 1;
         }
         
         return 0;
@@ -663,19 +660,19 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
     }
     
     bool all = false;
-    std::string detectorName;
+    int detectorId;
     if (message.size() == 1)
         all = true;
     else
-        detectorName = atom::toString(message[1]);
+        detectorId = atom::toInt(message[1]);
 
     // Delete flows related to this address, according to the parameter
     std::vector<Flow>::iterator flow;
     for (flow = theApp->mFlows.begin(); flow != theApp->mFlows.end();)
     {
-        if (lo_address_get_url(flow->client) == addressStr)
+        if (std::string(lo_address_get_url(flow->client)) == std::string(lo_address_get_url(address)))
         {
-            if (all == true || detectorName == flow->detector->getName())
+            if (all == true || detectorId == flow->id)
             {
                 theApp->mFlows.erase(flow);
                 std::cout << "Connection from address " << addressStr << " closed." << std::endl;
@@ -712,6 +709,7 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
         
     lo_address address = lo_address_new(atom::toString(message[0]).c_str(), "9000");
 
+    // TODO: send message back to notify the result of the parameter set
     // Find the flow
     unsigned int flowId = (unsigned int)(atom::toInt(message[1]));
     std::vector<Flow>::iterator flow;
@@ -752,6 +750,8 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
             }
         }
     }
+
+    lo_address_free(address);
 
     return 0;
 }
