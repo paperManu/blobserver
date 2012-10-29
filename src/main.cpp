@@ -515,9 +515,6 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     {
         return 1;
     }
-
-    if (message.size() < 5)
-        return 1; // TODO: add error messages for all the following returns
     
     lo_address address = lo_address_new(atom::toString(message[0]).c_str(), port);
 
@@ -530,6 +527,12 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     }
     else
     {
+        if (message.size() < 5)
+        {
+            lo_send(address, "/blobserver/connect", "s", "Too few arguments");
+            return 1; 
+        }
+
         // Check arguments
         // First argument is the chosen detector, next ones are sources
         std::string detectorName;
@@ -539,6 +542,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         }
         catch (atom::BadTypeTagError typeError)
         {
+            lo_send(address, "/blobserver/connect", "s", "Expected a detector type at position 2");
             return 1;
         }
 
@@ -547,7 +551,10 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         if (theApp->mDetectorFactory.key_exists(detectorName))
             detector = theApp->mDetectorFactory.create(detectorName);
         else
+        {
+            lo_send(address, "/blobserver/connect", "s", "Detector type not recognized");
             return 1;
+        }
 
         // Check how many cameras we need for it
         unsigned int sourceNbr = detector->getSourceNbr();
@@ -558,7 +565,10 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         for (iter = message.begin()+3; iter != message.end(); iter+=2)
         {
             if (iter+1 == message.end())
+            {
+                lo_send(address, "/blobserver/connect", "s", "Missing sub-source number");
                 return 1;
+            }
 
             std::string sourceName;
             int sourceIndex;
@@ -569,6 +579,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             }
             catch (atom::BadTypeTagError typeError)
             {
+                lo_send(address, "/blobserver/connect", "s", "Expected integer as a sub-source number");
                 return 1;
             }
 
@@ -590,7 +601,14 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
                 if (theApp->mSourceFactory.key_exists(sourceName))
                     source = theApp->mSourceFactory.create(sourceName, sourceIndex);
                 else
+                {
+                    std::string error = "Unable to connect to source ";
+                    error += sourceName;
+                    error += " ";
+                    error += sourceIndex;
+                    lo_send(address, "/blobserver/connect", "s", error.c_str());
                     return 1;
+                }
 
                 sources.push_back(source);
             }
@@ -631,6 +649,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         }
         else
         {
+            lo_send(address, "/blobserver/connect", "s", "The specified detector needs more sources");
             lo_address_free(address);
             return 1;
         }
@@ -647,15 +666,18 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
 
-    if (message.size() != 1 && message.size() != 2)
-        return 1;
-    
     std::string addressStr = atom::toString(message[0]);
     lo_address address = lo_address_new(addressStr.c_str(), "9000");
     int error = lo_address_errno(address);
     if (error != 0)
     {
         std::cout << "Wrong address received, error " << error << std::endl;
+        return 1;
+    }
+    
+    if (message.size() != 1 && message.size() != 2)
+    {
+        lo_send(address, "/blobserver/disconnect", "s", "Wrong number of arguments");
         return 1;
     }
     
@@ -701,13 +723,16 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
 
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
+        
+    lo_address address = lo_address_new(atom::toString(message[0]).c_str(), "9000");
 
     // Message must contain ip address, flow id, target (detector or src), src number if applicable, parameter and value
     // or just ip address, flow id, and start/stop
     if (message.size() < 3)
+    {
+        lo_send(address, "/blobserver/parameter", "s", "Wrong number of arguments");
         return 1;
-        
-    lo_address address = lo_address_new(atom::toString(message[0]).c_str(), "9000");
+    }
 
     // TODO: send message back to notify the result of the parameter set
     // Find the flow
@@ -721,7 +746,10 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
             if (atom::toString(message[2]) == "Detector")
             {
                 if (message.size() != 5)
+                {
+                    lo_send(address, "/blobserver/parameter", "s", "Wrong number of arguments");
                     return 1;
+                }
 
                 atom::Message msg;
                 msg.push_back(message[3]);
@@ -732,7 +760,10 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
             else if (atom::toString(message[2]) == "Source")
             {
                 if (message.size() != 6)
+                {
+                    lo_send(address, "/blobserver/parameter", "s", "Wrong number of arguments");
                     return 1;
+                }
 
                 int srcNbr = atom::toInt(message[3]);
                 atom::Message msg;
