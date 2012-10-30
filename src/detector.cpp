@@ -1,12 +1,25 @@
 #include "detector.h"
 
+using namespace atom;
+
+std::string Detector::mClassName = "Detector";
+std::string Detector::mDocumentation = "N/A";
+
 /*************/
 Detector::Detector()
 {
-    mOutputBuffer = cv::Mat::zeros(0, 0, CV_8U);
+    mName = mClassName;
+    mSourceNbr = 1;
 
+    mOutputBuffer = cv::Mat::zeros(0, 0, CV_8U);
     // By default, the mask is all white (all pixels are used)
     mSourceMask = cv::Mat::ones(1, 1, CV_8U);
+}
+
+/*****************/
+Detector::Detector(int pParam)
+{
+    Detector();
 }
 
 /*****************/
@@ -14,6 +27,24 @@ void Detector::setMask(cv::Mat pMask)
 {
     mSourceMask = pMask.clone();
     mMask = pMask.clone();
+}
+
+/*****************/
+Message Detector::getParameter(Message pParam)
+{
+    Message message;
+
+    if (pParam.size() != 1 || pParam[0].get()->getTypeTag() != StringValue::TYPE_TAG)
+        return message;
+        
+    std::string param = StringValue::convert(pParam[0])->getString();
+    
+    if (param == "name")
+        message.push_back(StringValue::create(mClassName.c_str()));
+    else if (param == "osc path")
+        message.push_back(StringValue::create(mOscPath.c_str()));
+
+    return message;
 }
 
 /*****************/

@@ -26,6 +26,7 @@
 #include <limits>
 #include <stdio.h>
 #include <memory>
+#include <mutex>
 #include "glib.h"
 #include "opencv2/opencv.hpp"
 #include "lo/lo.h"
@@ -35,6 +36,8 @@
 #include "source_opencv.h"
 #include "detector_meanOutliers.h"
 #include "detector_lightSpots.h"
+#include "atom/osc.h"
+#include "abstract-factory.h" // TODO: check license issues
 
 static gboolean gVersion = FALSE;
 static gboolean gHide = FALSE;
@@ -47,6 +50,7 @@ static gdouble gFramerate = 0.0;
 
 static gint gFilterSize = 3;
 static gchar* gDetectionLevel = NULL;
+static gchar* gMaskFilename = NULL;
 
 static GString* gIpAddress = NULL;
 static GString* gIpPort = NULL;
@@ -55,7 +59,7 @@ static gboolean gTcp = FALSE;
 static gboolean gOutliers = FALSE;
 static gboolean gLight = FALSE;
 
-// TODO: add entries for width, height and framerate
+// TODO: check wether all these options still work
 static GOptionEntry gEntries[] =
 {
     {"version", 0, 0, G_OPTION_ARG_NONE, &gVersion, "Shows version of this software", NULL},
@@ -67,6 +71,7 @@ static GOptionEntry gEntries[] =
     {"fps", 0, 0, G_OPTION_ARG_DOUBLE, &gFramerate, "Specifie the desired framerate for the camera capture", NULL},
     {"filter", 'f', 0, G_OPTION_ARG_INT, &gFilterSize, "Specifies the size of the filtering kernel to use", NULL},
     {"level", 'l', 0, G_OPTION_ARG_STRING, &gDetectionLevel, "If applicable, specifies the detection level to use", NULL},
+    {"mask", 'm', 0, G_OPTION_ARG_STRING, &gMaskFilename, "Specifies a mask which will be applied to all detectors", NULL},
     {"ip", 'i', 0, G_OPTION_ARG_STRING_ARRAY, &gIpAddress, "Specifies the ip address to send messages to", NULL}, 
     {"port", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &gIpPort, "Specifies the port to send messages to", NULL},
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
@@ -80,15 +85,33 @@ static GOptionEntry gEntries[] =
 #define BLOB_FILTER_LIGHT       0x0004
 #define BLOB_FILTER_COLOR       0x0008
 
+/**************************/
+// lo_address in an object
+class OscClient
+{
+    public:
+        OscClient(lo_address pAddress) {mAddress = pAddress;}
+        ~OscClient() {lo_address_free(mAddress);}
+
+        lo_address get() {return mAddress;}
+
+    private:
+        lo_address mAddress;
+};
+
 /*****************************/
 // Definition of the app class
 class App
 {
     public:
-        struct client
+        // Struct to contain a complete flow, from capture to client
+        struct Flow
         {
-            lo_address address;
-            int filters;
+            std::vector<std::shared_ptr<Source>> sources;
+            std::shared_ptr<Detector> detector;
+            std::shared_ptr<OscClient> client;
+            unsigned int id;
+            bool run;
         };
         
         ~App();
@@ -102,52 +125,55 @@ class App
         int loop();
 
     private:
+        /***********/
         // Attributes
         // Singleton
         static std::shared_ptr<App> mInstance;
 
-        int mMaxTrackedBlobs;
+        // Factories
+        factory::AbstractFactory<Detector, std::string, std::string, int> mDetectorFactory;
+        factory::AbstractFactory<Source, std::string, std::string, int> mSourceFactory;
 
         // liblo related
-        std::vector<client> mClients;
-        std::vector<lo_address> mOscAddresses;
         lo_server_thread mOscServer;
 
-        // opencv related
-        float mDetectionLevel;
+        // detection related
+        std::vector<std::shared_ptr<Source>> mSources;
+        std::vector<Flow> mFlows;
+        // A mutex to prevent unexpected changes in flows
+        std::mutex mFlowMutex;
 
-        Source* mSource;
-        cv::Mat mCameraBuffer;
+        std::shared_ptr<Source> mSource;
+        cv::Mat mMask; // TODO: set mask through a parameter
+        // TODO: send mask through gstreamer! or from any source!
 
-        // filter related
-        std::map<int, int> mFiltersUsage;
+        static unsigned int mCurrentId;
 
-        Detector_MeanOutliers mMeanOutliersDetector;
-        Detector_LightSpots mLightSpotsDetector;
-
+        /********/
         // Methods
         App();
 
         // Arguments parser
         int parseArgs(int argc, char **argv);
 
+        // Factory registering
+        void registerClasses();
+
+        unsigned int getValidId() {return ++mCurrentId;}
+
         // OSC related, server side
         static void oscError(int num, const char* msg, const char* path);
         static int oscGenericHandler(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        static int oscHandlerSetFilter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        
-        // OSC related, client side
-        void oscSend(const char* path, int filter, const char* types, lo_arg* argv);
+        static int oscHandlerSetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
 };
 
 std::shared_ptr<App> App::mInstance(nullptr);
+unsigned int App::mCurrentId = 0;
 
 /*****************/
 App::App()
-    :mDetectionLevel (2.f),
-    mMaxTrackedBlobs (8)
 {
 }
 
@@ -168,49 +194,28 @@ std::shared_ptr<App> App::getInstance()
 /*****************/
 int App::init(int argc, char** argv)
 {
+    // Register source and detector classes
+    registerClasses();
+
     // Parse arguments
     int ret = parseArgs(argc, argv);
     if(ret)
         return ret;
 
-    // Initialize GStreamer
-    //gst_init(&argc, &argv);
-
-    // Initialize camera
-    mSource = new Source_OpenCV;
-    if(!mSource->connect())
-    {
-        std::cout << "Error while opening camera number " << gCamNbr << ". Exiting." << std::endl;
-        return 1;
-    }
-
-    if(gWidth > 0)
-        mSource->setParameter("width", gWidth);
-    if(gHeight > 0)
-        mSource->setParameter("height", gHeight);
-    if(gFramerate > 0.0)
-        mSource->setParameter("framerate", gFramerate);
-
-    // Initialize filters
-    mFiltersUsage[BLOB_FILTER_OUTLIERS] = 0;
-    mFiltersUsage[BLOB_FILTER_LIGHT] = 0;
-
-    // Get a first frame to initialize the buffer
-    mSource->grabFrame();
-    mCameraBuffer = mSource->retrieveFrame();
-
     // Initialize OSC
     int lNetProto;
-    if(gTcp)
+    if (gTcp)
         lNetProto = LO_TCP;
     else
         lNetProto = LO_UDP;
+
     // Client
-    if(gIpAddress != NULL)
+    if (gIpAddress != NULL)
     {
+        // If an IP is specified, we create flows using all the specified detectors
         std::cout << "IP specified: " << gIpAddress->str << std::endl;
 
-        if(gIpPort != NULL)
+        if (gIpPort != NULL)
         {
             std::cout << "Using port number " << gIpPort->str << std::endl;
         }
@@ -220,27 +225,100 @@ int App::init(int argc, char** argv)
             std::cout << "No port specified, using 9000" << std::endl;
         }
 
-        client lClient;
-        lClient.address = lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str);
-        lClient.filters = BLOB_FILTER_OUTLIERS | BLOB_FILTER_LIGHT;
+        // Initialize camera
+        mSource.reset(new Source_OpenCV);
+        if (!mSource->connect())
+        {
+            std::cout << "Error while opening camera number " << gCamNbr << ". Exiting." << std::endl;
+            return 1;
+        }
+    
+        mSources.push_back(mSource);
+       
+        if (gWidth > 0)
+            mSource->setParameter("width", gWidth);
+        if (gHeight > 0)
+            mSource->setParameter("height", gHeight);
+        if (gFramerate > 0.0)
+            mSource->setParameter("framerate", gFramerate);
+    
+        // Create the flows
+        Flow lFlow;
+        lFlow.client.reset(new OscClient(lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str)));
+        lFlow.sources.push_back(mSource);
+        lFlow.run = true;
 
-        mFiltersUsage[BLOB_FILTER_OUTLIERS]++;
-        mFiltersUsage[BLOB_FILTER_LIGHT]++;
-
-        mClients.push_back(lClient);
-
-        mOscAddresses.push_back(lClient.address);
+        if (gOutliers)
+        {
+            lFlow.detector.reset(new Detector_MeanOutliers);
+            if (mMask.total() > 0)
+                lFlow.detector->setMask(mMask);
+            lFlow.id = getValidId();
+            mFlows.push_back(lFlow);
+        }
+        if (gLight)
+        {
+            lFlow.detector.reset(new Detector_LightSpots);
+            if (mMask.total() > 0)
+                lFlow.detector->setMask(mMask);
+            lFlow.id = getValidId();
+            mFlows.push_back(lFlow);
+        }
     }
 
     // Server
     mOscServer = lo_server_thread_new_with_proto("9001", lNetProto, App::oscError);
-    lo_server_thread_add_method(mOscServer, "/blobserver/connect", "si", App::oscHandlerConnect, NULL);
-    lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", "s", App::oscHandlerDisconnect, NULL);
-    lo_server_thread_add_method(mOscServer, "/blobserver/filter", "ss", App::oscHandlerSetFilter, NULL);
+    lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, App::oscHandlerConnect, NULL);
+    lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", NULL, App::oscHandlerDisconnect, NULL);
+    lo_server_thread_add_method(mOscServer, "/blobserver/parameter", NULL, App::oscHandlerSetParameter, NULL);
     lo_server_thread_add_method(mOscServer, NULL, NULL, App::oscGenericHandler, NULL);
     lo_server_thread_start(mOscServer);
 
     return 0;
+}
+
+/*****************/
+int App::parseArgs(int argc, char** argv)
+{
+    GError *error = NULL;
+    GOptionContext* context;
+
+    context = g_option_context_new("- blobserver, sends blobs through OSC");
+    g_option_context_add_main_entries(context, gEntries, NULL);
+    //g_option_context_add_group(context, gst_init_get_option_group());
+
+    if (!g_option_context_parse(context, &argc, &argv, &error))
+    {
+        std::cout << "Error while parsing options: " << error->message << std::endl;
+        return 1;
+    }
+
+    if (gMaskFilename != NULL)
+    {
+        mMask = cv::imread(gMaskFilename, CV_LOAD_IMAGE_GRAYSCALE);
+    }
+
+    if (gVersion)
+    {
+        std::cout << PACKAGE_TARNAME << " " << PACKAGE_VERSION << std::endl;
+        return 1;
+    }
+
+    return 0;
+}
+
+/*****************/
+void App::registerClasses()
+{
+    // Register detectors
+    mDetectorFactory.register_class<Detector_LightSpots>(Detector_LightSpots::getClassName(),
+        Detector_LightSpots::getDocumentation());
+    mDetectorFactory.register_class<Detector_MeanOutliers>(Detector_MeanOutliers::getClassName(),
+        Detector_MeanOutliers::getDocumentation());
+
+    // Register sources
+    mSourceFactory.register_class<Source_OpenCV>(Source_OpenCV::getClassName(),
+        Source_OpenCV::getDocumentation());
 }
 
 /*****************/
@@ -254,89 +332,100 @@ int App::loop()
     bool loop = true;
     while(loop)
     {
-        int lTotalBuffers = 1; // starting at 1, because there is at least the camera buffer
         std::vector<cv::Mat> lBuffers;
         std::vector<std::string> lBufferNames;
 
-        // Frame capture
-        mSource->grabFrame();
-        mCameraBuffer = mSource->retrieveFrame();
-        // cv::Mat are not copied when not specified, so the bandwidth usage
-        // of the following operation is minimal
-        lBuffers.push_back(mCameraBuffer);
-        lBufferNames.push_back(std::string("camera"));
+        // First buffer is a black screen. No special reason, except we need
+        // a first buffer
+        lBuffers.push_back(cv::Mat::zeros(480, 640, CV_8UC3));
+        lBufferNames.push_back(std::string("This is Blobserver"));
 
-        // If the frame seems valid
-        if (mCameraBuffer.size[0] > 0 && mCameraBuffer.size[0] > 0)
+        // Grab from all the sources
         {
-            // Camera capture
-            if (lShowCamera)
-                cv::imshow("blobserver", mCameraBuffer);
-
-            // Evaluating a new frame
-            lo_arg arg[1];
-            arg[0].i = frameNbr;
-            oscSend("/blobserver/startFrame", BLOB_NO_FILTER, "i", arg);
-
-            // Informations extraction
-            if (mFiltersUsage[BLOB_FILTER_OUTLIERS] > 0)
+            std::vector<std::shared_ptr<Source>>::iterator iter;
+            // First we grab, then we retrieve all frames
+            // This way, sync between frames is better
+            for (iter = mSources.begin(); iter != mSources.end(); ++iter)
             {
-                atom::Message message = mMeanOutliersDetector.detect(mCameraBuffer);
-                lBuffers.push_back(mMeanOutliersDetector.getOutput());
-                lBufferNames.push_back(std::string("mean outliers"));
-                lTotalBuffers += 1;
+                std::shared_ptr<Source> source = (*iter);
+                source->grabFrame();
+                lBuffers.push_back(source->retrieveFrame());
+                lBufferNames.push_back(source->getName());
 
-                // Send messages
-                // TODO: this is temporary, until libatom is used correctly (for atom -> osc conversion)
-                lo_arg args[5];
-                args[0].i = atom::IntValue::convert(message[2])->getInt();
-                args[1].i = atom::IntValue::convert(message[3])->getInt();
-                args[2].i = atom::IntValue::convert(message[4])->getInt();
-                args[3].i = atom::IntValue::convert(message[5])->getInt();
-                args[4].i = atom::IntValue::convert(message[6])->getInt();
-                oscSend("/blobserver/meanOutliers", BLOB_FILTER_OUTLIERS, "iiiii", args);
-            }
-
-            if (mFiltersUsage[BLOB_FILTER_LIGHT] > 0)
-            {
-                atom::Message message = mLightSpotsDetector.detect(mCameraBuffer);
-                lBuffers.push_back(mLightSpotsDetector.getOutput());
-                lBufferNames.push_back(std::string("light blobs"));
-                lTotalBuffers += 1;
-
-                // Send messages
-                // TODO: this is temporary, until libatom is used correctly (for atom -> osc conversion)
-                int nbr = atom::IntValue::convert(message[0])->getInt();
-                for (int i=0; i < nbr; i++)
+                // We also check if this source is still used
+                if (source.use_count() == 2) // 2, because this ptr and the one in the vector
                 {
-                    lo_arg args[6];
-                    args[0].i = atom::IntValue::convert(message[i*6+2])->getInt();
-                    args[1].i = atom::IntValue::convert(message[i*6+3])->getInt();
-                    args[2].i = atom::IntValue::convert(message[i*6+4])->getInt();
-                    args[3].i = atom::IntValue::convert(message[i*6+5])->getInt();
-                    args[4].i = atom::IntValue::convert(message[i*6+6])->getInt();
-                    args[5].i = atom::IntValue::convert(message[i*6+7])->getInt();
-                    oscSend("/blobserver/lightSpots", BLOB_FILTER_LIGHT, "iiiiii", args);
+                    std::cout << "Source " << source->getName() << " is no longer used. Disconnecting." << std::endl;
+                    mSources.erase(iter);
+                    --iter;
                 }
             }
+        }
 
-            if (lShowCamera)
+        // Go through the flows
+        {
+            mFlowMutex.lock();
+
+            std::vector<Flow>::iterator iter;
+            for (iter = mFlows.begin(); iter != mFlows.end(); ++iter)
             {
-                cv::putText(lBuffers[lSourceNumber], lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
-                    cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
-                cv::imshow("blobserver", lBuffers[lSourceNumber]);
+                Flow flow = (*iter);
+
+                // Check if the flow is running
+                if (flow.run == false)
+                    continue;
+
+                // Retrieve the frames from all sources in this flow
+                std::vector<cv::Mat> frames;
+                for (int i = 0; i < flow.sources.size(); ++i)
+                    frames.push_back(flow.sources[i]->retrieveFrame());
+
+                // Apply the detector on these frames
+                atom::Message message = flow.detector->detect(frames);
+                lBuffers.push_back(flow.detector->getOutput());
+                lBufferNames.push_back(flow.detector->getName());
+
+                // Send messages
+                // Beginning of the frame
+                lo_send(flow.client->get(), "/blobserver/startFrame", "ii", frameNbr, flow.id);
+
+                int nbr = atom::toInt(message[0]);
+                int size = atom::toInt(message[1]);
+                for (int i = 0; i < nbr; ++i)
+                {
+                    atom::Message msg;
+                    for (int j = 0; j < size; ++j)
+                        msg.push_back(message[i * size + 2 + j]);
+                    
+                    lo_message oscMsg = lo_message_new();
+                    atom::message_build_to_lo_message(msg, oscMsg);
+                    lo_send_message(flow.client->get(), flow.detector->getOscPath().c_str(), oscMsg);
+                }
+
+                // End of the frame
+                lo_send(flow.client->get(), "/blobserver/endFrame", "ii", frameNbr, flow.id);
             }
 
-            // End of frame
-            oscSend("/blobserver/endFrame", BLOB_NO_FILTER, "i", arg);
+            mFlowMutex.unlock();
+        }
+
+        if (lShowCamera)
+        {
+            // Check if the current source number is still available
+            if (lSourceNumber >= lBuffers.size())
+                lSourceNumber = 0;
+
+            cv::putText(lBuffers[lSourceNumber], lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
+                cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
+            cv::imshow("blobserver", lBuffers[lSourceNumber]);
         }
 
         char lKey = cv::waitKey(5);
-        if(lKey == 'q')
+        if(lKey == 27) // Escape
             loop = false;
         if(lKey == 'w')
         {
-            lSourceNumber = (lSourceNumber+1)%lTotalBuffers;
+            lSourceNumber = (lSourceNumber+1)%lBuffers.size();
             std::cout << "Buffer displayed: " << lBufferNames[lSourceNumber] << std::endl;
         }
 
@@ -373,41 +462,164 @@ int App::oscGenericHandler(const char* path, const char* types, lo_arg** argv, i
 /*****************/
 int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
+    std::shared_ptr<App> theApp = App::getInstance();
+
+
+    // Messge must be : ip / port / detector / source0 / subsource0 / source1 / ...
+    atom::Message message;
+    atom::message_build_from_lo_args(message, types, argv, argc);
+
     char port[8];
-    sprintf(port, "%i", argv[1]->i);
+    try
+    {
+        int portNbr = atom::toInt(message[1]);
+        sprintf(port, "%i", portNbr);
+    }
+    catch (atom::BadTypeTagError exception)
+    {
+        return 1;
+    }
+    
+    //lo_address address = lo_address_new(atom::toString(message[0]).c_str(), port);
+    std::shared_ptr<OscClient> address(new OscClient(lo_address_new(atom::toString(message[0]).c_str(), port)));
 
-    lo_address address = lo_address_new(&argv[0]->s, port);
-
-    int error = lo_address_errno(address);
-    if(error != 0)
+    int error = lo_address_errno(address->get());
+    if (error != 0)
     {
         std::cout << "Wrong address received, error " << error << std::endl;
         return 1;
     }
     else
     {
-        std::shared_ptr<App> theApp = App::getInstance();
-
-        // Check if we don't have any connection from the same address
-        bool isPresent = false;
-        for(std::vector<client>::iterator it = theApp->mClients.begin(); it != theApp->mClients.end(); ++it)
+        if (message.size() < 5)
         {
-            if(strcmp(lo_address_get_url(it->address), lo_address_get_url(address)) == 0)
+            lo_send(address->get(), "/blobserver/connect", "s", "Too few arguments");
+            return 1; 
+        }
+
+        // Check arguments
+        // First argument is the chosen detector, next ones are sources
+        std::string detectorName;
+        try
+        {
+            detectorName = atom::toString(message[2]);
+        }
+        catch (atom::BadTypeTagError typeError)
+        {
+            lo_send(address->get(), "/blobserver/connect", "s", "Expected a detector type at position 2");
+            return 1;
+        }
+
+        // Create the specified detector
+        std::shared_ptr<Detector> detector;
+        if (theApp->mDetectorFactory.key_exists(detectorName))
+            detector = theApp->mDetectorFactory.create(detectorName);
+        else
+        {
+            lo_send(address->get(), "/blobserver/connect", "s", "Detector type not recognized");
+            return 1;
+        }
+
+        // Check how many cameras we need for it
+        unsigned int sourceNbr = detector->getSourceNbr();
+        
+        // Allocate all the sources
+        std::vector<std::shared_ptr<Source>> sources;
+        atom::Message::const_iterator iter;
+        for (iter = message.begin()+3; iter != message.end(); iter+=2)
+        {
+            if (iter+1 == message.end())
             {
-                isPresent = true;
+                lo_send(address->get(), "/blobserver/connect", "s", "Missing sub-source number");
+                return 1;
+            }
+
+            std::string sourceName;
+            int sourceIndex;
+            try
+            {
+                sourceName = atom::toString(*iter);
+                sourceIndex = atom::toInt(*(iter+1));
+            }
+            catch (atom::BadTypeTagError typeError)
+            {
+                lo_send(address->get(), "/blobserver/connect", "s", "Expected integer as a sub-source number");
+                return 1;
+            }
+
+            // Check if this source is not already connected
+            bool alreadyConnected = false;
+            std::vector<std::shared_ptr<Source>>::const_iterator iterSource;
+            for (iterSource = theApp->mSources.begin(); iterSource != theApp->mSources.end(); ++iterSource)
+            {
+                if (iterSource->get()->getName() == sourceName && iterSource->get()->getSubsourceNbr() == (unsigned int)sourceIndex)
+                {
+                    sources.push_back(*iterSource);
+                    alreadyConnected = true;
+                }
+            }
+
+            if (!alreadyConnected)
+            {
+                std::shared_ptr<Source> source;
+                if (theApp->mSourceFactory.key_exists(sourceName))
+                    source = theApp->mSourceFactory.create(sourceName, sourceIndex);
+                else
+                {
+                    std::string error = "Unable to connect to source ";
+                    error += sourceName;
+                    error += " ";
+                    error += sourceIndex;
+                    lo_send(address->get(), "/blobserver/connect", "s", error.c_str());
+                    return 1;
+                }
+                
+                source->connect();
+                sources.push_back(source);
             }
         }
 
-        if(!isPresent)
+        // If enough sources have been specified
+        if (sources.size() >= sourceNbr)
         {
-            client lClient;
-            lClient.address = address;
-            lClient.filters = 0;
-            theApp->mClients.push_back(lClient);
+            theApp->mFlowMutex.lock();
 
-            lo_send(address, "/blobserver/connect", "s", "Connected");
+            // We can create the flow!
+            Flow flow;
+            
+            flow.detector = detector;
+            flow.client = address;
+            flow.id = theApp->getValidId();
+            flow.run = false;
 
-            std::cout << "Connection accepted from address " << &argv[0]->s << std::endl;
+            std::vector<std::shared_ptr<Source>>::const_iterator source;
+            for (source = sources.begin(); source != sources.end(); ++source)
+            {
+                flow.sources.push_back(*source);
+
+                // Add the sources to the mSources vector
+                // (if they are not already there)
+                bool isInSources = false;
+                std::vector<std::shared_ptr<Source>>::const_iterator iter;
+                for (iter = theApp->mSources.begin(); iter != theApp->mSources.end(); ++iter)
+                {
+                    if (iter->get()->getName() == source->get()->getName() && iter->get()->getSubsourceNbr() == source->get()->getSubsourceNbr())
+                        isInSources = true;
+                }
+                if (!isInSources)
+                    theApp->mSources.push_back(*source);
+            }
+            theApp->mFlows.push_back(flow);
+
+            // Tell the client that he is connected, and give him the flow id
+            lo_send(address->get(), "/blobserver/connect", "si", "Connected", (int)flow.id);
+
+            theApp->mFlowMutex.unlock();
+        }
+        else
+        {
+            lo_send(address->get(), "/blobserver/connect", "s", "The specified detector needs more sources");
+            return 1;
         }
         
         return 0;
@@ -418,135 +630,131 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
     std::shared_ptr<App> theApp = App::getInstance();
-    lo_address address = lo_address_new(&argv[0]->s, "9000");
+    
+    atom::Message message;
+    atom::message_build_from_lo_args(message, types, argv, argc);
 
-    for(std::vector<client>::iterator it = theApp->mClients.begin(); it != theApp->mClients.end(); ++it)
+    std::string addressStr = atom::toString(message[0]);
+    std::shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
+    int error = lo_address_errno(address->get());
+    if (error != 0)
     {
-        if(strcmp(lo_address_get_url(it->address), lo_address_get_url(address)) == 0)
-        {
-            lo_address_free(it->address);
-            theApp->mClients.erase(it);
-            std::cout << "Connection from address " << &argv[0]->s << " closed." << std::endl;
-
-            lo_send(address, "/blobserver/disconnect", "s", "Disconnected");
-
-            if(it->filters & BLOB_FILTER_OUTLIERS)
-                theApp->mFiltersUsage[BLOB_FILTER_OUTLIERS]--;
-            if(it->filters & BLOB_FILTER_LIGHT)
-                theApp->mFiltersUsage[BLOB_FILTER_LIGHT]--;
-
-            --it;
-        }
-    }
-
-    lo_address_free(address);
-
-    return 0;
-}
-
-/*****************/
-int App::oscHandlerSetFilter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
-{
-    std::shared_ptr<App> theApp = App::getInstance();
-    lo_address address = lo_address_new(&argv[0]->s, "9000");
-
-    int filter;
-    if(strcmp(&argv[1]->s, "meanOutliers") == 0)
-        filter = BLOB_FILTER_OUTLIERS;
-    else if(strcmp(&argv[1]->s, "lightSpots") == 0)
-        filter = BLOB_FILTER_LIGHT;
-    else
+        std::cout << "Wrong address received, error " << error << std::endl;
         return 1;
-
-    for(std::vector<client>::iterator it = theApp->mClients.begin(); it != theApp->mClients.end(); ++it)
+    }
+    
+    if (message.size() != 1 && message.size() != 2)
     {
-        if(strcmp(lo_address_get_url(it->address), lo_address_get_url(address)) == 0)
-        {
-            if((it->filters && filter) == true)
-            {
-                theApp->mFiltersUsage[filter]--;
-                it->filters -= filter;
+        lo_send(address->get(), "/blobserver/disconnect", "s", "Wrong number of arguments");
+        return 1;
+    }
+    
+    bool all = false;
+    int detectorId;
+    if (message.size() == 1)
+        all = true;
+    else
+        detectorId = atom::toInt(message[1]);
 
-                std::string lPath = "/blobserver/";
-                lPath += &argv[1]->s;
-                lo_send(address, lPath.c_str(), "s", "Deactivated");
+    // Delete flows related to this address, according to the parameter
+    theApp->mFlowMutex.lock();
+    std::vector<Flow>::iterator flow;
+    for (flow = theApp->mFlows.begin(); flow != theApp->mFlows.end();)
+    {
+        if (std::string(lo_address_get_url(flow->client->get())) == std::string(lo_address_get_url(address->get())))
+        {
+            if (all == true || detectorId == flow->id)
+            {
+                theApp->mFlows.erase(flow);
+                std::cout << "Connection from address " << addressStr << " closed." << std::endl;
+                lo_send(address->get(), "/blobserver/disconnect", "s", "Disconnected");
             }
             else
             {
-                theApp->mFiltersUsage[filter]++;
-                it->filters += filter;
-
-                std::string lPath = "/blobserver/";
-                lPath += &argv[1]->s;
-                lo_send(address, lPath.c_str(), "s", "Activated");
+                flow++;
             }
         }
+        else
+        {
+            flow++;
+        }
     }
-
-    lo_address_free(address);
+    theApp->mFlowMutex.unlock();
 
     return 0;
 }
 
 /*****************/
-void App::oscSend(const char* path, int filter, const char* types = NULL, lo_arg* argv = NULL)
+int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
-    // Message creation
-    if(types == NULL || argv == NULL)
-        return;
+    std::shared_ptr<App> theApp = App::getInstance();    
 
-    lo_message message = lo_message_new();
+    atom::Message message;
+    atom::message_build_from_lo_args(message, types, argv, argc);
+        
+    lo_address address = lo_address_new(atom::toString(message[0]).c_str(), "9000");
 
-    char c;
-    for(int i = 0, c = types[i]; c != '\0'; ++i, c = types[i]) 
+    // Message must contain ip address, flow id, target (detector or src), src number if applicable, parameter and value
+    // or just ip address, flow id, and start/stop
+    if (message.size() < 3)
     {
-        switch(c)
+        lo_send(address, "/blobserver/parameter", "s", "Wrong number of arguments");
+        return 1;
+    }
+
+    // TODO: send message back to notify the result of the parameter set
+    // Find the flow
+    unsigned int flowId = (unsigned int)(atom::toInt(message[1]));
+    std::vector<Flow>::iterator flow;
+    for (flow = theApp->mFlows.begin(); flow != theApp->mFlows.end(); ++flow)
+    {
+        if (flow->id == flowId)
         {
-        case LO_INT32:
-            lo_message_add_int32(message, argv[i].i);
-            break;
-        default:
-            std::cout << "Unrecognized OSC type: '" << c << "'" << std::endl;
+            theApp->mFlowMutex.lock();
+
+            // If the parameter is for the detector
+            if (atom::toString(message[2]) == "Detector")
+            {
+                if (message.size() != 5)
+                {
+                    lo_send(address, "/blobserver/parameter", "s", "Wrong number of arguments");
+                    return 1;
+                }
+
+                atom::Message msg;
+                msg.push_back(message[3]);
+                msg.push_back(message[4]);
+                flow->detector->setParameter(msg);
+            }
+            // If the parameter is for one of the sources
+            else if (atom::toString(message[2]) == "Source")
+            {
+                if (message.size() != 6)
+                {
+                    lo_send(address, "/blobserver/parameter", "s", "Wrong number of arguments");
+                    return 1;
+                }
+
+                int srcNbr = atom::toInt(message[3]);
+                atom::Message msg;
+                msg.push_back(message[4]);
+                msg.push_back(message[5]);
+                flow->sources[srcNbr]->setParameter(msg);
+            }
+            else if (atom::toString(message[2]) == "Start")
+            {
+                flow->run = true;
+            }
+            else if (atom::toString(message[2]) == "Stop")
+            {
+                flow->run = false;
+            }
+
+            theApp->mFlowMutex.unlock();
         }
     }
 
-    for(std::vector<client>::iterator it = mClients.begin(); it != mClients.end(); ++it)
-    {
-        // If it is juste a normal message, not related to filters
-        if(filter == BLOB_NO_FILTER)
-            lo_send_message(it->address, path, message);
-        else if((it->filters && filter) == true)
-            lo_send_message(it->address, path, message);
-    }
-}
-
-/*****************/
-int App::parseArgs(int argc, char** argv)
-{
-    GError *error = NULL;
-    GOptionContext* context;
-
-    context = g_option_context_new("- blobserver, sends blobs through OSC");
-    g_option_context_add_main_entries(context, gEntries, NULL);
-    //g_option_context_add_group(context, gst_init_get_option_group());
-
-    if(!g_option_context_parse(context, &argc, &argv, &error))
-    {
-        std::cout << "Error while parsing options: " << error->message << std::endl;
-        return 1;
-    }
-
-    if(gDetectionLevel != NULL)
-        mDetectionLevel = (float)g_ascii_strtod(gDetectionLevel, NULL);
-
-    if(gVersion)
-    {
-        std::cout << PACKAGE_TARNAME << " " << PACKAGE_VERSION << std::endl;
-        return 1;
-    }
-
-    mFiltersUsage[BLOB_FILTER_OUTLIERS] += gOutliers;
-    mFiltersUsage[BLOB_FILTER_LIGHT] += gLight;
+    lo_address_free(address);
 
     return 0;
 }

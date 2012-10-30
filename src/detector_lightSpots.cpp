@@ -2,12 +2,32 @@
 
 using namespace atom;
 
+std::string Detector_LightSpots::mClassName = "Detector_LightSpots";
+std::string Detector_LightSpots::mDocumentation = "N/A";
+
 /*************/
 Detector_LightSpots::Detector_LightSpots()
-    :mDetectionLevel (2.f),
-    mFilterSize (3),
-    mMaxTrackedBlobs (8)
 {
+    make();
+}
+
+/*************/
+Detector_LightSpots::Detector_LightSpots(int pParam)
+{
+    make();
+}
+
+/*************/
+void Detector_LightSpots::make()
+{
+    mDetectionLevel = 2.f;
+    mFilterSize = 3;
+    mMaxTrackedBlobs = 8;
+
+    mName = mClassName;
+    // OSC path for this detector
+    mOscPath = "/blobserver/lightSpots";
+
     mProcessNoiseCov = 1e-5;
     mMeasurementNoiseCov = 1e-5;
 
@@ -25,7 +45,7 @@ Detector_LightSpots::Detector_LightSpots()
 }
 
 /*************/
-atom::Message Detector_LightSpots::detect(cv::Mat pCapture)
+atom::Message Detector_LightSpots::detect(std::vector<cv::Mat> pCaptures)
 {
     cv::Mat lMean, lStdDev;
     cv::Mat lOutlier, lLight;
@@ -33,11 +53,11 @@ atom::Message Detector_LightSpots::detect(cv::Mat pCapture)
     std::vector<cv::KeyPoint> lKeyPoints;
 
     // Eliminate the outliers : calculate the mean and std dev
-    lOutlier = cv::Mat::zeros(pCapture.size[0], pCapture.size[1], CV_8U);
+    lOutlier = cv::Mat::zeros(pCaptures[0].size[0], pCaptures[0].size[1], CV_8U);
     lLight = lOutlier.clone();
-    cv::cvtColor(pCapture, lOutlier, CV_RGB2GRAY);
+    cv::cvtColor(pCaptures[0], lOutlier, CV_RGB2GRAY);
 
-    cv::meanStdDev(pCapture, lMean, lStdDev);
+    cv::meanStdDev(pCaptures[0], lMean, lStdDev);
     cv::absdiff(lOutlier, lMean.at<double>(0), lOutlier);
 
     // Detect pixels which values are superior to the mean

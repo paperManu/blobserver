@@ -32,15 +32,24 @@ class Detector_MeanOutliers : public Detector
 {
     public:
         Detector_MeanOutliers();
+        Detector_MeanOutliers(int pParam);
 
-        atom::Message detect(cv::Mat pCapture);
+        static std::string getClassName() {return mClassName;}
+        static std::string getDocumentation() {return mDocumentation;}
+
+        atom::Message detect(std::vector<cv::Mat> pCaptures);
         void setParameter(atom::Message pMessage);
 
     private:
+        static std::string mClassName;
+        static std::string mDocumentation;
+
         float mDetectionLevel; // Above std dev * mDetectionLevel, an object is detected
         int mFilterSize;
         Blob2D mMeanBlob;
         bool isInitialized;
+
+        void make();
 };
 
 #endif // DETECTOR_MEANOUTLIERS_H

@@ -31,18 +31,30 @@ class Source_OpenCV : public Source
 {
     public:
         Source_OpenCV();
+        Source_OpenCV(int pParam);
+        ~Source_OpenCV();
+
+
+        static std::string getClassName() {return mClassName;}
+        static std::string getDocumentation() {return mDocumentation;}
 
         bool connect();
         bool disconnect();
         bool grabFrame();
         cv::Mat retrieveFrame();
         void setParameter(const char* pParam, float pValue);
+        void setParameter(atom::Message pParam);
 
     private:
+        static std::string mClassName;
+        static std::string mDocumentation;
+
         cv::VideoCapture mCamera;
         cv::Mat mBuffer;
 
-        int mCameraNbr;
+        bool mUpdated;
+
+        void make(int pParam);
 };
 
 #endif // SOURCE_OPENCV_H

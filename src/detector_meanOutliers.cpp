@@ -2,29 +2,49 @@
 
 using namespace atom;
 
+std::string Detector_MeanOutliers::mClassName = "Detector_MeanOutliers";
+std::string Detector_MeanOutliers::mDocumentation = "N/A";
+
 /*************/
 Detector_MeanOutliers::Detector_MeanOutliers()
-    :isInitialized (false),
-    mDetectionLevel (2.f),
-    mFilterSize (3)
 {
+    make();
+}
+
+/*************/
+Detector_MeanOutliers::Detector_MeanOutliers(int pParam)
+{
+    make();
+}
+
+/*************/
+void Detector_MeanOutliers::make()
+{
+    isInitialized = false;
+    mDetectionLevel = 2.f;
+    mFilterSize = 3;
+
+    mName = mClassName;
+    // OSC path for this detector
+    mOscPath = "/blobserver/meanOutliers";
+
     mMeanBlob.setParameter("processNoiseCov", 1e-6);
     mMeanBlob.setParameter("measurementNoiseCov", 1e-4);
 }
 
 /*************/
-atom::Message Detector_MeanOutliers::detect(cv::Mat pCapture)
+atom::Message Detector_MeanOutliers::detect(std::vector<cv::Mat> pCaptures)
 {
     cv::Mat lMean, lStdDev;
     cv::Mat lOutlier, lEroded, lFiltered;
 
     // Eliminate the outliers : calculate the mean and std dev
-    lOutlier = cv::Mat::zeros(pCapture.size[0], pCapture.size[1], CV_8U);
+    lOutlier = cv::Mat::zeros(pCaptures[0].size[0], pCaptures[0].size[1], CV_8U);
     lEroded = lOutlier.clone();
     lFiltered = lOutlier.clone();
-    cv::cvtColor(pCapture, lOutlier, CV_RGB2GRAY);
+    cv::cvtColor(pCaptures[0], lOutlier, CV_RGB2GRAY);
 
-    cv::meanStdDev(pCapture, lMean, lStdDev);
+    cv::meanStdDev(pCaptures[0], lMean, lStdDev);
     cv::absdiff(lOutlier, lMean.at<double>(0), lOutlier);
 
     // Detect pixels far from the mean (> 2*stddev)
@@ -35,7 +55,7 @@ atom::Message Detector_MeanOutliers::detect(cv::Mat pCapture)
     cv::dilate(lEroded, lFiltered, cv::Mat(), cv::Point(-1, -1), mFilterSize);
 
     // Apply the mask
-    cv::Mat lMask = getMask(lFiltered, CV_INTER_NN);
+    cv::Mat lMask = getMask(lFiltered, CV_INTER_LINEAR);
     for (int x = 0; x < lFiltered.cols; ++x)
         for (int y = 0; y < lFiltered.rows; ++y)
         {
@@ -102,13 +122,7 @@ atom::Message Detector_MeanOutliers::detect(cv::Mat pCapture)
     // Constructing the message
     Message message;
     // Two first values are the number and size of each (the...) blob
-    message.push_back(IntValue::create(1));
-    message.push_back(IntValue::create(5));
-    message.push_back(IntValue::create(lX));
-    message.push_back(IntValue::create(lY));
-    message.push_back(IntValue::create(lNumber));
-    message.push_back(IntValue::create(lSpeedX));
-    message.push_back(IntValue::create(lSpeedY));
+    message = createMessage("iiiiiii", 1, 5, lX, lY, lNumber, lSpeedX, lSpeedY);
 
     return message;
 }

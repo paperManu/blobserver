@@ -26,28 +26,44 @@
  #define SOURCE_H
 
 #include "opencv2/opencv.hpp"
+#include "atom/message.h"
 
 class Source
 {
     public:
         Source();
+        Source(int pParam);
 
-        virtual bool connect() {return true;};
-        virtual bool disconnect() {return true;};
-        virtual bool grabFrame() {};
-        virtual cv::Mat retrieveFrame() {return cv::Mat::zeros(1, 1, CV_8U);};
-        virtual void setParameter(const char* pParam, float pValue) {};
+        static std::string getClassName() {return mClassName;}
+        static std::string getDocumentation() {return mDocumentation;}
 
-        unsigned int getWidth() {return mWidth;};
-        unsigned int getHeight() {return mHeight;};
-        unsigned int getChannels() {return mChannels;};
-        unsigned int getFramerate() {return mFramerate;};
+        virtual bool connect() {return true;}
+        virtual bool disconnect() {return true;}
+        virtual bool grabFrame() {}
+        virtual cv::Mat retrieveFrame() {return cv::Mat::zeros(1, 1, CV_8U);}
+
+        virtual void setParameter(const char* pParam, float pValue) {}
+        virtual void setParameter(atom::Message pParam) {}
+
+        std::string getName() {return mName;}
+        unsigned int getWidth() {return mWidth;}
+        unsigned int getHeight() {return mHeight;}
+        unsigned int getChannels() {return mChannels;}
+        unsigned int getFramerate() {return mFramerate;}
+        unsigned int getSubsourceNbr() {return mSubsourceNbr;}
+
 
     protected:
         // Base caracteristics of the grabber
+        std::string mName;
         unsigned int mWidth, mHeight;
         unsigned int mChannels;
         unsigned int mFramerate;
+        unsigned int mSubsourceNbr;
+
+    private:
+        static std::string mClassName;
+        static std::string mDocumentation;
 };
 
  #endif // SOURCE_H
