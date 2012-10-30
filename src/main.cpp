@@ -80,11 +80,6 @@ static GOptionEntry gEntries[] =
     {NULL}
 };
 
-#define BLOB_NO_FILTER          0x0001
-#define BLOB_FILTER_OUTLIERS    0x0002
-#define BLOB_FILTER_LIGHT       0x0004
-#define BLOB_FILTER_COLOR       0x0008
-
 /**************************/
 // lo_address in an object
 class OscClient
@@ -341,6 +336,7 @@ int App::loop()
         lBufferNames.push_back(std::string("This is Blobserver"));
 
         // Grab from all the sources
+        // TODO: grab the sources in seperate threads
         {
             std::vector<std::shared_ptr<Source>>::iterator iter;
             // First we grab, then we retrieve all frames
@@ -566,15 +562,20 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
                     source = theApp->mSourceFactory.create(sourceName, sourceIndex);
                 else
                 {
-                    std::string error = "Unable to connect to source ";
+                    std::string error = "Unable to create source ";
                     error += sourceName;
-                    error += " ";
-                    error += sourceIndex;
                     lo_send(address->get(), "/blobserver/connect", "s", error.c_str());
                     return 1;
                 }
                 
-                source->connect();
+                if (!source->connect())
+                {
+                    std::string error = "Unable to create to source ";
+                    error += sourceName;
+                    lo_send(address->get(), "/blobserver/connect", "s", error.c_str());
+                    return 1;
+                }
+
                 sources.push_back(source);
             }
         }
@@ -702,7 +703,6 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
         return 1;
     }
 
-    // TODO: send message back to notify the result of the parameter set
     // Find the flow
     unsigned int flowId = (unsigned int)(atom::toInt(message[1]));
     std::vector<Flow>::iterator flow;
