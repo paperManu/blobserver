@@ -37,7 +37,7 @@ class Detector_MeanOutliers : public Detector
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(cv::Mat pCapture);
+        atom::Message detect(std::vector<cv::Mat> pCaptures);
         void setParameter(atom::Message pMessage);
 
     private:

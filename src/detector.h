@@ -44,7 +44,7 @@ class Detector
          * The two first values in the message are the number of blob,
          * and the size of each blob in the message
          */
-        virtual atom::Message detect(cv::Mat pCapture) {}
+        virtual atom::Message detect(std::vector<cv::Mat> pCaptures) {}
         void setMask(cv::Mat pMask);
 
         virtual void setParameter(atom::Message pParam) {}

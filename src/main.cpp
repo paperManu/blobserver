@@ -380,8 +380,7 @@ int App::loop()
                     frames.push_back(flow.sources[i]->retrieveFrame());
 
                 // Apply the detector on these frames
-                // TODO: specify multiple frames to the detector
-                atom::Message message = flow.detector->detect(frames[0]);
+                atom::Message message = flow.detector->detect(frames);
                 lBuffers.push_back(flow.detector->getOutput());
                 lBufferNames.push_back(flow.detector->getName());
 
