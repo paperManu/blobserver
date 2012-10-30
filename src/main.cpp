@@ -58,7 +58,7 @@ static gboolean gTcp = FALSE;
 static gboolean gOutliers = FALSE;
 static gboolean gLight = FALSE;
 
-// TODO: add entries for width, height and framerate
+// TODO: check wether all these options still work
 static GOptionEntry gEntries[] =
 {
     {"version", 0, 0, G_OPTION_ARG_NONE, &gVersion, "Shows version of this software", NULL},
@@ -103,13 +103,6 @@ class OscClient
 class App
 {
     public:
-        // Struct to contain information about the OSC client
-        struct Client
-        {
-            lo_address address;
-            int filters;
-        };
-
         // Struct to contain a complete flow, from capture to client
         struct Flow
         {
@@ -135,30 +128,23 @@ class App
         // Attributes
         // Singleton
         static std::shared_ptr<App> mInstance;
-        int mMaxTrackedBlobs;
 
         // Factories
         factory::AbstractFactory<Detector, std::string, std::string, int> mDetectorFactory;
         factory::AbstractFactory<Source, std::string, std::string, int> mSourceFactory;
 
         // liblo related
-        std::vector<Client> mClients;
-        std::vector<lo_address> mOscAddresses;
         lo_server_thread mOscServer;
 
         // detection related
-        float mDetectionLevel;
         std::vector<std::shared_ptr<Source>> mSources;
         std::vector<Flow> mFlows;
 
         std::shared_ptr<Source> mSource;
         cv::Mat mMask; // TODO: set mask through a parameter
-        // TODO: send mask through gstreamer!
+        // TODO: send mask through gstreamer! or from any source!
 
         static unsigned int mCurrentId;
-
-        Detector_MeanOutliers mMeanOutliersDetector;
-        Detector_LightSpots mLightSpotsDetector;
 
         /********/
         // Methods
@@ -188,8 +174,6 @@ unsigned int App::mCurrentId = 0;
 
 /*****************/
 App::App()
-    :mDetectionLevel (2.f),
-    mMaxTrackedBlobs (8)
 {
 }
 
@@ -220,7 +204,7 @@ int App::init(int argc, char** argv)
 
     // Initialize OSC
     int lNetProto;
-    if(gTcp)
+    if (gTcp)
         lNetProto = LO_TCP;
     else
         lNetProto = LO_UDP;
@@ -243,7 +227,7 @@ int App::init(int argc, char** argv)
 
         // Initialize camera
         mSource.reset(new Source_OpenCV);
-        if(!mSource->connect())
+        if (!mSource->connect())
         {
             std::cout << "Error while opening camera number " << gCamNbr << ". Exiting." << std::endl;
             return 1;
@@ -251,11 +235,11 @@ int App::init(int argc, char** argv)
     
         mSources.push_back(mSource);
        
-        if(gWidth > 0)
+        if (gWidth > 0)
             mSource->setParameter("width", gWidth);
-        if(gHeight > 0)
+        if (gHeight > 0)
             mSource->setParameter("height", gHeight);
-        if(gFramerate > 0.0)
+        if (gFramerate > 0.0)
             mSource->setParameter("framerate", gFramerate);
     
         // Create the flows
@@ -280,16 +264,6 @@ int App::init(int argc, char** argv)
             lFlow.id = getValidId();
             mFlows.push_back(lFlow);
         }
-
-        Client lClient;
-        lClient.address = lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str);
-        lClient.filters = BLOB_FILTER_OUTLIERS | BLOB_FILTER_LIGHT;
-
-        if(mMask.total() > 0)
-            mMeanOutliersDetector.setMask(mMask);
-
-        mClients.push_back(lClient);
-        mOscAddresses.push_back(lClient.address);
     }
 
     // Server
@@ -318,9 +292,6 @@ int App::parseArgs(int argc, char** argv)
         std::cout << "Error while parsing options: " << error->message << std::endl;
         return 1;
     }
-
-    if (gDetectionLevel != NULL)
-        mDetectionLevel = (float)g_ascii_strtod(gDetectionLevel, NULL);
 
     if (gMaskFilename != NULL)
     {
@@ -797,15 +768,6 @@ void App::oscSend(const char* path, int filter, const char* types = NULL, lo_arg
         default:
             std::cout << "Unrecognized OSC type: '" << c << "'" << std::endl;
         }
-    }
-
-    for(std::vector<Client>::iterator it = mClients.begin(); it != mClients.end(); ++it)
-    {
-        // If it is juste a normal message, not related to filters
-        if(filter == BLOB_NO_FILTER)
-            lo_send_message(it->address, path, message);
-        else if((it->filters && filter) == true)
-            lo_send_message(it->address, path, message);
     }
 }
 
