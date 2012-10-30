@@ -421,7 +421,7 @@ int App::loop()
         }
 
         char lKey = cv::waitKey(5);
-        if(lKey == 'q') // TODO: ctrl+Q to quit
+        if(lKey == 27) // Escape
             loop = false;
         if(lKey == 'w')
         {
