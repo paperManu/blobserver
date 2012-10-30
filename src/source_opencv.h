@@ -34,6 +34,7 @@ class Source_OpenCV : public Source
         Source_OpenCV(int pParam);
         ~Source_OpenCV();
 
+
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
@@ -52,6 +53,8 @@ class Source_OpenCV : public Source
         cv::Mat mBuffer;
 
         bool mUpdated;
+
+        void make(int pParam);
 };
 
 #endif // SOURCE_OPENCV_H

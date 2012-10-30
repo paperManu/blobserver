@@ -26,6 +26,7 @@
 #include <limits>
 #include <stdio.h>
 #include <memory>
+#include <mutex>
 #include "glib.h"
 #include "opencv2/opencv.hpp"
 #include "lo/lo.h"
@@ -139,6 +140,8 @@ class App
         // detection related
         std::vector<std::shared_ptr<Source>> mSources;
         std::vector<Flow> mFlows;
+        // A mutex to prevent unexpected changes in flows
+        std::mutex mFlowMutex;
 
         std::shared_ptr<Source> mSource;
         cv::Mat mMask; // TODO: set mask through a parameter
@@ -164,9 +167,6 @@ class App
         static int oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerSetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        
-        // OSC related, client side
-        void oscSend(const char* path, int filter, const char* types, lo_arg* argv);
 };
 
 std::shared_ptr<App> App::mInstance(nullptr);
@@ -340,7 +340,6 @@ int App::loop()
         lBuffers.push_back(cv::Mat::zeros(480, 640, CV_8UC3));
         lBufferNames.push_back(std::string("This is Blobserver"));
 
-        // TODO: check for threading issues with liblo
         // Grab from all the sources
         {
             std::vector<std::shared_ptr<Source>>::iterator iter;
@@ -365,6 +364,8 @@ int App::loop()
 
         // Go through the flows
         {
+            mFlowMutex.lock();
+
             std::vector<Flow>::iterator iter;
             for (iter = mFlows.begin(); iter != mFlows.end(); ++iter)
             {
@@ -404,6 +405,8 @@ int App::loop()
                 // End of the frame
                 lo_send(flow.client->get(), "/blobserver/endFrame", "ii", frameNbr, flow.id);
             }
+
+            mFlowMutex.unlock();
         }
 
         if (lShowCamera)
@@ -422,7 +425,6 @@ int App::loop()
             loop = false;
         if(lKey == 'w')
         {
-            // TODO: handle the case where a buffer is deleted and lSourceNumber becomes higher than lBuffers.size()
             lSourceNumber = (lSourceNumber+1)%lBuffers.size();
             std::cout << "Buffer displayed: " << lBufferNames[lSourceNumber] << std::endl;
         }
@@ -534,7 +536,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 
             std::string sourceName;
             int sourceIndex;
-            try // TODO: add cleaning if there was a problem during connection
+            try
             {
                 sourceName = atom::toString(*iter);
                 sourceIndex = atom::toInt(*(iter+1));
@@ -580,6 +582,8 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         // If enough sources have been specified
         if (sources.size() >= sourceNbr)
         {
+            theApp->mFlowMutex.lock();
+
             // We can create the flow!
             Flow flow;
             
@@ -609,6 +613,8 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 
             // Tell the client that he is connected, and give him the flow id
             lo_send(address->get(), "/blobserver/connect", "si", "Connected", (int)flow.id);
+
+            theApp->mFlowMutex.unlock();
         }
         else
         {
@@ -651,6 +657,7 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
         detectorId = atom::toInt(message[1]);
 
     // Delete flows related to this address, according to the parameter
+    theApp->mFlowMutex.lock();
     std::vector<Flow>::iterator flow;
     for (flow = theApp->mFlows.begin(); flow != theApp->mFlows.end();)
     {
@@ -672,6 +679,7 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
             flow++;
         }
     }
+    theApp->mFlowMutex.unlock();
 
     return 0;
 }
@@ -702,6 +710,8 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
     {
         if (flow->id == flowId)
         {
+            theApp->mFlowMutex.lock();
+
             // If the parameter is for the detector
             if (atom::toString(message[2]) == "Detector")
             {
@@ -739,35 +749,14 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
             {
                 flow->run = false;
             }
+
+            theApp->mFlowMutex.unlock();
         }
     }
 
     lo_address_free(address);
 
     return 0;
-}
-
-/*****************/
-void App::oscSend(const char* path, int filter, const char* types = NULL, lo_arg* argv = NULL)
-{
-    // Message creation
-    if(types == NULL || argv == NULL)
-        return;
-
-    lo_message message = lo_message_new();
-
-    char c;
-    for(int i = 0, c = types[i]; c != '\0'; ++i, c = types[i]) 
-    {
-        switch(c)
-        {
-        case LO_INT32:
-            lo_message_add_int32(message, argv[i].i);
-            break;
-        default:
-            std::cout << "Unrecognized OSC type: '" << c << "'" << std::endl;
-        }
-    }
 }
 
 /*****************/

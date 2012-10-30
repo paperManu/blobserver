@@ -7,22 +7,29 @@ std::string Detector_MeanOutliers::mDocumentation = "N/A";
 
 /*************/
 Detector_MeanOutliers::Detector_MeanOutliers()
-    :isInitialized (false),
-    mDetectionLevel (2.f),
-    mFilterSize (3)
 {
+    make();
+}
+
+/*************/
+Detector_MeanOutliers::Detector_MeanOutliers(int pParam)
+{
+    make();
+}
+
+/*************/
+void Detector_MeanOutliers::make()
+{
+    isInitialized = false;
+    mDetectionLevel = 2.f;
+    mFilterSize = 3;
+
     mName = mClassName;
     // OSC path for this detector
     mOscPath = "/blobserver/meanOutliers";
 
     mMeanBlob.setParameter("processNoiseCov", 1e-6);
     mMeanBlob.setParameter("measurementNoiseCov", 1e-4);
-}
-
-/*************/
-Detector_MeanOutliers::Detector_MeanOutliers(int pParam)
-{
-    Detector_MeanOutliers();
 }
 
 /*************/

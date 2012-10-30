@@ -51,6 +51,8 @@ class Detector_LightSpots : public Detector
         float mDetectionLevel;
         int mFilterSize;
         float mProcessNoiseCov, mMeasurementNoiseCov;
+
+        void make();
 };
 
 #endif // DETECTOR_LIGHTSPOTS_H

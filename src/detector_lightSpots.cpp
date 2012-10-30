@@ -7,10 +7,23 @@ std::string Detector_LightSpots::mDocumentation = "N/A";
 
 /*************/
 Detector_LightSpots::Detector_LightSpots()
-    :mDetectionLevel (2.f),
-    mFilterSize (3),
-    mMaxTrackedBlobs (8)
 {
+    make();
+}
+
+/*************/
+Detector_LightSpots::Detector_LightSpots(int pParam)
+{
+    make();
+}
+
+/*************/
+void Detector_LightSpots::make()
+{
+    mDetectionLevel = 2.f;
+    mFilterSize = 3;
+    mMaxTrackedBlobs = 8;
+
     mName = mClassName;
     // OSC path for this detector
     mOscPath = "/blobserver/lightSpots";
@@ -29,12 +42,6 @@ Detector_LightSpots::Detector_LightSpots()
     lParams.minArea = 0.f;
     lParams.maxArea = 65535.f;
     mLightBlobDetector = new cv::SimpleBlobDetector(lParams);
-}
-
-/*************/
-Detector_LightSpots::Detector_LightSpots(int pParam)
-{
-    Detector_LightSpots();
 }
 
 /*************/

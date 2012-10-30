@@ -6,14 +6,21 @@ std::string Source_OpenCV::mDocumentation = "N/A";
 /*************/
 Source_OpenCV::Source_OpenCV()
 {
-    mName = mClassName;
-    mBuffer = cv::Mat::zeros(0, 0, CV_8U);
+    make(0);
 }
 
 /*************/
 Source_OpenCV::Source_OpenCV(int pParam)
 {
-    Source_OpenCV();
+    make(pParam);
+}
+
+/*************/
+void Source_OpenCV::make(int pParam)
+{
+    mName = mClassName;
+    mSubsourceNbr = pParam;
+    mBuffer = cv::Mat::zeros(0, 0, CV_8U);
 }
 
 /*************/

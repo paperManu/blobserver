@@ -48,6 +48,8 @@ class Detector_MeanOutliers : public Detector
         int mFilterSize;
         Blob2D mMeanBlob;
         bool isInitialized;
+
+        void make();
 };
 
 #endif // DETECTOR_MEANOUTLIERS_H
