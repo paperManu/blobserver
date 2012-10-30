@@ -152,8 +152,8 @@ class App
         std::vector<Flow> mFlows;
 
         std::shared_ptr<Source> mSource;
-        cv::Mat mCameraBuffer;
-        cv::Mat mMask;
+        cv::Mat mMask; // TODO: set mask through a parameter
+        // TODO: send mask through gstreamer!
 
         static unsigned int mCurrentId;
 
@@ -258,10 +258,6 @@ int App::init(int argc, char** argv)
         if(gFramerate > 0.0)
             mSource->setParameter("framerate", gFramerate);
     
-        // Get a first frame to initialize the buffer
-        mSource->grabFrame();
-        mCameraBuffer = mSource->retrieveFrame();
-
         // Create the flows
         Flow lFlow;
         lFlow.client.reset(new OscClient(lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str)));
@@ -373,85 +369,86 @@ int App::loop()
         lBuffers.push_back(cv::Mat::zeros(480, 640, CV_8UC3));
         lBufferNames.push_back(std::string("This is Blobserver"));
 
-        // Frame capture
-        //mSource->grabFrame();
-        //mCameraBuffer = mSource->retrieveFrame();
-        // cv::Mat are not copied when not specified, so the bandwidth usage
-        // of the following operation is minimal
-        //lBuffers.push_back(mCameraBuffer); // TODO: remove all mention of mCameraBuffer
-        //lBufferNames.push_back(std::string("camera"));
-
-        // If the frame seems valid
-        //if (mCameraBuffer.total() > 0)
-        //{
-            // Grab from all the sources
+        // TODO: check for threading issues with liblo
+        // Grab from all the sources
+        {
+            std::vector<std::shared_ptr<Source>>::iterator iter;
+            // First we grab, then we retrieve all frames
+            // This way, sync between frames is better
+            for (iter = mSources.begin(); iter != mSources.end(); ++iter)
             {
-                std::vector<std::shared_ptr<Source>>::const_iterator iter;
-                // First we grab, then we retrieve all frames
-                // This way, sync between frames is better
-                for (iter = mSources.begin(); iter != mSources.end(); ++iter)
+                std::shared_ptr<Source> source = (*iter);
+                source->grabFrame();
+                lBuffers.push_back(source->retrieveFrame());
+                lBufferNames.push_back(source->getName());
+
+                // We also check if this source is still used
+                if (source.use_count() == 2) // 2, because this ptr and the one in the vector
                 {
-                    std::shared_ptr<Source> source = (*iter);
-                    source->grabFrame();
-                    lBuffers.push_back(source->retrieveFrame());
-                    lBufferNames.push_back(source->getName());
+                    std::cout << "Source " << source->getName() << " is no longer used. Disconnecting." << std::endl;
+                    mSources.erase(iter);
+                    --iter;
                 }
             }
+        }
 
-            // Go through the flows
+        // Go through the flows
+        {
+            std::vector<Flow>::iterator iter;
+            for (iter = mFlows.begin(); iter != mFlows.end(); ++iter)
             {
-                std::vector<Flow>::iterator iter;
-                for (iter = mFlows.begin(); iter != mFlows.end(); ++iter)
+                Flow flow = (*iter);
+
+                // Check if the flow is running
+                if (flow.run == false)
+                    continue;
+
+                // Retrieve the frames from all sources in this flow
+                std::vector<cv::Mat> frames;
+                for (int i = 0; i < flow.sources.size(); ++i)
+                    frames.push_back(flow.sources[i]->retrieveFrame());
+
+                // Apply the detector on these frames
+                // TODO: specify multiple frames to the detector
+                atom::Message message = flow.detector->detect(frames[0]);
+                lBuffers.push_back(flow.detector->getOutput());
+                lBufferNames.push_back(flow.detector->getName());
+
+                // Send messages
+                // Beginning of the frame
+                lo_send(flow.client->get(), "/blobserver/startFrame", "ii", frameNbr, flow.id);
+
+                int nbr = atom::toInt(message[0]);
+                int size = atom::toInt(message[1]);
+                for (int i = 0; i < nbr; ++i)
                 {
-                    Flow flow = (*iter);
-
-                    // Check if the flow is running
-                    if (flow.run == false)
-                        continue;
-
-                    // Retrieve the frames from all sources in this flow
-                    std::vector<cv::Mat> frames;
-                    for (int i = 0; i < flow.sources.size(); ++i)
-                        frames.push_back(flow.sources[i]->retrieveFrame());
-
-                    // Apply the detector on these frames
-                    // TODO: specify multiple frames to the detector
-                    atom::Message message = flow.detector->detect(frames[0]);
-                    lBuffers.push_back(flow.detector->getOutput());
-                    lBufferNames.push_back(flow.detector->getName());
-
-                    // Send messages
-                    // Beginning of the frame
-                    lo_send(flow.client->get(), "/blobserver/startFrame", "ii", frameNbr, flow.id);
-
-                    int nbr = atom::toInt(message[0]);
-                    int size = atom::toInt(message[1]);
-                    for (int i = 0; i < nbr; ++i)
-                    {
-                        atom::Message msg;
-                        for (int j = 0; j < size; ++j)
-                            msg.push_back(message[i * size + 2 + j]);
-                        
-                        lo_message oscMsg = lo_message_new();
-                        atom::message_build_to_lo_message(msg, oscMsg);
-                        lo_send_message(flow.client->get(), flow.detector->getOscPath().c_str(), oscMsg);
-                    }
-
-                    // End of the frame
-                    lo_send(flow.client->get(), "/blobserver/endFrame", "ii", frameNbr, flow.id);
+                    atom::Message msg;
+                    for (int j = 0; j < size; ++j)
+                        msg.push_back(message[i * size + 2 + j]);
+                    
+                    lo_message oscMsg = lo_message_new();
+                    atom::message_build_to_lo_message(msg, oscMsg);
+                    lo_send_message(flow.client->get(), flow.detector->getOscPath().c_str(), oscMsg);
                 }
-            }
 
-            if (lShowCamera)
-            {
-                cv::putText(lBuffers[lSourceNumber], lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
-                    cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
-                cv::imshow("blobserver", lBuffers[lSourceNumber]);
+                // End of the frame
+                lo_send(flow.client->get(), "/blobserver/endFrame", "ii", frameNbr, flow.id);
             }
-        //}
+        }
+
+        if (lShowCamera)
+        {
+            // Check if the current source number is still available
+            if (lSourceNumber >= lBuffers.size())
+                lSourceNumber = 0;
+
+            cv::putText(lBuffers[lSourceNumber], lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
+                cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
+            cv::imshow("blobserver", lBuffers[lSourceNumber]);
+        }
 
         char lKey = cv::waitKey(5);
-        if(lKey == 'q')
+        if(lKey == 'q') // TODO: ctrl+Q to quit
             loop = false;
         if(lKey == 'w')
         {
