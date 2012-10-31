@@ -14,6 +14,7 @@ Source::Source()
     mChannels = 0;
     mFramerate = 0;
     mSubsourceNbr = 0;
+    mId = 0;
 }
 
 /************/

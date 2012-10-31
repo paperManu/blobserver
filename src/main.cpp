@@ -232,11 +232,26 @@ int App::init(int argc, char** argv)
         mSources.push_back(mSource);
        
         if (gWidth > 0)
-            mSource->setParameter("width", gWidth);
+        {
+            atom::Message msg;
+            msg.push_back(atom::StringValue::create("width"));
+            msg.push_back(atom::FloatValue::create((double)gWidth));
+            mSource->setParameter(msg);
+        }
         if (gHeight > 0)
-            mSource->setParameter("height", gHeight);
+        {
+            atom::Message msg;
+            msg.push_back(atom::StringValue::create("width"));
+            msg.push_back(atom::FloatValue::create((double)gHeight));
+            mSource->setParameter(msg);
+        }
         if (gFramerate > 0.0)
-            mSource->setParameter("framerate", gFramerate);
+        {
+            atom::Message msg;
+            msg.push_back(atom::StringValue::create("framerate"));
+            msg.push_back(atom::FloatValue::create((double)gFramerate));
+            mSource->setParameter(msg);
+        }
     
         // Create the flows
         Flow lFlow;
@@ -351,7 +366,14 @@ int App::loop()
                 std::shared_ptr<Source> source = (*iter);
                 source->grabFrame();
                 lBuffers.push_back(source->retrieveFrame());
-                lBufferNames.push_back(source->getName());
+                
+                atom::Message msg;
+                msg.push_back(atom::StringValue::create("id"));
+                msg = source->getParameter(msg);
+                int id = atom::toInt(msg[1]);
+                char name[16];
+                sprintf(name, "%i", id);
+                lBufferNames.push_back(source->getName() + std::string(" ") + std::string(name));
 
                 // We also check if this source is still used
                 if (source.use_count() == 2) // 2, because this ptr and the one in the vector

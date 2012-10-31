@@ -42,8 +42,8 @@ class Source
         virtual bool grabFrame() {}
         virtual cv::Mat retrieveFrame() {return cv::Mat::zeros(1, 1, CV_8U);}
 
-        virtual void setParameter(const char* pParam, float pValue) {}
         virtual void setParameter(atom::Message pParam) {}
+        virtual atom::Message getParameter(atom::Message pParam) {}
 
         std::string getName() {return mName;}
         unsigned int getWidth() {return mWidth;}
@@ -60,6 +60,7 @@ class Source
         unsigned int mChannels;
         unsigned int mFramerate;
         unsigned int mSubsourceNbr;
+        unsigned int mId;
 
     private:
         static std::string mClassName;

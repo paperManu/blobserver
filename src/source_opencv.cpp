@@ -47,6 +47,8 @@ bool Source_OpenCV::connect()
     channels = (int)(mCamera.get(CV_CAP_PROP_FORMAT));
     mFramerate = (unsigned int)((channels >> 3) + 1); // See CV_MAKETYPE in types_c.h in OpenCV
 
+    mId = (unsigned int)(mCamera.get(CV_CAP_PROP_GUID));
+
     return true;    
 }
 
@@ -73,30 +75,6 @@ cv::Mat Source_OpenCV::retrieveFrame()
 
     mUpdated = false;
     return mBuffer.clone();
-}
-
-/*************/
-void Source_OpenCV::setParameter(const char* pParam, float pValue)
-{
-    if (strcmp(pParam, "width") == 0)
-    {
-        mCamera.set(CV_CAP_PROP_FRAME_WIDTH, pValue);
-        mWidth = (unsigned int)(mCamera.get(CV_CAP_PROP_FRAME_WIDTH));
-    }
-    else if (strcmp(pParam, "height") == 0)
-    {
-        mCamera.set(CV_CAP_PROP_FRAME_HEIGHT, pValue);
-        mHeight = (unsigned int)(mCamera.get(CV_CAP_PROP_FRAME_HEIGHT));
-    }
-    else if (strcmp(pParam, "framerate") == 0)
-    {
-        mCamera.set(CV_CAP_PROP_FPS, pValue);
-        mFramerate = (unsigned int)(mCamera.get(CV_CAP_PROP_FPS));
-    }
-    else if (strcmp(pParam, "camera number") == 0)
-    {
-        mSubsourceNbr = (unsigned int)pValue;
-    }
 }
 
 /*************/
@@ -137,4 +115,37 @@ void Source_OpenCV::setParameter(atom::Message pParam)
     {
         mSubsourceNbr = (unsigned int)paramValue;
     }
+}
+
+/*************/
+atom::Message Source_OpenCV::getParameter(atom::Message pParam)
+{
+    atom::Message msg;
+
+    if (pParam.size() < 1)
+        return msg;
+
+    std::string paramName;
+    try
+    {
+        paramName = atom::toString(pParam[0]);
+    }
+    catch (atom::BadTypeTagError exception)
+    {
+        return msg;
+    }
+
+    msg.push_back(pParam[0]);
+    if (paramName == "width")
+        msg.push_back(atom::IntValue::create(mWidth));
+    else if (paramName == "height")
+        msg.push_back(atom::IntValue::create(mWidth));
+    else if (paramName == "framerate")
+        msg.push_back(atom::IntValue::create(mFramerate));
+    else if (paramName == "subsourcenbr")
+        msg.push_back(atom::IntValue::create(mSubsourceNbr));
+    else if (paramName == "id")
+        msg.push_back(atom::FloatValue::create(mId));
+
+    return msg;
 }
