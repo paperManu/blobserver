@@ -137,6 +137,7 @@ class App
         std::vector<Flow> mFlows;
         // A mutex to prevent unexpected changes in flows
         std::mutex mFlowMutex;
+        std::mutex mSourceMutex;
 
         std::shared_ptr<Source> mSource;
         cv::Mat mMask; // TODO: set mask through a parameter
@@ -305,6 +306,8 @@ int App::parseArgs(int argc, char** argv)
 /*****************/
 void App::registerClasses()
 {
+    // TODO: send list of available detectors and sources to the client
+    // TODO: send info about how to use them to the client
     // Register detectors
     mDetectorFactory.register_class<Detector_LightSpots>(Detector_LightSpots::getClassName(),
         Detector_LightSpots::getDocumentation());
@@ -338,6 +341,8 @@ int App::loop()
         // Grab from all the sources
         // TODO: grab the sources in seperate threads
         {
+            mSourceMutex.lock();
+
             std::vector<std::shared_ptr<Source>>::iterator iter;
             // First we grab, then we retrieve all frames
             // This way, sync between frames is better
@@ -356,6 +361,8 @@ int App::loop()
                     --iter;
                 }
             }
+
+            mSourceMutex.unlock();
         }
 
         // Go through the flows
@@ -372,6 +379,8 @@ int App::loop()
                     continue;
 
                 // Retrieve the frames from all sources in this flow
+                // Their is no risk for sources to disappear here, so no
+                // need of a mutex (they are freed earlier)
                 std::vector<cv::Mat> frames;
                 for (int i = 0; i < flow.sources.size(); ++i)
                     frames.push_back(flow.sources[i]->retrieveFrame());
@@ -593,6 +602,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             flow.id = theApp->getValidId();
             flow.run = false;
 
+            theApp->mSourceMutex.lock();
             std::vector<std::shared_ptr<Source>>::const_iterator source;
             for (source = sources.begin(); source != sources.end(); ++source)
             {
@@ -610,6 +620,8 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
                 if (!isInSources)
                     theApp->mSources.push_back(*source);
             }
+            theApp->mSourceMutex.unlock();
+
             theApp->mFlows.push_back(flow);
 
             // Tell the client that he is connected, and give him the flow id
