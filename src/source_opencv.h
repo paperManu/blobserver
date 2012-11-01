@@ -51,9 +51,6 @@ class Source_OpenCV : public Source
         static std::string mDocumentation;
 
         cv::VideoCapture mCamera;
-        cv::Mat mBuffer;
-
-        bool mUpdated;
 
         void make(int pParam);
 };

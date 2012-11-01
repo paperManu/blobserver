@@ -70,10 +70,8 @@ bool Source_OpenCV::grabFrame()
 /*************/
 cv::Mat Source_OpenCV::retrieveFrame()
 {
-    if (mUpdated)
-        mCamera.retrieve(mBuffer);
+    mCamera.retrieve(mBuffer);
 
-    mUpdated = false;
     return mBuffer.clone();
 }
 
@@ -115,6 +113,8 @@ void Source_OpenCV::setParameter(atom::Message pParam)
     {
         mSubsourceNbr = (unsigned int)paramValue;
     }
+    else
+        setBaseParameter(pParam);
 }
 
 /*************/
@@ -144,8 +144,8 @@ atom::Message Source_OpenCV::getParameter(atom::Message pParam)
         msg.push_back(atom::IntValue::create(mFramerate));
     else if (paramName == "subsourcenbr")
         msg.push_back(atom::IntValue::create(mSubsourceNbr));
-    else if (paramName == "id")
-        msg.push_back(atom::FloatValue::create(mId));
+    else
+        msg = getBaseParameter(pParam);
 
     return msg;
 }

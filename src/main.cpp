@@ -365,7 +365,7 @@ int App::loop()
             {
                 std::shared_ptr<Source> source = (*iter);
                 source->grabFrame();
-                lBuffers.push_back(source->retrieveFrame());
+                lBuffers.push_back(source->retrieveCorrectedFrame());
                 
                 atom::Message msg;
                 msg.push_back(atom::StringValue::create("id"));
@@ -405,7 +405,7 @@ int App::loop()
                 // need of a mutex (they are freed earlier)
                 std::vector<cv::Mat> frames;
                 for (int i = 0; i < flow.sources.size(); ++i)
-                    frames.push_back(flow.sources[i]->retrieveFrame());
+                    frames.push_back(flow.sources[i]->retrieveCorrectedFrame());
 
                 // Apply the detector on these frames
                 atom::Message message = flow.detector->detect(frames);
@@ -727,17 +727,27 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
         
-    lo_address address = lo_address_new(atom::toString(message[0]).c_str(), "9000");
+    std::string addressStr = atom::toString(message[0]);
+    std::shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
 
     // Message must contain ip address, flow id, target (detector or src), src number if applicable, parameter and value
     // or just ip address, flow id, and start/stop
     if (message.size() < 3)
     {
-        lo_send(address, "/blobserver/parameter", "s", "Wrong number of arguments");
+        lo_send(address->get(), "/blobserver/parameter", "s", "Wrong number of arguments");
+        return 1;
+    }
+    
+    int error = lo_address_errno(address->get());
+    if (error != 0)
+    {
+        std::cout << "Wrong address received, error " << error << std::endl;
         return 1;
     }
 
     // Find the flow
+    int result = 0;
+
     unsigned int flowId = (unsigned int)(atom::toInt(message[1]));
     std::vector<Flow>::iterator flow;
     for (flow = theApp->mFlows.begin(); flow != theApp->mFlows.end(); ++flow)
@@ -749,31 +759,43 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
             // If the parameter is for the detector
             if (atom::toString(message[2]) == "Detector")
             {
-                if (message.size() != 5)
+                if (message.size() < 5)
                 {
-                    lo_send(address, "/blobserver/parameter", "s", "Wrong number of arguments");
-                    return 1;
+                    lo_send(address->get(), "/blobserver/parameter", "s", "Wrong number of arguments");
+                    result = 1;
                 }
-
-                atom::Message msg;
-                msg.push_back(message[3]);
-                msg.push_back(message[4]);
-                flow->detector->setParameter(msg);
+                else
+                {
+                    atom::Message msg;
+                    for (int i = 3; i < message.size(); ++i)
+                        msg.push_back(message[i]);
+                    flow->detector->setParameter(msg);
+                }
             }
             // If the parameter is for one of the sources
             else if (atom::toString(message[2]) == "Source")
             {
-                if (message.size() != 6)
+                if (message.size() < 6)
                 {
-                    lo_send(address, "/blobserver/parameter", "s", "Wrong number of arguments");
-                    return 1;
+                    lo_send(address->get(), "/blobserver/parameter", "s", "Wrong number of arguments");
+                    result = 1;
                 }
-
-                int srcNbr = atom::toInt(message[3]);
-                atom::Message msg;
-                msg.push_back(message[4]);
-                msg.push_back(message[5]);
-                flow->sources[srcNbr]->setParameter(msg);
+                else
+                {
+                    int srcNbr = atom::toInt(message[3]);
+                    if (srcNbr >= flow->sources.size())
+                    {
+                        lo_send(address->get(), "/blobserver/parameter", "s", "Wrong source index");
+                        result = 1;
+                    }
+                    else
+                    {
+                        atom::Message msg;
+                        for (int i = 4; i < message.size(); ++i)
+                            msg.push_back(message[i]);
+                        flow->sources[srcNbr]->setParameter(msg);
+                    }
+                }
             }
             else if (atom::toString(message[2]) == "Start")
             {
@@ -788,9 +810,7 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
         }
     }
 
-    lo_address_free(address);
-
-    return 0;
+    return result;
 }
 
 /*****************/
