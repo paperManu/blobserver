@@ -7,6 +7,7 @@ blobserver_SOURCES = \
     detector.cpp \
     detector_meanOutliers.cpp \
     detector_lightSpots.cpp \
+    detector_objOnAPlane.cpp \
     source.cpp \
     source_opencv.cpp
 
@@ -16,6 +17,7 @@ noinst_HEADERS = \
     detector.h \
     detector_meanOutliers.h \
     detector_lightSpots.h \
+    detector_objOnAPlane.h \
     source.h \
     source_opencv.h
 

@@ -21,11 +21,8 @@ Source::Source()
     mCorrectDistortion = false;
     mCorrectVignetting = false;
 
-    mOpticalDesc.resolution.x = 0;
-    mOpticalDesc.resolution.y = 0;
     mOpticalDesc.distortion = 0.0;
     mOpticalDesc.vignetting = 0.0;
-    mOpticalDesc.hfov = 0;
 
     mRecomputeVignettingMat = false;
     mRecomputeDistortionMat = false;
@@ -221,12 +218,16 @@ cv::Mat Source::correctDistortion(cv::Mat pImg)
             for (int y = 0; y < (int)mHeight; ++y)
             {
                 // Compute the distance to center in normalized value
+                // See http://wiki.panotools.org/Lens_correction_model for information
                 float dstRadius = (sqrtf(pow((float)x-center.x, 2.f) + pow((float)y-center.y, 2.f)));
                 cv::Vec2f dir;
                 dir[0] = ((float)x-center.x)/dstRadius;
                 dir[1] = ((float)y-center.y)/dstRadius;
                 
-                float srcRadius = a*pow(dstRadius/radius, 4.f) + b*pow(dstRadius/radius, 3.f) + c*pow(dstRadius/radius, 2.f) + dstRadius/radius;
+                float srcRadius = a*pow(dstRadius/radius, 4.f)
+                    + b*pow(dstRadius/radius, 3.f)
+                    + c*pow(dstRadius/radius, 2.f)
+                    + dstRadius/radius;
 
                 mDistortionMat.at<cv::Vec2f>(y, x)[0] = center.x + srcRadius*radius*dir[0];
                 mDistortionMat.at<cv::Vec2f>(y, x)[1] = center.y + srcRadius*radius*dir[1];

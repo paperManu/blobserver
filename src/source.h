@@ -80,8 +80,6 @@ class Source
         bool mCorrectVignetting;
         struct OpticalDesc
         {
-            cv::Point resolution;
-            float hfov;
             cv::Vec3f distortion;
             cv::Vec3f vignetting;
         } mOpticalDesc;

@@ -36,6 +36,7 @@
 #include "source_opencv.h"
 #include "detector_meanOutliers.h"
 #include "detector_lightSpots.h"
+#include "detector_objOnAPlane.h"
 #include "atom/osc.h"
 #include "abstract-factory.h" // TODO: check license issues
 
@@ -328,6 +329,8 @@ void App::registerClasses()
         Detector_LightSpots::getDocumentation());
     mDetectorFactory.register_class<Detector_MeanOutliers>(Detector_MeanOutliers::getClassName(),
         Detector_MeanOutliers::getDocumentation());
+    mDetectorFactory.register_class<Detector_ObjOnAPlane>(Detector_ObjOnAPlane::getClassName(),
+        Detector_ObjOnAPlane::getDocumentation());
 
     // Register sources
     mSourceFactory.register_class<Source_OpenCV>(Source_OpenCV::getClassName(),
