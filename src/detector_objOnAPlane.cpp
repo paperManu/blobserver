@@ -52,6 +52,7 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
     // Conversion of captures from their own space to a common space
     std::vector<cv::Mat> correctedCaptures;
 
+    int index = 0;
     std::vector<cv::Mat>::iterator iterCapture;
     std::vector<cv::Mat>::const_iterator iterMap;
     for (iterCapture = pCaptures.begin(), iterMap = mMaps.begin()+1;
@@ -63,7 +64,10 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
 
         cv::Mat correctedCapture;
         cv::remap(capture, correctedCapture, map, cv::Mat(), cv::INTER_AREA);
-
+        char str[16];
+        sprintf(str, "capture %i", index);
+        index++;
+        cv::imshow(str, correctedCapture);
         correctedCaptures.push_back(correctedCapture);
     }
 
@@ -297,12 +301,15 @@ void Detector_ObjOnAPlane::updateMaps(std::vector<cv::Mat> pCaptures)
         
         // The second vector has to be ortho
         baseY[0] = -baseX[1];
-        baseY[1] = baseY[0];
+        baseY[1] = baseX[0];
 
         // Temporary origin
         origin = space[0];
         
-        // Get the length for each axis and move (maybe) the origin
+        // We have an ortho base, we can use the dot product
+        std::vector<cv::Vec2f> newCoords;
+        newCoords.push_back(origin);
+
         cv::Vec2f max = 0.f;
         std::vector<cv::Vec2f>::iterator iterPoint;
         for (iterPoint = space.begin()+1; iterPoint != space.end(); ++iterPoint)
@@ -318,6 +325,7 @@ void Detector_ObjOnAPlane::updateMaps(std::vector<cv::Mat> pCaptures)
             {
                 origin[0] += coords[0];
                 coords[0] = 0.f;
+
             }
             if (coords[1] < 0.f)
             {
@@ -327,24 +335,41 @@ void Detector_ObjOnAPlane::updateMaps(std::vector<cv::Mat> pCaptures)
 
             max[0] = std::max(max[0], coords[0]);
             max[1] = std::max(max[1], coords[1]);
+            
+            // New coords for the point
+            newCoords.push_back(coords);
         }
 
         // Create the map
         float ratio = (float)(max[1])/(float)(max[0]);
         cv::Mat map = cv::Mat::zeros((int)(1024*ratio), 1024, CV_32FC2); 
 
-        // Fill the map
-        for (int x = 0; x < map.cols; ++x)
-        {
-            for (int y = 0; y < map.rows; ++y)
-            {
-                cv::Vec2f coords;
-                coords[0] = max[0] * (float)x / (float)(map.cols);
-                coords[1] = max[1] * (float)y / (float)(map.rows);
+        // We now need to projection from the uniform space to real space
+        // Calculates the tranformation matrix
+        cv::Point2f inPoints[4];
+        cv::Point2f outPoints[4];
+        for (int i = 0; i < 4; ++i)
+            inPoints[i] = newCoords[i];
 
-                map.at<cv::Vec2f>(y, x) = coords[0]*baseX + coords[1]*baseY;
+        outPoints[0] = cv::Point2f(0.f, 0.f);
+        outPoints[1] = cv::Point2f((float)(map.cols), 0.f);
+        outPoints[2] = cv::Point2f((float)(map.cols), (float)(map.rows));
+        outPoints[3] = cv::Point2f(0.f, (float)(map.rows));
+
+        cv::Mat transformMat = cv::getPerspectiveTransform(inPoints, outPoints);
+
+        // Create the map
+        cv::Mat tmpMap = map.clone(); 
+
+        for (int x = 0; x < tmpMap.cols; ++x)
+        {
+            for (int y = 0; y < tmpMap.rows; ++y)
+            {
+                tmpMap.at<cv::Vec2f>(y, x) = cv::Vec2f(x, y);
             }
         }
+
+        cv::warpPerspective(tmpMap, map, transformMat, tmpMap.size(), cv::INTER_LINEAR);
 
         mMaps.push_back(map);
     }
@@ -359,52 +384,32 @@ void Detector_ObjOnAPlane::updateMaps(std::vector<cv::Mat> pCaptures)
         std::vector<cv::Vec2f> space = *iterSpace;
         cv::Mat capture = *iterCapture;
 
-        // Create the base vectors
-        cv::Vec2f baseX, baseY, origin;
-        int size = space.size();
+        // Calculates the tranformation matrix
+        cv::Point2f inPoints[4];
+        cv::Point2f outPoints[4];
+        for (int i = 0; i < 4; ++i)
+            inPoints[i] = space[i];
 
-        baseX[0] = space[1][0] - space[0][0];
-        baseX[1] = space[1][1] - space[0][1];
-        baseX /= cv::norm(baseX);
+        outPoints[0] = cv::Point2f(0.f, 0.f);
+        outPoints[1] = cv::Point2f((float)(capture.cols), 0.f);
+        outPoints[2] = cv::Point2f((float)(capture.cols), (float)(capture.rows));
+        outPoints[3] = cv::Point2f(0.f, (float)(capture.rows));
 
-        baseY[0] = space[size-1][0] - space[0][0];
-        baseY[1] = space[size-1][1] - space[0][1];
-        baseY /= cv::norm(baseY);
+        cv::Mat transformMat = cv::getPerspectiveTransform(inPoints, outPoints);
 
-        origin = space[0];
-
-        // Get the length of each axis
-        cv::Vec2f max = 0.f;
-        std::vector<cv::Vec2f>::iterator iterPoint;
-        // We start from 1, because 0 is the origin
-        for (iterPoint = space.begin()+1; iterPoint != space.end(); ++iterPoint)
-        {
-            cv::Vec2f point = *iterPoint;
-
-            cv::Vec2f vector;
-            vector = point - origin;
-            
-            cv::Vec2f coords;
-            coords[0] = vector.dot(baseX);
-            coords[1] = vector.dot(baseY);
-            
-            max[0] = std::max(max[0], coords[0]);
-            max[1] = std::max(max[1], coords[1]);
-        }
-
-        // Fill the map
+        // Create the map
+        cv::Mat tmpMap = cv::Mat::zeros(capture.rows, capture.cols, CV_32FC2); 
         cv::Mat map = cv::Mat::zeros(capture.rows, capture.cols, CV_32FC2); 
-        for (int x = 0; x < map.cols; ++x)
-        {
-            for (int y = 0; y < map.rows; ++y)
-            {
-                cv::Vec2f coords;
-                coords[0] = max[0] * (float)x / (float)(map.cols);
-                coords[1] = max[1] * (float)y / (float)(map.rows);
 
-                map.at<cv::Vec2f>(y, x) = coords[0]*baseX + coords[1]*baseY;
+        for (int x = 0; x < tmpMap.cols; ++x)
+        {
+            for (int y = 0; y < tmpMap.rows; ++y)
+            {
+                tmpMap.at<cv::Vec2f>(y, x) = cv::Vec2f(x, y);
             }
         }
+
+        cv::warpPerspective(tmpMap, map, transformMat, tmpMap.size(), cv::INTER_LINEAR);
 
         mMaps.push_back(map);
     }
