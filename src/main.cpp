@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include "glib.h"
 #include "opencv2/opencv.hpp"
 #include "lo/lo.h"
@@ -140,6 +141,9 @@ class App
         std::mutex mFlowMutex;
         std::mutex mSourceMutex;
 
+        // Threads
+        std::shared_ptr<std::thread> mSourcesThread;
+
         std::shared_ptr<Source> mSource;
         cv::Mat mMask; // TODO: set mask through a parameter
         // TODO: send mask through gstreamer! or from any source!
@@ -156,7 +160,11 @@ class App
         // Factory registering
         void registerClasses();
 
+        // Creates a new and unique ID for a flow
         unsigned int getValidId() {return ++mCurrentId;}
+
+        // Sources update function, use in a thread
+        static void updateSources();
 
         // OSC related, server side
         static void oscError(int num, const char* msg, const char* path);
@@ -205,6 +213,9 @@ int App::init(int argc, char** argv)
         lNetProto = LO_TCP;
     else
         lNetProto = LO_UDP;
+
+    // Create the thread which will grab from all sources
+    mSourcesThread.reset(new std::thread(updateSources));
 
     // Client
     if (gIpAddress != NULL)
@@ -356,8 +367,7 @@ int App::loop()
         lBuffers.push_back(cv::Mat::zeros(480, 640, CV_8UC3));
         lBufferNames.push_back(std::string("This is Blobserver"));
 
-        // Grab from all the sources
-        // TODO: grab the sources in seperate threads
+        // Retrive the capture from all the sources
         {
             mSourceMutex.lock();
 
@@ -367,7 +377,6 @@ int App::loop()
             for (iter = mSources.begin(); iter != mSources.end(); ++iter)
             {
                 std::shared_ptr<Source> source = (*iter);
-                source->grabFrame();
                 lBuffers.push_back(source->retrieveCorrectedFrame());
                 
                 atom::Message msg;
@@ -377,14 +386,6 @@ int App::loop()
                 char name[16];
                 sprintf(name, "%i", id);
                 lBufferNames.push_back(source->getName() + std::string(" ") + std::string(name));
-
-                // We also check if this source is still used
-                if (source.use_count() == 2) // 2, because this ptr and the one in the vector
-                {
-                    std::cout << "Source " << source->getName() << " is no longer used. Disconnecting." << std::endl;
-                    mSources.erase(iter);
-                    --iter;
-                }
             }
 
             mSourceMutex.unlock();
@@ -465,6 +466,40 @@ int App::loop()
     }
 
     return 0;
+}
+
+/*****************/
+void App::updateSources()
+{
+    std::shared_ptr<App> theApp = App::getInstance();
+
+    bool run = true;
+
+    while(run)
+    {
+        theApp->mSourceMutex.lock();
+        
+        std::vector<std::shared_ptr<Source>>::iterator iter;
+        // First we grab, then we retrieve all frames
+        // This way, sync between frames is better
+        for (iter = theApp->mSources.begin(); iter != theApp->mSources.end(); ++iter)
+        {
+            std::shared_ptr<Source> source = (*iter);
+            source->grabFrame();
+        
+            // We also check if this source is still used
+            if (source.use_count() == 2) // 2, because this ptr and the one in the vector
+            {
+                std::cout << "Source " << source->getName() << " is no longer used. Disconnecting." << std::endl;
+                theApp->mSources.erase(iter);
+                --iter;
+            }
+        }
+        
+        theApp->mSourceMutex.unlock();
+
+        usleep(1000);
+    }
 }
 
 /*****************/
