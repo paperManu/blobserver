@@ -369,7 +369,7 @@ int App::loop()
 
         // Retrive the capture from all the sources
         {
-            mSourceMutex.lock();
+            std::lock_guard<std::mutex> lock(mSourceMutex);
 
             std::vector<std::shared_ptr<Source>>::iterator iter;
             // First we grab, then we retrieve all frames
@@ -387,13 +387,11 @@ int App::loop()
                 sprintf(name, "%i", id);
                 lBufferNames.push_back(source->getName() + std::string(" ") + std::string(name));
             }
-
-            mSourceMutex.unlock();
         }
 
         // Go through the flows
         {
-            mFlowMutex.lock();
+            std::lock_guard<std::mutex> lock(mFlowMutex);
 
             std::vector<Flow>::iterator iter;
             for (iter = mFlows.begin(); iter != mFlows.end(); ++iter)
@@ -436,8 +434,6 @@ int App::loop()
                 // End of the frame
                 lo_send(flow.client->get(), "/blobserver/endFrame", "ii", frameNbr, flow.id);
             }
-
-            mFlowMutex.unlock();
         }
 
         if (lShowCamera)
@@ -477,26 +473,26 @@ void App::updateSources()
 
     while(run)
     {
-        theApp->mSourceMutex.lock();
-        
-        std::vector<std::shared_ptr<Source>>::iterator iter;
-        // First we grab, then we retrieve all frames
-        // This way, sync between frames is better
-        for (iter = theApp->mSources.begin(); iter != theApp->mSources.end(); ++iter)
         {
-            std::shared_ptr<Source> source = (*iter);
-            source->grabFrame();
-        
-            // We also check if this source is still used
-            if (source.use_count() == 2) // 2, because this ptr and the one in the vector
+            std::lock_guard<std::mutex> lock(theApp->mSourceMutex);
+            
+            std::vector<std::shared_ptr<Source>>::iterator iter;
+            // First we grab, then we retrieve all frames
+            // This way, sync between frames is better
+            for (iter = theApp->mSources.begin(); iter != theApp->mSources.end(); ++iter)
             {
-                std::cout << "Source " << source->getName() << " is no longer used. Disconnecting." << std::endl;
-                theApp->mSources.erase(iter);
-                --iter;
+                std::shared_ptr<Source> source = (*iter);
+                source->grabFrame();
+            
+                // We also check if this source is still used
+                if (source.use_count() == 2) // 2, because this ptr and the one in the vector
+                {
+                    std::cout << "Source " << source->getName() << " is no longer used. Disconnecting." << std::endl;
+                    theApp->mSources.erase(iter);
+                    --iter;
+                }
             }
         }
-        
-        theApp->mSourceMutex.unlock();
 
         usleep(1000);
     }
@@ -652,7 +648,8 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         // If enough sources have been specified
         if (sources.size() >= sourceNbr)
         {
-            theApp->mFlowMutex.lock();
+            std::lock_guard<std::mutex> lock(theApp->mFlowMutex);
+            std::lock_guard<std::mutex> lockToo(theApp->mSourceMutex);
 
             // We can create the flow!
             Flow flow;
@@ -662,7 +659,6 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             flow.id = theApp->getValidId();
             flow.run = false;
 
-            theApp->mSourceMutex.lock();
             std::vector<std::shared_ptr<Source>>::const_iterator source;
             for (source = sources.begin(); source != sources.end(); ++source)
             {
@@ -680,14 +676,11 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
                 if (!isInSources)
                     theApp->mSources.push_back(*source);
             }
-            theApp->mSourceMutex.unlock();
 
             theApp->mFlows.push_back(flow);
 
             // Tell the client that he is connected, and give him the flow id
             lo_send(address->get(), "/blobserver/connect", "si", "Connected", (int)flow.id);
-
-            theApp->mFlowMutex.unlock();
         }
         else
         {
@@ -730,7 +723,7 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
         detectorId = atom::toInt(message[1]);
 
     // Delete flows related to this address, according to the parameter
-    theApp->mFlowMutex.lock();
+    std::lock_guard<std::mutex> lock(theApp->mFlowMutex);
     std::vector<Flow>::iterator flow;
     for (flow = theApp->mFlows.begin(); flow != theApp->mFlows.end();)
     {
@@ -752,7 +745,6 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
             flow++;
         }
     }
-    theApp->mFlowMutex.unlock();
 
     return 0;
 }
@@ -792,7 +784,7 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
     {
         if (flow->id == flowId)
         {
-            theApp->mFlowMutex.lock();
+            std::lock_guard<std::mutex> lock(theApp->mFlowMutex);
 
             // If the parameter is for the detector
             if (atom::toString(message[2]) == "Detector")
@@ -843,8 +835,6 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
             {
                 flow->run = false;
             }
-
-            theApp->mFlowMutex.unlock();
         }
     }
 

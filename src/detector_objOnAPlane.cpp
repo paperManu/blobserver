@@ -31,13 +31,13 @@ void Detector_ObjOnAPlane::make()
 
     // Set mBlobDetector to indeed detect light
     cv::SimpleBlobDetector::Params lParams;
-    lParams.filterByColor = true;
+    lParams.filterByColor = false;
     lParams.blobColor = 255;
     lParams.minCircularity = 0.1f;
     lParams.maxCircularity = 1.f;
     lParams.minInertiaRatio = 0.f;
     lParams.maxInertiaRatio = 1.f;
-    lParams.minArea = 10.f;
+    lParams.minArea = 512.f;
     lParams.maxArea = 65535.f;
     mBlobDetector.reset(new cv::SimpleBlobDetector(lParams));
 }
@@ -339,22 +339,26 @@ void Detector_ObjOnAPlane::updateMaps(std::vector<cv::Mat> pCaptures)
             // New coords for the point
             newCoords.push_back(coords);
         }
+        // TODO: coords should be all recalculated after this loop
 
         // Create the map
         float ratio = (float)(max[1])/(float)(max[0]);
-        cv::Mat map = cv::Mat::zeros((int)(1024*ratio), 1024, CV_32FC2); 
+        cv::Mat map = cv::Mat::zeros(pCaptures[0].rows, pCaptures[0].cols, CV_32FC2); 
 
         // We now need to projection from the uniform space to real space
         // Calculates the tranformation matrix
         cv::Point2f inPoints[4];
         cv::Point2f outPoints[4];
         for (int i = 0; i < 4; ++i)
-            inPoints[i] = newCoords[i];
+        {
+            outPoints[i].x = newCoords[i][0] / max[0] * (float)map.cols;
+            outPoints[i].y = newCoords[i][1] / max[1] * (float)map.cols*ratio;
+        }
 
-        outPoints[0] = cv::Point2f(0.f, 0.f);
-        outPoints[1] = cv::Point2f((float)(map.cols), 0.f);
-        outPoints[2] = cv::Point2f((float)(map.cols), (float)(map.rows));
-        outPoints[3] = cv::Point2f(0.f, (float)(map.rows));
+        inPoints[0] = cv::Point2f(0.f, 0.f);
+        inPoints[1] = cv::Point2f((float)(pCaptures[0].cols), 0.f);
+        inPoints[2] = cv::Point2f((float)(pCaptures[0].cols), (float)(pCaptures[0].rows));
+        inPoints[3] = cv::Point2f(0.f, (float)(pCaptures[0].rows));
 
         cv::Mat transformMat = cv::getPerspectiveTransform(inPoints, outPoints);
 
@@ -365,7 +369,10 @@ void Detector_ObjOnAPlane::updateMaps(std::vector<cv::Mat> pCaptures)
         {
             for (int y = 0; y < tmpMap.rows; ++y)
             {
-                tmpMap.at<cv::Vec2f>(y, x) = cv::Vec2f(x, y);
+                cv::Vec2f pos;
+                pos[0] = ((float)x / (float)tmpMap.cols) * (float)(pCaptures[0].cols);
+                pos[1] = ((float)y / (float)tmpMap.rows) * (float)(pCaptures[0].rows);
+                tmpMap.at<cv::Vec2f>(y, x) = pos;
             }
         }
 
