@@ -47,10 +47,11 @@ class Detector_ObjOnAPlane : public Detector
 
         int mMaxTrackedBlobs;
         float mDetectionLevel;
+        int mFilterSize;
         float mProcessNoiseCov, mMeasurementNoiseCov;
         
-        std::shared_ptr<cv::SimpleBlobDetector> mBlobDetector; // OpenCV object which detects the blobs in an image
         std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
+        int mMinArea;
 
         std::vector<std::vector<cv::Vec2f>> mSpaces; // First space is the real plane
         std::vector<cv::Mat> mMaps;

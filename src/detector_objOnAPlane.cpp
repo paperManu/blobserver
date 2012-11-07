@@ -25,21 +25,11 @@ void Detector_ObjOnAPlane::make()
 
     mMaxTrackedBlobs = 8;
     mDetectionLevel = 10.0;
+    mFilterSize = 3;
+    mMinArea = 32;
 
     mProcessNoiseCov = 1e-5;
     mMeasurementNoiseCov = 1e-5;
-
-    // Set mBlobDetector to indeed detect light
-    cv::SimpleBlobDetector::Params lParams;
-    lParams.filterByColor = false;
-    lParams.blobColor = 255;
-    lParams.minCircularity = 0.1f;
-    lParams.maxCircularity = 1.f;
-    lParams.minInertiaRatio = 0.f;
-    lParams.maxInertiaRatio = 1.f;
-    lParams.minArea = 512.f;
-    lParams.maxArea = 65535.f;
-    mBlobDetector.reset(new cv::SimpleBlobDetector(lParams));
 }
 
 /*****************/
@@ -104,10 +94,15 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
     
     // Convert the detection to real space
     cv::Mat realDetected;
-    cv::remap(detected, realDetected, mMaps[0], cv::Mat(), cv::INTER_AREA);
+    cv::remap(detected, realDetected, mMaps[0], cv::Mat(), cv::INTER_NEAREST);
+
+    // Erode and dilate to suppress noise
+    cv::Mat lEroded;
+    cv::erode(realDetected, lEroded, cv::Mat(), cv::Point(-1, -1), mFilterSize);
+    cv::dilate(lEroded, realDetected, cv::Mat(), cv::Point(-1, -1), mFilterSize*2);
 
     // Apply the mask
-    cv::Mat lMask = getMask(realDetected, CV_INTER_NN);
+    cv::Mat lMask = getMask(realDetected, cv::INTER_NEAREST);
     for (int x = 0; x < realDetected.cols; ++x)
         for (int y = 0; y < realDetected.rows; ++y)
         {
@@ -116,21 +111,25 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
         }
 
     // Detect blobs
-    std::vector<cv::KeyPoint> lKeyPoints;
-    mBlobDetector->detect(realDetected, lKeyPoints);
+    std::vector<std::vector<cv::Point>> contours;
+    std::vector<cv::Vec4i> hierarchy;
+    cv::findContours(realDetected, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_TC89_L1);
+    cv::drawContours(realDetected, contours, -1, cv::Scalar(255, 0, 0), 2);
 
-    // We use Blob::properties, not cv::KeyPoints
     std::vector<Blob::properties> lProperties;
-    for(int i = 0; i < std::min((int)(lKeyPoints.size()), mMaxTrackedBlobs); ++i)
+    for(int i = 0; i < std::min((int)(contours.size()), mMaxTrackedBlobs); ++i)
     {
+        cv::Rect rect = cv::boundingRect(contours[i]);
+
         Blob::properties properties;
-        properties.position.x = lKeyPoints[i].pt.x;
-        properties.position.y = lKeyPoints[i].pt.y;
-        properties.size = lKeyPoints[i].size;
+        properties.position.x = rect.x + rect.width / 2;
+        properties.position.y = rect.y + rect.height / 2;
+        properties.size = cv::contourArea(contours[i], false);
         properties.speed.x = 0.f;
         properties.speed.y = 0.f;
 
-        lProperties.push_back(properties);
+        if (properties.size > mMinArea)
+            lProperties.push_back(properties);
     }
 
     // We want to track them
@@ -149,7 +148,7 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
     // Include the number and size of each blob in the message
     message.push_back(IntValue::create((int)mBlobs.size()));
     message.push_back(IntValue::create(6));
-
+    
     for(int i = 0; i < mBlobs.size(); ++i)
     {
         int lX, lY, lSize, ldX, ldY, lId;
@@ -280,6 +279,81 @@ void Detector_ObjOnAPlane::setParameter(Message pMessage)
     {
         mSpaces.clear();
         mMapsUpdated = false;
+    }
+    else if (cmd == "setDetectionLevel")
+    {
+        float value;
+        
+        try
+        {
+            value = toFloat(pMessage[1]);
+        }
+        catch (BadTypeTagError error)
+        {
+            return;
+        }
+
+        mDetectionLevel = std::max(0.f, value);
+    }
+    else if (cmd == "setProcessNoiseCov")
+    {
+        float value;
+        
+        try
+        {
+            value = toFloat(pMessage[1]);
+        }
+        catch (BadTypeTagError error)
+        {
+            return;
+        }
+
+        mProcessNoiseCov = std::max(0.f, value);
+    }
+    else if (cmd == "setMeasurementNoiseCov")
+    {
+        float value;
+        
+        try
+        {
+            value = toFloat(pMessage[1]);
+        }
+        catch (BadTypeTagError error)
+        {
+            return;
+        }
+
+        mMeasurementNoiseCov = std::max(0.f, value);
+    }
+    else if (cmd == "setFilterSize")
+    {
+        float value;
+        
+        try
+        {
+            value = toFloat(pMessage[1]);
+        }
+        catch (BadTypeTagError error)
+        {
+            return;
+        }
+
+        mFilterSize = std::max(0.f, value);
+    }
+    else if (cmd == "setMinBlobArea")
+    {
+        float value;
+        
+        try
+        {
+            value = toFloat(pMessage[1]);
+        }
+        catch (BadTypeTagError error)
+        {
+            return;
+        }
+
+        mMinArea = std::max(0.f, value);
     }
 }
 
