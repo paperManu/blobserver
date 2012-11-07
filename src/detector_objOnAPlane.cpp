@@ -85,7 +85,10 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
         {
             for (int y = 0; y < master.rows; ++y)
             {
-                float dist = cv::norm(master.at<cv::Vec3b>(y, x), capture.at<cv::Vec3b>(y, x), cv::NORM_L2);
+                //float dist = cv::norm(master.at<cv::Vec3b>(y, x), capture.at<cv::Vec3b>(y, x), cv::NORM_L2);
+                cv::Vec3b mst = master.at<cv::Vec3b>(y, x);
+                cv::Vec3b cpt = capture.at<cv::Vec3b>(y, x);
+                float dist = sqrtf(pow(mst[0]-cpt[0], 2.f) + pow(mst[1]-cpt[1], 2.f) + pow(mst[2]-cpt[2], 2.f));
                 if (dist > mDetectionLevel)
                     detected.at<uchar>(y, x) = 255;
             }
