@@ -22,14 +22,13 @@ noinst_HEADERS = \
     source_opencv.h
 
 blobserver_CXXFLAGS = \
-    -std=gnu++0x \
-	$(GLIB_CFLAGS) \
+    $(GLIB_CFLAGS) \
     $(OPENCV_CFLAGS) \
     $(LIBLO_CFLAGS) \
     $(LIBATOM_CFLAGS)
 
 blobserver_LDADD = \
-	$(GLIB_LIBS) \
+    $(GLIB_LIBS) \
     $(OPENCV_LIBS) \
     $(LIBLO_LIBS) \
     $(LIBATOM_LIBS)
