@@ -34,6 +34,7 @@ class Source
     public:
         Source();
         Source(int pParam);
+        ~Source();
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}

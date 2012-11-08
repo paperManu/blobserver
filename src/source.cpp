@@ -37,6 +37,13 @@ Source::Source(int pParam)
 }
 
 /************/
+Source::~Source()
+{
+    if (mICCTransform != NULL)
+        cmsDeleteTransform(mICCTransform);
+}
+
+/************/
 cv::Mat Source::retrieveCorrectedFrame()
 {
     if (mUpdated)
@@ -144,6 +151,9 @@ void Source::setBaseParameter(atom::Message pParam)
         {
             return;
         }
+
+        if (mICCTransform != NULL)
+            cmsDeleteTransform(mICCTransform);
         mICCTransform = loadICCTransform(filename);
     }
 }
