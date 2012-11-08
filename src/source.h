@@ -26,6 +26,7 @@
  #define SOURCE_H
 
 #include "opencv2/opencv.hpp"
+#include "lcms2.h"
 #include "atom/message.h"
 
 class Source
@@ -76,6 +77,7 @@ class Source
         static std::string mClassName;
         static std::string mDocumentation;
         
+        // Distorsion parameters
         bool mCorrectDistortion;
         bool mCorrectVignetting;
         struct OpticalDesc
@@ -89,9 +91,15 @@ class Source
         bool mRecomputeVignettingMat;
         bool mRecomputeDistortionMat;
 
+        // Color correction
+        cmsHTRANSFORM mICCTransform;
+
         // Methods to correct the optical distortion
         cv::Mat correctVignetting(cv::Mat pImg);
         cv::Mat correctDistortion(cv::Mat pImg);
+
+        // Methods related to colorimetry. Default output profile is sRGB
+        cmsHTRANSFORM loadICCTransform(std::string pFile);
 };
 
  #endif // SOURCE_H

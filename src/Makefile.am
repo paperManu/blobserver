@@ -25,10 +25,12 @@ blobserver_CXXFLAGS = \
     $(GLIB_CFLAGS) \
     $(OPENCV_CFLAGS) \
     $(LIBLO_CFLAGS) \
-    $(LIBATOM_CFLAGS)
+    $(LIBATOM_CFLAGS) \
+    $(LCMS_CFLAGS)
 
 blobserver_LDADD = \
     $(GLIB_LIBS) \
     $(OPENCV_LIBS) \
     $(LIBLO_LIBS) \
-    $(LIBATOM_LIBS)
+    $(LIBATOM_LIBS) \
+    $(LCMS_LIBS)

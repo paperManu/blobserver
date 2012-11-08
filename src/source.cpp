@@ -26,6 +26,8 @@ Source::Source()
 
     mRecomputeVignettingMat = false;
     mRecomputeDistortionMat = false;
+
+    mICCTransform = NULL;
 }
 
 /************/
@@ -41,6 +43,8 @@ cv::Mat Source::retrieveCorrectedFrame()
     {
         mBuffer = retrieveFrame();
 
+        if (mICCTransform != NULL)
+            cmsDoTransform(mICCTransform, mBuffer.data, mBuffer.data, mBuffer.total());
         if (mCorrectVignetting)
             mBuffer = correctVignetting(mBuffer);
         if (mCorrectDistortion)
@@ -57,7 +61,7 @@ void Source::setBaseParameter(atom::Message pParam)
 {
     if (pParam.size() < 2)
         return;
-
+    
     std::string paramName;
     try
     {
@@ -128,6 +132,19 @@ void Source::setBaseParameter(atom::Message pParam)
 
         mCorrectDistortion = true;
         mRecomputeDistortionMat = true;
+    }
+    else if (paramName == "iccInputProfile")
+    {
+        std::string filename;
+        try
+        {
+            filename = atom::toString(pParam[1]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+        mICCTransform = loadICCTransform(filename);
     }
 }
 
@@ -241,4 +258,28 @@ cv::Mat Source::correctDistortion(cv::Mat pImg)
     cv::remap(pImg, resultMat, mDistortionMat, cv::Mat(), cv::INTER_LINEAR);
 
     return resultMat;
+}
+
+/************/
+cmsHTRANSFORM Source::loadICCTransform(std::string pFile)
+{
+    cmsHTRANSFORM transform = NULL;
+    cmsHPROFILE inProfile, outProfile;
+    
+    // Load the specified ICC profile
+    inProfile = cmsOpenProfileFromFile(pFile.c_str(), "r");
+    if (inProfile == NULL)
+    {
+        std::cout << "Error while loading ICC profile " << pFile << std::endl;
+        return transform;
+    }
+
+    outProfile = cmsCreate_sRGBProfile();
+    transform = cmsCreateTransform(inProfile, TYPE_BGR_8, outProfile, TYPE_BGR_8, INTENT_RELATIVE_COLORIMETRIC, 0);
+
+    cmsCloseProfile(inProfile);
+    cmsCloseProfile(outProfile);
+
+    std::cout << "ICC profile " << pFile << " correctly loaded" << std::endl;
+    return transform;
 }
