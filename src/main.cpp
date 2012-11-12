@@ -371,14 +371,14 @@ int App::loop()
         {
             std::lock_guard<std::mutex> lock(mSourceMutex);
 
-            std::vector<std::shared_ptr<Source>>::iterator iter;
             // First we grab, then we retrieve all frames
             // This way, sync between frames is better
-            for (iter = mSources.begin(); iter != mSources.end(); ++iter)
+            std::for_each (mSources.begin(), mSources.end(), [&] (std::shared_ptr<Source> source)
             {
-                std::shared_ptr<Source> source = (*iter);
-                lBuffers.push_back(source->retrieveCorrectedFrame());
-                
+                cv::Mat frame = source->retrieveCorrectedFrame();
+
+                lBuffers.push_back(frame);
+
                 atom::Message msg;
                 msg.push_back(atom::StringValue::create("id"));
                 msg = source->getParameter(msg);
@@ -386,31 +386,29 @@ int App::loop()
                 char name[16];
                 sprintf(name, "%i", id);
                 lBufferNames.push_back(source->getName() + std::string(" ") + std::string(name));
-            }
+            } );
         }
 
         // Go through the flows
         {
             std::lock_guard<std::mutex> lock(mFlowMutex);
 
-            std::vector<Flow>::iterator iter;
-            for (iter = mFlows.begin(); iter != mFlows.end(); ++iter)
+            std::for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
             {
-                Flow flow = (*iter);
-
-                // Check if the flow is running
                 if (flow.run == false)
-                    continue;
+                    return;
 
                 // Retrieve the frames from all sources in this flow
                 // Their is no risk for sources to disappear here, so no
-                // need of a mutex (they are freed earlier)
+                // need for a mutex (they are freed earlier)
                 std::vector<cv::Mat> frames;
                 for (int i = 0; i < flow.sources.size(); ++i)
                     frames.push_back(flow.sources[i]->retrieveCorrectedFrame());
 
                 // Apply the detector on these frames
                 atom::Message message = flow.detector->detect(frames);
+
+                // Lock everything to add result to buffers, and send OSC messages
                 lBuffers.push_back(flow.detector->getOutput());
                 lBufferNames.push_back(flow.detector->getName());
 
@@ -433,7 +431,7 @@ int App::loop()
 
                 // End of the frame
                 lo_send(flow.client->get(), "/blobserver/endFrame", "ii", frameNbr, flow.id);
-            }
+            } );
         }
 
         if (lShowCamera)

@@ -1,6 +1,7 @@
 #include "detector_objOnAPlane.h"
 
 using namespace atom;
+using namespace std;
 
 std::string Detector_ObjOnAPlane::mClassName = "Detector_ObjOnAPlane";
 std::string Detector_ObjOnAPlane::mDocumentation = "N/A";
@@ -63,23 +64,20 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
 
     // Resize all captures to match the first one,
     // and convert all of them to HSV
-    cv::cvtColor(correctedCaptures[0], correctedCaptures[0], CV_BGR2HSV);
-    for (iterCapture = correctedCaptures.begin()+1; iterCapture != correctedCaptures.end(); ++iterCapture)
+    for_each (correctedCaptures.begin(), correctedCaptures.end(), [&] (cv::Mat capture)
     {
-        cv::Mat capture = *iterCapture;
         cv::Mat resized;
 
         cv::resize(capture, resized, correctedCaptures[0].size(), 0, 0, cv::INTER_LINEAR);
         cv::cvtColor(resized, capture, CV_BGR2HSV);
-    }
+    } );
 
     // Compare the first capture to all the others
     cv::Mat master = correctedCaptures[0];
     cv::Mat detected = cv::Mat::zeros(master.rows, master.cols, CV_8U);
 
-    for (iterCapture = correctedCaptures.begin(); iterCapture != correctedCaptures.end(); ++iterCapture)
+    for_each ( correctedCaptures.begin(), correctedCaptures.end(), [&] (cv::Mat capture)
     {
-        cv::Mat capture = *iterCapture;
 
         for (int x = 0; x < master.cols; ++x)
         {
@@ -94,7 +92,7 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
                     detected.at<uchar>(y, x) = 255;
             }
         }
-    }
+    } );
     
     // Convert the detection to real space
     cv::Mat realDetected;

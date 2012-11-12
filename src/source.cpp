@@ -285,7 +285,7 @@ cmsHTRANSFORM Source::loadICCTransform(std::string pFile)
     }
 
     outProfile = cmsCreate_sRGBProfile();
-    transform = cmsCreateTransform(inProfile, TYPE_BGR_8, outProfile, TYPE_BGR_8, INTENT_RELATIVE_COLORIMETRIC, 0);
+    transform = cmsCreateTransform(inProfile, TYPE_BGR_8, outProfile, TYPE_BGR_8, INTENT_PERCEPTUAL, 0);
 
     cmsCloseProfile(inProfile);
     cmsCloseProfile(outProfile);
