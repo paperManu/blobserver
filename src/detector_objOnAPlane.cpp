@@ -76,7 +76,7 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
     cv::Mat master = correctedCaptures[0];
     cv::Mat detected = cv::Mat::zeros(master.rows, master.cols, CV_8U);
 
-    for_each ( correctedCaptures.begin(), correctedCaptures.end(), [&] (cv::Mat capture)
+    for_each (correctedCaptures.begin(), correctedCaptures.end(), [&] (cv::Mat capture)
     {
 
         for (int x = 0; x < master.cols; ++x)
