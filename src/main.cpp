@@ -172,6 +172,8 @@ class App
         static int oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerSetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
+        static int oscHandlerGetDetectors(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
+        static int oscHandlerGetSources(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
 };
 
 std::shared_ptr<App> App::mInstance(nullptr);
@@ -294,6 +296,8 @@ int App::init(int argc, char** argv)
     lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, App::oscHandlerConnect, NULL);
     lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", NULL, App::oscHandlerDisconnect, NULL);
     lo_server_thread_add_method(mOscServer, "/blobserver/parameter", NULL, App::oscHandlerSetParameter, NULL);
+    lo_server_thread_add_method(mOscServer, "/blobserver/detectors", NULL, App::oscHandlerGetDetectors, NULL);
+    lo_server_thread_add_method(mOscServer, "/blobserver/sources", NULL, App::oscHandlerGetSources, NULL);
     lo_server_thread_add_method(mOscServer, NULL, NULL, App::oscGenericHandler, NULL);
     lo_server_thread_start(mOscServer);
 
@@ -839,6 +843,69 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
     return result;
 }
 
+/*****************/
+int App::oscHandlerGetDetectors(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
+{
+    std::shared_ptr<App> theApp = App::getInstance();
+
+    atom::Message message;
+    atom::message_build_from_lo_args(message, types, argv, argc);
+
+    if (message.size() < 1)
+        return 1;
+
+    std::shared_ptr<OscClient> address;
+    try
+    {
+        std::string addressStr = atom::toString(message[0]);
+        address.reset(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
+    }
+    catch (atom::BadTypeTagError exception)
+    {
+        return 1;
+    }
+
+    // Get all the available detectors
+    std::vector<std::string> keys = theApp->mDetectorFactory.get_keys();
+
+    atom::Message outMessage;
+    std::for_each (keys.begin(), keys.end(), [&] (std::string key)
+    {
+        std::cout << key << std::endl;
+        outMessage.push_back(atom::StringValue::create(key.c_str()));
+    } );
+
+    lo_message oscMsg = lo_message_new();
+    atom::message_build_to_lo_message(outMessage, oscMsg);
+
+    lo_send_message(address->get(), "/blobserver/detectors", oscMsg);
+}
+
+/*****************/
+int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
+{
+    std::shared_ptr<App> theApp = App::getInstance();
+
+    atom::Message message;
+    atom::message_build_from_lo_args(message, types, argv, argc);
+
+    std::string addressStr = atom::toString(message[0]);
+    std::shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
+
+    // Get all the available detectors
+    std::vector<std::string> keys = theApp->mSourceFactory.get_keys();
+
+    atom::Message outMessage;
+    std::for_each (keys.begin(), keys.end(), [&] (std::string key)
+    {
+        outMessage.push_back(atom::StringValue::create(key.c_str()));
+    } );
+
+    lo_message oscMsg = lo_message_new();
+    atom::message_build_to_lo_message(outMessage, oscMsg);
+
+    lo_send_message(address->get(), "/blobserver/sources", oscMsg);
+}
 /*****************/
 int main(int argc, char** argv)
 {
