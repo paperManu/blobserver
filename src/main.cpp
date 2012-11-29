@@ -172,6 +172,7 @@ class App
         static int oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerSetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
+        static int oscHandlerGetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerGetDetectors(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerGetSources(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
 };
@@ -295,7 +296,8 @@ int App::init(int argc, char** argv)
     mOscServer = lo_server_thread_new_with_proto("9001", lNetProto, App::oscError);
     lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, App::oscHandlerConnect, NULL);
     lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", NULL, App::oscHandlerDisconnect, NULL);
-    lo_server_thread_add_method(mOscServer, "/blobserver/parameter", NULL, App::oscHandlerSetParameter, NULL);
+    lo_server_thread_add_method(mOscServer, "/blobserver/setParameter", NULL, App::oscHandlerSetParameter, NULL);
+    lo_server_thread_add_method(mOscServer, "/blobserver/getParameter", NULL, App::oscHandlerGetParameter, NULL);
     lo_server_thread_add_method(mOscServer, "/blobserver/detectors", NULL, App::oscHandlerGetDetectors, NULL);
     lo_server_thread_add_method(mOscServer, "/blobserver/sources", NULL, App::oscHandlerGetSources, NULL);
     lo_server_thread_add_method(mOscServer, NULL, NULL, App::oscGenericHandler, NULL);
@@ -766,7 +768,7 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
     // or just ip address, flow id, and start/stop
     if (message.size() < 3)
     {
-        lo_send(address->get(), "/blobserver/parameter", "s", "Wrong number of arguments");
+        lo_send(address->get(), "/blobserver/setParameter", "s", "Wrong number of arguments");
         return 1;
     }
     
@@ -793,7 +795,7 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
             {
                 if (message.size() < 5)
                 {
-                    lo_send(address->get(), "/blobserver/parameter", "s", "Wrong number of arguments");
+                    lo_send(address->get(), "/blobserver/setParameter", "s", "Wrong number of arguments");
                     result = 1;
                 }
                 else
@@ -809,7 +811,7 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
             {
                 if (message.size() < 6)
                 {
-                    lo_send(address->get(), "/blobserver/parameter", "s", "Wrong number of arguments");
+                    lo_send(address->get(), "/blobserver/setParameter", "s", "Wrong number of arguments");
                     result = 1;
                 }
                 else
@@ -817,7 +819,7 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
                     int srcNbr = atom::toInt(message[3]);
                     if (srcNbr >= flow->sources.size())
                     {
-                        lo_send(address->get(), "/blobserver/parameter", "s", "Wrong source index");
+                        lo_send(address->get(), "/blobserver/setParameter", "s", "Wrong source index");
                         result = 1;
                     }
                     else
@@ -839,6 +841,105 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
             }
         }
     }
+
+    return result;
+}
+
+/*****************/
+int App::oscHandlerGetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
+{
+    std::shared_ptr<App> theApp = App::getInstance();
+
+    atom::Message message;
+    atom::message_build_from_lo_args(message, types, argv, argc);
+
+    std::shared_ptr<OscClient> address;
+    try
+    {
+        std::string addressStr = atom::toString(message[0]);
+        address.reset(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
+    }
+    catch (...)
+    {
+        return 1;
+    }
+
+    if (message.size() < 4)
+    {
+        lo_send(address->get(), "/blobserver/getParameter", "s", "Wrong number of arguments");
+        return 1;
+    }
+
+    unsigned int flowId;
+    std::string entity;
+
+    try
+    {
+        flowId = (unsigned int)(atom::toInt(message[1]));
+        entity = atom::toString(message[2]);
+    }
+    catch (atom::BadTypeTagError exception)
+    {
+        return 1;
+    }
+
+    // Go through the flows
+    int result = 0;
+    std::for_each (theApp->mFlows.begin(), theApp->mFlows.end(), [&] (Flow flow)
+    {
+        if (flow.id == flowId)
+        {
+            std::lock_guard<std::mutex> lock(theApp->mFlowMutex);
+
+            // If the parameter is for the detector
+            if (entity == "Detector")
+            {
+                atom::Message msg;
+                msg.push_back(message[3]);
+                msg = flow.detector->getParameter(msg);
+
+                lo_message oscMsg = lo_message_new();
+                atom::message_build_to_lo_message(msg, oscMsg);
+                lo_send_message(address->get(), "/blobserver/getParameter", oscMsg);
+            }
+            // If the parameter is for the sources
+            else if (entity == "Sources")
+            {
+                if (message.size() < 5)
+                {
+                    lo_send(address->get(), "/blobserver/getParameter", "s", "Wrong number of arguments");
+                    result = 1;
+                }
+                else
+                {
+                    int srcNbr;
+                    try
+                    {
+                        srcNbr = atom::toInt(message[3]);
+                    }
+                    catch (...)
+                    {
+                        return 1;
+                    }
+
+                    if (srcNbr >= flow.sources.size())
+                    {
+                        result = 1;
+                    }
+                    else
+                    {
+                        atom::Message msg;
+                        msg.push_back(message[4]);
+                        msg = flow.sources[srcNbr]->getParameter(msg);
+
+                        lo_message oscMsg = lo_message_new();
+                        atom::message_build_to_lo_message(msg, oscMsg);
+                        lo_send_message(address->get(), "/blobserver/getParameter", oscMsg);
+                    }
+                }
+            }
+        }
+    } );
 
     return result;
 }
