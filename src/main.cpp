@@ -990,21 +990,54 @@ int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
 
-    std::string addressStr = atom::toString(message[0]);
-    std::shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
-
-    // Get all the available detectors
-    std::vector<std::string> keys = theApp->mSourceFactory.get_keys();
-
-    atom::Message outMessage;
-    std::for_each (keys.begin(), keys.end(), [&] (std::string key)
+    std::string addressStr;
+    try
     {
-        outMessage.push_back(atom::StringValue::create(key.c_str()));
-    } );
+        addressStr = atom::toString(message[0]);
+    }
+    catch (...)
+    {
+        return 1;
+    }
+    std::shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
+    
+    // If we have another parameter, it means we want to get availables subsources
+    atom::Message outMessage;
+    if (message.size() > 1)
+    {
+        std::string sourceName;
+        try
+        {
+            sourceName = atom::toString(message[1]);
+        }
+        catch (...)
+        {
+            return 1;
+        }
+
+        // We try to create the named source
+        std::shared_ptr<Source> source;
+        if (theApp->mSourceFactory.key_exists(sourceName))
+            source = theApp->mSourceFactory.create(sourceName, -1);
+        else
+            return 1;
+
+        // Ask the source for all the available subsources
+        outMessage = source->getSubsources();
+    }
+    else
+    {
+        // Get all the available detectors
+        std::vector<std::string> keys = theApp->mSourceFactory.get_keys();
+
+        std::for_each (keys.begin(), keys.end(), [&] (std::string key)
+        {
+            outMessage.push_back(atom::StringValue::create(key.c_str()));
+        } );
+    }
 
     lo_message oscMsg = lo_message_new();
     atom::message_build_to_lo_message(outMessage, oscMsg);
-
     lo_send_message(address->get(), "/blobserver/sources", oscMsg);
 }
 /*****************/

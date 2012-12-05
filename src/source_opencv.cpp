@@ -184,3 +184,43 @@ atom::Message Source_OpenCV::getParameter(atom::Message pParam)
 
     return msg;
 }
+
+/*************/
+atom::Message Source_OpenCV::getSubsources()
+{
+    atom::Message message;
+
+    // We need to test all possible CV sources
+    int srcNbr = 14;
+    int sources[] = {0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 910, 1000, 1100, 1200, 1300};
+
+    for (int i = 0; i < srcNbr; ++i)
+    {
+        int index = 0;
+
+        while (true)
+        {
+            cv::VideoCapture camera;
+
+            bool available;
+            available = camera.open(sources[i] + index);
+
+            if (!available)
+                break;
+
+            message.push_back(atom::IntValue::create(sources[i] + index));
+
+            unsigned int id;
+            char name[64];
+            id = (unsigned int)(camera.get(CV_CAP_PROP_GUID));
+            sprintf(name, "%i", id);
+            message.push_back(atom::StringValue::create(name));
+
+            camera.release();
+
+            index++;
+        }
+    }
+
+    return message;
+}

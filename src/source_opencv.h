@@ -34,9 +34,10 @@ class Source_OpenCV : public Source
         Source_OpenCV(int pParam);
         ~Source_OpenCV();
 
-
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
+
+        atom::Message getSubsources(); 
 
         bool connect();
         bool disconnect();

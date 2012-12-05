@@ -34,11 +34,20 @@ Message Detector::getParameter(Message pParam)
 {
     Message message;
 
-    if (pParam.size() != 1 || pParam[0].get()->getTypeTag() != StringValue::TYPE_TAG)
+    if (pParam.size() < 1)
         return message;
         
-    std::string param = StringValue::convert(pParam[0])->getString();
-    
+    std::string param;
+    try
+    {
+        param = atom::toString(pParam[0]);
+    }
+    catch (...)
+    {
+        return message;
+    }
+
+    message.push_back(pParam[0]);
     if (param == "name")
         message.push_back(StringValue::create(mClassName.c_str()));
     else if (param == "osc path")

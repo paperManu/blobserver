@@ -39,6 +39,10 @@ class Source
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
+        // Returns all the subsources availables through this source
+        // Needs to be redefined in subclasses
+        virtual atom::Message getSubsources() {return atom::Message();}
+
         // Base methods
         virtual bool connect() {return true;}
         virtual bool disconnect() {return true;}
