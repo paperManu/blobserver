@@ -21,14 +21,13 @@ Source::Source()
     mCorrectDistortion = false;
     mCorrectVignetting = false;
 
-    mOpticalDesc.resolution.x = 0;
-    mOpticalDesc.resolution.y = 0;
     mOpticalDesc.distortion = 0.0;
     mOpticalDesc.vignetting = 0.0;
-    mOpticalDesc.hfov = 0;
 
     mRecomputeVignettingMat = false;
     mRecomputeDistortionMat = false;
+
+    mICCTransform = NULL;
 }
 
 /************/
@@ -38,12 +37,21 @@ Source::Source(int pParam)
 }
 
 /************/
+Source::~Source()
+{
+    if (mICCTransform != NULL)
+        cmsDeleteTransform(mICCTransform);
+}
+
+/************/
 cv::Mat Source::retrieveCorrectedFrame()
 {
     if (mUpdated)
     {
         mBuffer = retrieveFrame();
 
+        if (mICCTransform != NULL)
+            cmsDoTransform(mICCTransform, mBuffer.data, mBuffer.data, mBuffer.total());
         if (mCorrectVignetting)
             mBuffer = correctVignetting(mBuffer);
         if (mCorrectDistortion)
@@ -60,7 +68,7 @@ void Source::setBaseParameter(atom::Message pParam)
 {
     if (pParam.size() < 2)
         return;
-
+    
     std::string paramName;
     try
     {
@@ -131,6 +139,22 @@ void Source::setBaseParameter(atom::Message pParam)
 
         mCorrectDistortion = true;
         mRecomputeDistortionMat = true;
+    }
+    else if (paramName == "iccInputProfile")
+    {
+        std::string filename;
+        try
+        {
+            filename = atom::toString(pParam[1]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+
+        if (mICCTransform != NULL)
+            cmsDeleteTransform(mICCTransform);
+        mICCTransform = loadICCTransform(filename);
     }
 }
 
@@ -221,12 +245,16 @@ cv::Mat Source::correctDistortion(cv::Mat pImg)
             for (int y = 0; y < (int)mHeight; ++y)
             {
                 // Compute the distance to center in normalized value
+                // See http://wiki.panotools.org/Lens_correction_model for information
                 float dstRadius = (sqrtf(pow((float)x-center.x, 2.f) + pow((float)y-center.y, 2.f)));
                 cv::Vec2f dir;
                 dir[0] = ((float)x-center.x)/dstRadius;
                 dir[1] = ((float)y-center.y)/dstRadius;
                 
-                float srcRadius = a*pow(dstRadius/radius, 4.f) + b*pow(dstRadius/radius, 3.f) + c*pow(dstRadius/radius, 2.f) + dstRadius/radius;
+                float srcRadius = a*pow(dstRadius/radius, 4.f)
+                    + b*pow(dstRadius/radius, 3.f)
+                    + c*pow(dstRadius/radius, 2.f)
+                    + dstRadius/radius;
 
                 mDistortionMat.at<cv::Vec2f>(y, x)[0] = center.x + srcRadius*radius*dir[0];
                 mDistortionMat.at<cv::Vec2f>(y, x)[1] = center.y + srcRadius*radius*dir[1];
@@ -240,4 +268,28 @@ cv::Mat Source::correctDistortion(cv::Mat pImg)
     cv::remap(pImg, resultMat, mDistortionMat, cv::Mat(), cv::INTER_LINEAR);
 
     return resultMat;
+}
+
+/************/
+cmsHTRANSFORM Source::loadICCTransform(std::string pFile)
+{
+    cmsHTRANSFORM transform = NULL;
+    cmsHPROFILE inProfile, outProfile;
+    
+    // Load the specified ICC profile
+    inProfile = cmsOpenProfileFromFile(pFile.c_str(), "r");
+    if (inProfile == NULL)
+    {
+        std::cout << "Error while loading ICC profile " << pFile << std::endl;
+        return transform;
+    }
+
+    outProfile = cmsCreate_sRGBProfile();
+    transform = cmsCreateTransform(inProfile, TYPE_BGR_8, outProfile, TYPE_BGR_8, INTENT_PERCEPTUAL, 0);
+
+    cmsCloseProfile(inProfile);
+    cmsCloseProfile(outProfile);
+
+    std::cout << "ICC profile " << pFile << " correctly loaded" << std::endl;
+    return transform;
 }

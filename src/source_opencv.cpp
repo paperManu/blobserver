@@ -87,7 +87,6 @@ void Source_OpenCV::setParameter(atom::Message pParam)
     try
     {
         paramName = atom::toString(pParam[0]);
-        paramValue = atom::toFloat(pParam[1]);
     }
     catch (atom::BadTypeTagError exception)
     {
@@ -96,21 +95,57 @@ void Source_OpenCV::setParameter(atom::Message pParam)
 
     if (paramName == "width")
     {
+        try
+        {
+            paramValue = atom::toFloat(pParam[1]);
+        }
+        catch (atom::BadTypeTagError exception)
+        {
+            return;
+        }
+
         mCamera.set(CV_CAP_PROP_FRAME_WIDTH, paramValue);
         mWidth = (unsigned int)(mCamera.get(CV_CAP_PROP_FRAME_WIDTH));
     }
     else if (paramName == "height")
     {
+        try
+        {
+            paramValue = atom::toFloat(pParam[1]);
+        }
+        catch (atom::BadTypeTagError exception)
+        {
+            return;
+        }
+
         mCamera.set(CV_CAP_PROP_FRAME_HEIGHT, paramValue);
         mHeight = (unsigned int)(mCamera.get(CV_CAP_PROP_FRAME_HEIGHT));
     }
     else if (paramName == "framerate")
     {
+        try
+        {
+            paramValue = atom::toFloat(pParam[1]);
+        }
+        catch (atom::BadTypeTagError exception)
+        {
+            return;
+        }
+
         mCamera.set(CV_CAP_PROP_FPS, paramValue);
         mFramerate = (unsigned int)(mCamera.get(CV_CAP_PROP_FPS));
     }
-    else if (paramName == "camera number")
+    else if (paramName == "cameraNumber")
     {
+        try
+        {
+            paramValue = atom::toFloat(pParam[1]);
+        }
+        catch (atom::BadTypeTagError exception)
+        {
+            return;
+        }
+
         mSubsourceNbr = (unsigned int)paramValue;
     }
     else

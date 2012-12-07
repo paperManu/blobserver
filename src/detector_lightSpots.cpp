@@ -31,7 +31,7 @@ void Detector_LightSpots::make()
     mProcessNoiseCov = 1e-5;
     mMeasurementNoiseCov = 1e-5;
 
-    // Set mLightDetector to indeed detect light
+    // Set mLightBlobDetector to indeed detect light
     cv::SimpleBlobDetector::Params lParams;
     lParams.filterByColor = true;
     lParams.blobColor = 255;
@@ -109,9 +109,6 @@ atom::Message Detector_LightSpots::detect(std::vector<cv::Mat> pCaptures)
         lIt->setParameter("processNoiseCov", mProcessNoiseCov);
         lIt->setParameter("measurementNoiseCov", mMeasurementNoiseCov);
     }
-
-    //if(gVerbose)
-    //    std::cout << "--- Light blobs detection:" << std::endl;
 
     // And we send and print them
     Message message;

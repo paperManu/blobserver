@@ -7,6 +7,7 @@ blobserver_SOURCES = \
     detector.cpp \
     detector_meanOutliers.cpp \
     detector_lightSpots.cpp \
+    detector_objOnAPlane.cpp \
     source.cpp \
     source_opencv.cpp
 
@@ -16,18 +17,20 @@ noinst_HEADERS = \
     detector.h \
     detector_meanOutliers.h \
     detector_lightSpots.h \
+    detector_objOnAPlane.h \
     source.h \
     source_opencv.h
 
 blobserver_CXXFLAGS = \
-    -std=gnu++0x \
-	$(GLIB_CFLAGS) \
+    $(GLIB_CFLAGS) \
     $(OPENCV_CFLAGS) \
     $(LIBLO_CFLAGS) \
-    $(LIBATOM_CFLAGS)
+    $(LIBATOM_CFLAGS) \
+    $(LCMS_CFLAGS)
 
 blobserver_LDADD = \
-	$(GLIB_LIBS) \
+    $(GLIB_LIBS) \
     $(OPENCV_LIBS) \
     $(LIBLO_LIBS) \
-    $(LIBATOM_LIBS)
+    $(LIBATOM_LIBS) \
+    $(LCMS_LIBS)

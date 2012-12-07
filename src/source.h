@@ -3,18 +3,18 @@
  *
  * This file is part of blobserver.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * switcher is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with switcher.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -26,6 +26,7 @@
  #define SOURCE_H
 
 #include "opencv2/opencv.hpp"
+#include "lcms2.h"
 #include "atom/message.h"
 
 class Source
@@ -33,6 +34,7 @@ class Source
     public:
         Source();
         Source(int pParam);
+        ~Source();
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -76,12 +78,11 @@ class Source
         static std::string mClassName;
         static std::string mDocumentation;
         
+        // Distorsion parameters
         bool mCorrectDistortion;
         bool mCorrectVignetting;
         struct OpticalDesc
         {
-            cv::Point resolution;
-            float hfov;
             cv::Vec3f distortion;
             cv::Vec3f vignetting;
         } mOpticalDesc;
@@ -91,9 +92,15 @@ class Source
         bool mRecomputeVignettingMat;
         bool mRecomputeDistortionMat;
 
+        // Color correction
+        cmsHTRANSFORM mICCTransform;
+
         // Methods to correct the optical distortion
         cv::Mat correctVignetting(cv::Mat pImg);
         cv::Mat correctDistortion(cv::Mat pImg);
+
+        // Methods related to colorimetry. Default output profile is sRGB
+        cmsHTRANSFORM loadICCTransform(std::string pFile);
 };
 
  #endif // SOURCE_H
