@@ -462,7 +462,10 @@ int App::loop()
 
         frameNbr++;
 
-        usleep(1000);
+        timespec req, rem;
+        req.tv_sec = 0.01;
+        req.tv_nsec = req.tv_sec*1000000L;
+        nanosleep(&req, &rem);
     }
 
     return 0;
