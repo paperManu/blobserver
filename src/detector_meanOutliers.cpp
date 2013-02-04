@@ -1,6 +1,6 @@
 #include "detector_meanOutliers.h"
 
-using namespace atom;
+//using namespace atom;
 
 std::string Detector_MeanOutliers::mClassName = "Detector_MeanOutliers";
 std::string Detector_MeanOutliers::mDocumentation = "N/A";
@@ -120,9 +120,9 @@ atom::Message Detector_MeanOutliers::detect(std::vector<cv::Mat> pCaptures)
     int lSpeedY = (int)(props.speed.y);
 
     // Constructing the message
-    Message message;
+    atom::Message message;
     // Two first values are the number and size of each (the...) blob
-    message = createMessage("iiiiiii", 1, 5, lX, lY, lNumber, lSpeedX, lSpeedY);
+    message = atom::createMessage("iiiiiii", 1, 5, lX, lY, lNumber, lSpeedX, lSpeedY);
 
     return message;
 }
@@ -130,34 +130,34 @@ atom::Message Detector_MeanOutliers::detect(std::vector<cv::Mat> pCaptures)
 /*************/
 void Detector_MeanOutliers::setParameter(atom::Message pMessage)
 {
-    Message::const_iterator iter = pMessage.begin();
+    atom::Message::const_iterator iter = pMessage.begin();
 
-    if ((*iter).get()->getTypeTag() == StringValue::TYPE_TAG)
+    if ((*iter).get()->getTypeTag() == atom::StringValue::TYPE_TAG)
     {
-        std::string cmd = StringValue::convert(*iter)->getString();
+        std::string cmd = atom::StringValue::convert(*iter)->getString();
 
         ++iter;
         if (iter == pMessage.end())
             return;
 
-        if (cmd == "setDetectionLevel" && (*iter).get()->getTypeTag() == FloatValue::TYPE_TAG)
+        if (cmd == "setDetectionLevel" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
         {
-            float param = FloatValue::convert(*iter)->getFloat();
+            float param = atom::FloatValue::convert(*iter)->getFloat();
             mDetectionLevel = std::max(0.f, param);
         }
-        else if (cmd == "setFilterSize" && (*iter).get()->getTypeTag() == FloatValue::TYPE_TAG)
+        else if (cmd == "setFilterSize" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
         {
-            float param = FloatValue::convert(*iter)->getFloat();
+            float param = atom::FloatValue::convert(*iter)->getFloat();
             mFilterSize= std::max(0.f, param);
         }
-        else if (cmd == "setProcessNoiseCov" && (*iter).get()->getTypeTag() == FloatValue::TYPE_TAG)
+        else if (cmd == "setProcessNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
         {
-            float param = FloatValue::convert(*iter)->getFloat();
+            float param = atom::FloatValue::convert(*iter)->getFloat();
             mMeanBlob.setParameter("processNoiseCov", param);
         }
-        else if (cmd == "setMeasurementNoiseCov" && (*iter).get()->getTypeTag() == FloatValue::TYPE_TAG)
+        else if (cmd == "setMeasurementNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
         {
-            float param = FloatValue::convert(*iter)->getFloat();
+            float param = atom::FloatValue::convert(*iter)->getFloat();
             mMeanBlob.setParameter("measurementNoiseCov", param);
         }
     }

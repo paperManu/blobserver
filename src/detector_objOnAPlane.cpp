@@ -1,6 +1,6 @@
 #include "detector_objOnAPlane.h"
 
-using namespace atom;
+//using namespace atom;
 using namespace std;
 
 std::string Detector_ObjOnAPlane::mClassName = "Detector_ObjOnAPlane";
@@ -146,10 +146,10 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
     }
 
     // And we send and print them
-    Message message;
+    atom::Message message;
     // Include the number and size of each blob in the message
-    message.push_back(IntValue::create((int)mBlobs.size()));
-    message.push_back(IntValue::create(6));
+    message.push_back(atom::IntValue::create((int)mBlobs.size()));
+    message.push_back(atom::IntValue::create(6));
     
     for(int i = 0; i < mBlobs.size(); ++i)
     {
@@ -168,12 +168,12 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
         cv::putText(realDetected, lNbrStr, cv::Point(lX, lY), cv::FONT_HERSHEY_COMPLEX, 0.66, cv::Scalar(128.0, 128.0, 128.0, 128.0));
 
         // Add this blob to the message
-        message.push_back(IntValue::create(lX));
-        message.push_back(IntValue::create(lY));
-        message.push_back(IntValue::create(lSize));
-        message.push_back(IntValue::create(ldX));
-        message.push_back(IntValue::create(ldY));
-        message.push_back(IntValue::create(lId));
+        message.push_back(atom::IntValue::create(lX));
+        message.push_back(atom::IntValue::create(lY));
+        message.push_back(atom::IntValue::create(lSize));
+        message.push_back(atom::IntValue::create(ldX));
+        message.push_back(atom::IntValue::create(ldY));
+        message.push_back(atom::IntValue::create(lId));
     }
 
     // Save the result in a buffer
@@ -183,16 +183,16 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
 }
 
 /*****************/
-void Detector_ObjOnAPlane::setParameter(Message pMessage)
+void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
 {
-    Message::const_iterator iter = pMessage.begin();
+    atom::Message::const_iterator iter = pMessage.begin();
 
     std::string cmd;
     try
     {
         cmd = toString(pMessage[0]);
     }
-    catch (BadTypeTagError error)
+    catch (atom::BadTypeTagError error)
     {
         return;
     }
@@ -215,7 +215,7 @@ void Detector_ObjOnAPlane::setParameter(Message pMessage)
                     point[0] = toFloat(pMessage[i]);
                     point[1] = toFloat(pMessage[i+1]);
                 }
-                catch (BadTypeTagError error)
+                catch (atom::BadTypeTagError error)
                 {
                     return;
                 }
@@ -236,7 +236,7 @@ void Detector_ObjOnAPlane::setParameter(Message pMessage)
         {
             number = toInt(pMessage[1]);
         }
-        catch (BadTypeTagError error)
+        catch (atom::BadTypeTagError error)
         {
             return;
         }
@@ -260,7 +260,7 @@ void Detector_ObjOnAPlane::setParameter(Message pMessage)
                     point[0] = toFloat(pMessage[i*size+2+j]);
                     point[1] = toFloat(pMessage[i*size+2+j+1]);
                 }
-                catch (BadTypeTagError error)
+                catch (atom::BadTypeTagError error)
                 {
                     return;
                 }
@@ -290,7 +290,7 @@ void Detector_ObjOnAPlane::setParameter(Message pMessage)
         {
             value = toFloat(pMessage[1]);
         }
-        catch (BadTypeTagError error)
+        catch (atom::BadTypeTagError error)
         {
             return;
         }
@@ -305,7 +305,7 @@ void Detector_ObjOnAPlane::setParameter(Message pMessage)
         {
             value = toFloat(pMessage[1]);
         }
-        catch (BadTypeTagError error)
+        catch (atom::BadTypeTagError error)
         {
             return;
         }
@@ -320,7 +320,7 @@ void Detector_ObjOnAPlane::setParameter(Message pMessage)
         {
             value = toFloat(pMessage[1]);
         }
-        catch (BadTypeTagError error)
+        catch (atom::BadTypeTagError error)
         {
             return;
         }
@@ -335,7 +335,7 @@ void Detector_ObjOnAPlane::setParameter(Message pMessage)
         {
             value = toFloat(pMessage[1]);
         }
-        catch (BadTypeTagError error)
+        catch (atom::BadTypeTagError error)
         {
             return;
         }
@@ -350,7 +350,7 @@ void Detector_ObjOnAPlane::setParameter(Message pMessage)
         {
             value = toFloat(pMessage[1]);
         }
-        catch (BadTypeTagError error)
+        catch (atom::BadTypeTagError error)
         {
             return;
         }

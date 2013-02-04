@@ -55,7 +55,7 @@ if test "x${have_lcms}" = "xfalse" ; then
 fi
 
 # LibAtom
-PKG_CHECK_MODULES([LIBATOM], atom-0.1)
+PKG_CHECK_MODULES([LIBATOM], atom-0.2)
 if test "x${have_atom}" = "xfalse" ; then
     AC_MSG_ERROR([Missing atom])
 fi
