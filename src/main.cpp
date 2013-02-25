@@ -463,7 +463,7 @@ int App::loop()
         frameNbr++;
 
         timespec req, rem;
-        req.tv_sec = 0.01;
+        req.tv_sec = 0;
         req.tv_nsec = req.tv_sec*1000000L;
         nanosleep(&req, &rem);
     }
@@ -642,7 +642,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
                 
                 if (!source->connect())
                 {
-                    std::string error = "Unable to create to source ";
+                    std::string error = "Unable to connect to source ";
                     error += sourceName;
                     lo_send(address->get(), "/blobserver/connect", "s", error.c_str());
                     return 1;
@@ -1030,7 +1030,7 @@ int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv
     }
     else
     {
-        // Get all the available detectors
+        // Get all the available sources
         std::vector<std::string> keys = theApp->mSourceFactory.get_keys();
 
         std::for_each (keys.begin(), keys.end(), [&] (std::string key)
