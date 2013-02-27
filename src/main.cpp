@@ -28,22 +28,26 @@
 #include <memory>
 #include <mutex>
 #include <thread>
-#include "glib.h"
-#include "opencv2/opencv.hpp"
-#include "lo/lo.h"
+#include <glib.h>
+#include <opencv2/opencv.hpp>
+#include <lo/lo.h>
+#include <atom/osc.h>
 //#include "gst/gst.h"
 
+#include "base_objects.h"
 #include "blob_2D.h"
+#include "configurator.h"
 #include "source_opencv.h"
 #include "detector_meanOutliers.h"
 #include "detector_lightSpots.h"
 #include "detector_objOnAPlane.h"
-#include "atom/osc.h"
 #include "abstract-factory.h"
 
 static gboolean gVersion = FALSE;
 static gboolean gHide = FALSE;
 static gboolean gVerbose = FALSE;
+
+static gchar* gConfigFile = NULL;
 
 static gint gCamNbr = 0;
 static gint gWidth = 0;
@@ -62,9 +66,11 @@ static gboolean gOutliers = FALSE;
 static gboolean gLight = FALSE;
 
 // TODO: check wether all these options still work
+// TODO: or better, delete options that are availables in config file
 static GOptionEntry gEntries[] =
 {
     {"version", 0, 0, G_OPTION_ARG_NONE, &gVersion, "Shows version of this software", NULL},
+    {"config", 'C', 0, G_OPTION_ARG_STRING, &gConfigFile, "Specify a configuration file to load at startup", NULL},
     {"hide", 0, 0, G_OPTION_ARG_NONE, &gHide, "Hides the camera window", NULL},
     {"verbose", 'v', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
     {"cam", 'c', 0, G_OPTION_ARG_INT, &gCamNbr, "Selects which camera to use, as detected by OpenCV", NULL},
@@ -82,20 +88,6 @@ static GOptionEntry gEntries[] =
     {NULL}
 };
 
-/**************************/
-// lo_address in an object
-class OscClient
-{
-    public:
-        OscClient(lo_address pAddress) {mAddress = pAddress;}
-        ~OscClient() {lo_address_free(mAddress);}
-
-        lo_address get() {return mAddress;}
-
-    private:
-        lo_address mAddress;
-};
-
 /*****************************/
 // Definition of the app class
 class App
@@ -110,7 +102,7 @@ class App
             unsigned int id;
             bool run;
         };
-        
+
         ~App();
 
         static std::shared_ptr<App> getInstance();
@@ -183,6 +175,7 @@ unsigned int App::mCurrentId = 0;
 /*****************/
 App::App()
 {
+    mCurrentId = 0;
 }
 
 
@@ -293,7 +286,7 @@ int App::init(int argc, char** argv)
     }
 
     // Server
-    mOscServer = lo_server_thread_new_with_proto("9001", lNetProto, App::oscError);
+    mOscServer = lo_server_thread_new_with_proto("9002", lNetProto, App::oscError);
     lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, App::oscHandlerConnect, NULL);
     lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", NULL, App::oscHandlerDisconnect, NULL);
     lo_server_thread_add_method(mOscServer, "/blobserver/setParameter", NULL, App::oscHandlerSetParameter, NULL);
@@ -302,6 +295,12 @@ int App::init(int argc, char** argv)
     lo_server_thread_add_method(mOscServer, "/blobserver/sources", NULL, App::oscHandlerGetSources, NULL);
     lo_server_thread_add_method(mOscServer, NULL, NULL, App::oscGenericHandler, NULL);
     lo_server_thread_start(mOscServer);
+
+    if (gConfigFile != NULL)
+    {
+        Configurator configurator;
+        configurator.loadXML((char*)gConfigFile);
+    }
 
     return 0;
 }
@@ -339,8 +338,6 @@ int App::parseArgs(int argc, char** argv)
 /*****************/
 void App::registerClasses()
 {
-    // TODO: send list of available detectors and sources to the client
-    // TODO: send info about how to use them to the client
     // Register detectors
     mDetectorFactory.register_class<Detector_LightSpots>(Detector_LightSpots::getClassName(),
         Detector_LightSpots::getDocumentation());
@@ -525,6 +522,8 @@ int App::oscGenericHandler(const char* path, const char* types, lo_arg** argv, i
 
         std::cout << std::endl;
     }
+
+    return 1;
 }
 
 /*****************/
@@ -532,10 +531,10 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 {
     std::shared_ptr<App> theApp = App::getInstance();
 
-
     // Messge must be : ip / port / detector / source0 / subsource0 / source1 / ...
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
+
 
     char port[8];
     try

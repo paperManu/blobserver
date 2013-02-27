@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.68)
 AC_INIT([BLOBSERVER],
-        [0.2.3],
+        [0.3.0],
         [http://code.sat.qc.ca/redmine/projects/blobserver/issues],
         [blobserver],
         [http://code.sat.qc.ca/redmine/projects/blobserver])
@@ -16,9 +16,11 @@ AC_PROG_CXX
 AC_PROG_CC
 
 AC_MSG_CHECKING([to see if compiler understands -std=gnu++0x])
-CXXFLAGS="$CFLAGS -std=gnu++0x"
+#CXXFLAGS="$CFLAGS -std=gnu++0x"
+CXXFLAGS="-g3 -O0 -std=gnu++0x"
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ ], [ ])], [
-  CXXFLAGS="$CFLAGS -std=gnu++0x"
+#  CXXFLAGS="$CFLAGS -std=gnu++0x"
+  CXXFLAGS="-g3 -O0 -std=gnu++0x"
   AC_MSG_RESULT([yes])
 ], [
   AC_MSG_RESULT([no])
@@ -58,6 +60,12 @@ fi
 PKG_CHECK_MODULES([LIBATOM], atom-0.2)
 if test "x${have_atom}" = "xfalse" ; then
     AC_MSG_ERROR([Missing atom])
+fi
+
+# LibXML2
+PKG_CHECK_MODULES([XML2], libxml-2.0)
+if test "x${have_xml2}" = "xfalse" ; then
+    AC_MSG_ERROR([Missing libxml2])
 fi
 
 # GNU help2man creates man pages from --help output; in many cases, this

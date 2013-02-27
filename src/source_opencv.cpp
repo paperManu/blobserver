@@ -32,6 +32,9 @@ Source_OpenCV::~Source_OpenCV()
 /*************/
 bool Source_OpenCV::connect()
 {
+    if (mSubsourceNbr == 0)
+        return false;
+
     mCamera.open(mSubsourceNbr);
     if (!mCamera.isOpened())
     {
@@ -191,8 +194,8 @@ atom::Message Source_OpenCV::getSubsources()
     atom::Message message;
 
     // We need to test all possible CV sources
-    int srcNbr = 14;
-    int sources[] = {0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 910, 1000, 1100, 1200, 1300};
+    int srcNbr = 13;
+    int sources[] = {100, 200, 300, 400, 500, 600, 700, 800, 900, 910, 1000, 1100, 1200, 1300};
 
     for (int i = 0; i < srcNbr; ++i)
     {

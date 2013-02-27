@@ -4,6 +4,7 @@ blobserver_SOURCES = \
     main.cpp \
     blob.cpp \
     blob_2D.cpp \
+    configurator.cpp \
     detector.cpp \
     detector_meanOutliers.cpp \
     detector_lightSpots.cpp \
@@ -14,6 +15,7 @@ blobserver_SOURCES = \
 noinst_HEADERS = \
     blob.h \
     blob_2D.h \
+    configurator.h \
     detector.h \
     detector_meanOutliers.h \
     detector_lightSpots.h \
@@ -26,11 +28,13 @@ blobserver_CXXFLAGS = \
     $(OPENCV_CFLAGS) \
     $(LIBLO_CFLAGS) \
     $(LIBATOM_CFLAGS) \
-    $(LCMS_CFLAGS)
+    $(LCMS_CFLAGS) \
+    $(XML2_CFLAGS)
 
 blobserver_LDADD = \
     $(GLIB_LIBS) \
     $(OPENCV_LIBS) \
     $(LIBLO_LIBS) \
     $(LIBATOM_LIBS) \
-    $(LCMS_LIBS)
+    $(LCMS_LIBS) \
+    $(XML2_LIBS)
