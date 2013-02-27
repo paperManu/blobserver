@@ -32,7 +32,6 @@
 #include <opencv2/opencv.hpp>
 #include <lo/lo.h>
 #include <atom/osc.h>
-//#include "gst/gst.h"
 
 #include "base_objects.h"
 #include "blob_2D.h"
@@ -48,43 +47,17 @@ static gboolean gHide = FALSE;
 static gboolean gVerbose = FALSE;
 
 static gchar* gConfigFile = NULL;
-
-static gint gCamNbr = 0;
-static gint gWidth = 0;
-static gint gHeight = 0;
-static gdouble gFramerate = 0.0;
-
-static gint gFilterSize = 3;
-static gchar* gDetectionLevel = NULL;
 static gchar* gMaskFilename = NULL;
-
-static GString* gIpAddress = NULL;
-static GString* gIpPort = NULL;
 static gboolean gTcp = FALSE;
 
-static gboolean gOutliers = FALSE;
-static gboolean gLight = FALSE;
-
-// TODO: check wether all these options still work
-// TODO: or better, delete options that are availables in config file
 static GOptionEntry gEntries[] =
 {
-    {"version", 0, 0, G_OPTION_ARG_NONE, &gVersion, "Shows version of this software", NULL},
+    {"version", 'v', 0, G_OPTION_ARG_NONE, &gVersion, "Shows version of this software", NULL},
     {"config", 'C', 0, G_OPTION_ARG_STRING, &gConfigFile, "Specify a configuration file to load at startup", NULL},
-    {"hide", 0, 0, G_OPTION_ARG_NONE, &gHide, "Hides the camera window", NULL},
-    {"verbose", 'v', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
-    {"cam", 'c', 0, G_OPTION_ARG_INT, &gCamNbr, "Selects which camera to use, as detected by OpenCV", NULL},
-    {"width", 'w', 0, G_OPTION_ARG_INT, &gWidth, "Specifie the desired width for the camera capture", NULL},
-    {"height", 'h', 0, G_OPTION_ARG_INT, &gHeight, "Specifie the desired height for the camera capture", NULL},
-    {"fps", 0, 0, G_OPTION_ARG_DOUBLE, &gFramerate, "Specifie the desired framerate for the camera capture", NULL},
-    {"filter", 'f', 0, G_OPTION_ARG_INT, &gFilterSize, "Specifies the size of the filtering kernel to use", NULL},
-    {"level", 'l', 0, G_OPTION_ARG_STRING, &gDetectionLevel, "If applicable, specifies the detection level to use", NULL},
+    {"hide", 'H', 0, G_OPTION_ARG_NONE, &gHide, "Hides the camera window", NULL},
+    {"verbose", 'V', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
     {"mask", 'm', 0, G_OPTION_ARG_STRING, &gMaskFilename, "Specifies a mask which will be applied to all detectors", NULL},
-    {"ip", 'i', 0, G_OPTION_ARG_STRING_ARRAY, &gIpAddress, "Specifies the ip address to send messages to", NULL}, 
-    {"port", 'p', 0, G_OPTION_ARG_STRING_ARRAY, &gIpPort, "Specifies the port to send messages to", NULL},
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
-    {"outliers", 0, 0, G_OPTION_ARG_NONE, &gOutliers, "Detects the outliers (luminance wise) and outputs their mean position", NULL},
-    {"light", 0, 0, G_OPTION_ARG_NONE, &gLight, "Detects light zone, extract them as blobs and outputs their position and size", NULL},
     {NULL}
 };
 
@@ -213,88 +186,24 @@ int App::init(int argc, char** argv)
     // Create the thread which will grab from all sources
     mSourcesThread.reset(new std::thread(updateSources));
 
-    // Client
-    if (gIpAddress != NULL)
-    {
-        // If an IP is specified, we create flows using all the specified detectors
-        std::cout << "IP specified: " << gIpAddress->str << std::endl;
-
-        if (gIpPort != NULL)
-        {
-            std::cout << "Using port number " << gIpPort->str << std::endl;
-        }
-        else
-        {
-            gIpPort = g_string_new("9000");
-            std::cout << "No port specified, using 9000" << std::endl;
-        }
-
-        // Initialize camera
-        mSource.reset(new Source_OpenCV);
-        if (!mSource->connect())
-        {
-            std::cout << "Error while opening camera number " << gCamNbr << ". Exiting." << std::endl;
-            return 1;
-        }
-    
-        mSources.push_back(mSource);
-       
-        if (gWidth > 0)
-        {
-            atom::Message msg;
-            msg.push_back(atom::StringValue::create("width"));
-            msg.push_back(atom::FloatValue::create((double)gWidth));
-            mSource->setParameter(msg);
-        }
-        if (gHeight > 0)
-        {
-            atom::Message msg;
-            msg.push_back(atom::StringValue::create("width"));
-            msg.push_back(atom::FloatValue::create((double)gHeight));
-            mSource->setParameter(msg);
-        }
-        if (gFramerate > 0.0)
-        {
-            atom::Message msg;
-            msg.push_back(atom::StringValue::create("framerate"));
-            msg.push_back(atom::FloatValue::create((double)gFramerate));
-            mSource->setParameter(msg);
-        }
-    
-        // Create the flows
-        Flow lFlow;
-        lFlow.client.reset(new OscClient(lo_address_new_with_proto(lNetProto, gIpAddress->str, gIpPort->str)));
-        lFlow.sources.push_back(mSource);
-        lFlow.run = true;
-
-        if (gOutliers)
-        {
-            lFlow.detector.reset(new Detector_MeanOutliers);
-            if (mMask.total() > 0)
-                lFlow.detector->setMask(mMask);
-            lFlow.id = getValidId();
-            mFlows.push_back(lFlow);
-        }
-        if (gLight)
-        {
-            lFlow.detector.reset(new Detector_LightSpots);
-            if (mMask.total() > 0)
-                lFlow.detector->setMask(mMask);
-            lFlow.id = getValidId();
-            mFlows.push_back(lFlow);
-        }
-    }
-
     // Server
     mOscServer = lo_server_thread_new_with_proto("9002", lNetProto, App::oscError);
-    lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, App::oscHandlerConnect, NULL);
-    lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", NULL, App::oscHandlerDisconnect, NULL);
-    lo_server_thread_add_method(mOscServer, "/blobserver/setParameter", NULL, App::oscHandlerSetParameter, NULL);
-    lo_server_thread_add_method(mOscServer, "/blobserver/getParameter", NULL, App::oscHandlerGetParameter, NULL);
-    lo_server_thread_add_method(mOscServer, "/blobserver/detectors", NULL, App::oscHandlerGetDetectors, NULL);
-    lo_server_thread_add_method(mOscServer, "/blobserver/sources", NULL, App::oscHandlerGetSources, NULL);
-    lo_server_thread_add_method(mOscServer, NULL, NULL, App::oscGenericHandler, NULL);
-    lo_server_thread_start(mOscServer);
+    if (mOscServer != NULL)
+    {
+        lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, App::oscHandlerConnect, NULL);
+        lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", NULL, App::oscHandlerDisconnect, NULL);
+        lo_server_thread_add_method(mOscServer, "/blobserver/setParameter", NULL, App::oscHandlerSetParameter, NULL);
+        lo_server_thread_add_method(mOscServer, "/blobserver/getParameter", NULL, App::oscHandlerGetParameter, NULL);
+        lo_server_thread_add_method(mOscServer, "/blobserver/detectors", NULL, App::oscHandlerGetDetectors, NULL);
+        lo_server_thread_add_method(mOscServer, "/blobserver/sources", NULL, App::oscHandlerGetSources, NULL);
+        lo_server_thread_add_method(mOscServer, NULL, NULL, App::oscGenericHandler, NULL);
+        lo_server_thread_start(mOscServer);
+    }
+    else
+    {
+        cout << "TCP port not available for the Osc server to launch - Exiting" << endl;
+        exit(1);
+    }
 
     if (gConfigFile != NULL)
     {
@@ -505,7 +414,7 @@ void App::updateSources()
 /*****************/
 void App::oscError(int num, const char* msg, const char* path)
 {
-    std::cout << "liblo server error " << num << " in path " << path << ": " << msg << std::endl;
+    std::cout << "liblo server error " << num << std::endl;
 }
 
 /*****************/
