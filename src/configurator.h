@@ -49,6 +49,8 @@ class Configurator
 
     private:
         /*** Attributes ***/
+        bool mReady;
+
         lo_server_thread mOscServer;
 
         atomic_int mLastIndexReceived;

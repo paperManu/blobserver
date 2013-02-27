@@ -4,13 +4,22 @@
 #include <atom/osc.h>
 
 /*************/
-Configurator::Configurator()
-    : mVerbose(false)
+Configurator::Configurator():
+    mReady(false),
+    mVerbose(false)
 {
     mOscServer = lo_server_thread_new("9000", Configurator::oscError);
-    lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, Configurator::oscHandlerConnect, this);
-    lo_server_thread_add_method(mOscServer, NULL, NULL, Configurator::oscGenericHandler, this);
-    lo_server_thread_start(mOscServer);
+    if (mOscServer != NULL)
+    {
+        lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, Configurator::oscHandlerConnect, this);
+        lo_server_thread_add_method(mOscServer, NULL, NULL, Configurator::oscGenericHandler, this);
+        lo_server_thread_start(mOscServer);
+        mReady = true;
+    }
+    else
+    {
+        cout << "Couldn't set up Osc server for loading configuration file" << endl;
+    }
 
     mLastIndexReceived = 0;
 }
@@ -18,12 +27,19 @@ Configurator::Configurator()
 /*************/
 Configurator::~Configurator()
 {
-    lo_server_thread_stop(mOscServer);
+    if (mOscServer != NULL)
+        lo_server_thread_stop(mOscServer);
 }
 
 /*************/
 void Configurator::loadXML(const char* filename)
 {
+    if (!mReady)
+    {
+        cout << "Osc server not up - can't load configuration file." << endl;
+        return;
+    }
+
     cout << "Attempting to read XML file " << filename << endl;
 
     xmlDocPtr doc;
@@ -42,6 +58,11 @@ void Configurator::loadXML(const char* filename)
         cout << "Document seem to be empty" << endl;
         return;
     }
+
+    if (cur->xmlChildrenNode == NULL)
+        return;
+
+    cur = cur->xmlChildrenNode;
 
     while (cur != NULL)
     {
@@ -395,7 +416,7 @@ void Configurator::checkInt(int& value, const int defaultValue)
 /*************/
 void Configurator::oscError(int num, const char* msg, const char* path)
 {
-    std::cout << "liblo server error " << num << " in path " << path << ": " << msg << std::endl;
+    std::cout << "liblo server error " << num << endl;
 }
 
 /*************/
