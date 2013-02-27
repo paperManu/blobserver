@@ -1,7 +1,10 @@
-bin_PROGRAMS = blobserver
+bin_PROGRAMS = \
+    blobserver \
+    blobcontroller
 
+# Blobserver
 blobserver_SOURCES = \
-    main.cpp \
+    blobserver.cpp \
     blob.cpp \
     blob_2D.cpp \
     configurator.cpp \
@@ -37,4 +40,23 @@ blobserver_LDADD = \
     $(LIBLO_LIBS) \
     $(LIBATOM_LIBS) \
     $(LCMS_LIBS) \
+    $(XML2_LIBS)
+
+# Blobcontroler
+blobcontroller_SOURCES = \
+    blobcontroller.cpp \
+    configurator.cpp
+
+blobcontroller_CXXFLAGS = \
+    $(GLIB_CFLAGS) \
+    $(OPENCV_CFLAGS) \
+    $(LIBLO_CFLAGS) \
+    $(LIBATOM_CFLAGS) \
+    $(XML2_CFLAGS)
+
+blobcontroller_LDADD = \
+    $(GLIB_LIBS) \
+    $(OPENCV_LIBS) \
+    $(LIBLO_LIBS) \
+    $(LIBATOM_LIBS) \
     $(XML2_LIBS)

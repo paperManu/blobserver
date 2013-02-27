@@ -22,3 +22,4 @@ src/.deps/
 src/Makefile
 src/Makefile.in
 src/blobserver
+src/blobcontroller

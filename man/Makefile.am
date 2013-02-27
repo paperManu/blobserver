@@ -13,6 +13,6 @@ common_mandeps = $(top_srcdir)/configure.ac
 # binary when any source file changes, only the main one.
 # Use -o so that the `missing' program can infer the output file.
 
-blobserver.1: $(top_srcdir)/src/main.cpp $(common_mandeps) $(top_srcdir)/man/man-blobserver.h2m
+blobserver.1: $(top_srcdir)/src/blobserver.cpp $(common_mandeps) $(top_srcdir)/man/man-blobserver.h2m
 	$(HELP2MAN) --include=man-blobserver.h2m --name="blobserver" --no-info $(top_builddir)/src/blobserver -o $@
 

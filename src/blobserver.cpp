@@ -18,8 +18,8 @@
  */
 
 /**
- * @file
- * The main program.
+ * @blobserver.cpp
+ * The main program from the blobserver suite.
  */
 
 #include <iostream>
