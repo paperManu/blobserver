@@ -199,11 +199,17 @@ int App::init(int argc, char** argv)
         exit(1);
     }
 
-    if (gConfigFile != NULL)
+    // Configuration file needs to be loaded in a thread
+    std::thread loadConfig([] ()
     {
-        Configurator configurator;
-        configurator.loadXML((char*)gConfigFile);
-    }
+        if (gConfigFile != NULL)
+        {
+            Configurator configurator;
+            configurator.loadXML((char*)gConfigFile);
+        }
+    } );
+
+    loadConfig.detach();
 
     return 0;
 }

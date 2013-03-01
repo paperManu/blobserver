@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Emmanuel Durand
+ * Copyright (C) 2013 Emmanuel Durand
  *
  * This file is part of blobserver.
  *
@@ -30,6 +30,8 @@
 #include "source.h"
 #include "detector.h"
 
+using namespace std;
+
 /*************/
 // lo_address in an object
 class OscClient
@@ -48,9 +50,9 @@ class OscClient
 // Struct to contain a complete flow, from capture to client
 struct Flow
 {
-    std::vector<std::shared_ptr<Source>> sources;
-    std::shared_ptr<Detector> detector;
-    std::shared_ptr<OscClient> client;
+    vector<shared_ptr<Source>> sources;
+    shared_ptr<Detector> detector;
+    shared_ptr<OscClient> client;
     unsigned int id;
     bool run;
 };
