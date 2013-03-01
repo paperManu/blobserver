@@ -33,6 +33,7 @@
 #include <atom/message.h>
 #include <lo/lo.h>
 
+#include "config.h"
 #include "base_objects.h"
 
 #define LOAD_MAX_WAIT_TIME_MS 500

@@ -17,9 +17,13 @@ libtool
 ltmain.sh
 man/Makefile
 man/Makefile.in
+man/protocol.png
 missing
 src/.deps/
+src/config.h
+src/config.h.in
 src/Makefile
 src/Makefile.in
 src/blobserver
 src/blobcontroller
+src/stamp-h1
