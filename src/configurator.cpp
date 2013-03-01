@@ -53,14 +53,11 @@ void Configurator::loadXML(const char* filename)
 
     xmlNodePtr cur;
     cur = xmlDocGetRootElement(doc);
-    if (cur == NULL)
+    if (cur == NULL || cur->xmlChildrenNode == NULL)
     {
-        cout << "Document seem to be empty" << endl;
+        cout << "Document seems to be empty" << endl;
         return;
     }
-
-    if (cur->xmlChildrenNode == NULL)
-        return;
 
     cur = cur->xmlChildrenNode;
 

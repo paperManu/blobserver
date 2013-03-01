@@ -1,7 +1,5 @@
 #include "detector.h"
 
-using namespace atom;
-
 std::string Detector::mClassName = "Detector";
 std::string Detector::mDocumentation = "N/A";
 
@@ -30,9 +28,9 @@ void Detector::setMask(cv::Mat pMask)
 }
 
 /*****************/
-Message Detector::getParameter(Message pParam)
+atom::Message Detector::getParameter(atom::Message pParam)
 {
-    Message message;
+    atom::Message message;
 
     if (pParam.size() < 1)
         return message;
@@ -49,11 +47,17 @@ Message Detector::getParameter(Message pParam)
 
     message.push_back(pParam[0]);
     if (param == "name")
-        message.push_back(StringValue::create(mClassName.c_str()));
+        message.push_back(atom::StringValue::create(mClassName.c_str()));
     else if (param == "osc path")
-        message.push_back(StringValue::create(mOscPath.c_str()));
+        message.push_back(atom::StringValue::create(mOscPath.c_str()));
 
     return message;
+}
+
+/*****************/
+void Detector::addSource(shared_ptr<Source> source)
+{
+    mSources.push_back(source);
 }
 
 /*****************/

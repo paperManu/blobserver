@@ -189,7 +189,9 @@ cv::Mat Source::correctVignetting(cv::Mat pImg)
     if (mRecomputeVignettingMat == true || mVignettingMat.size() != mBuffer.size())
     {
         // Vignetting description has changed, or grabbed image has not the same resolution
-        mVignettingMat = cv::Mat::zeros(mHeight, mWidth, CV_32FC3);
+        int nbrChannels = (mBuffer.type() >> CV_CN_SHIFT) + 1;
+        int type = CV_MAKE_TYPE(CV_32F, nbrChannels);
+        mVignettingMat = cv::Mat::zeros(mHeight, mWidth, type);
 
         cv::Point2f center;
         center.x = (float)mWidth / 2.f;
@@ -202,13 +204,12 @@ cv::Mat Source::correctVignetting(cv::Mat pImg)
             for (int y = 0; y < (int)mHeight; ++y)
             {
                 float sqradius = (pow((float)x-center.x, 2.f) + pow((float)y-center.y, 2.f))/sqfactor;
-                float correction = 1.f + mOpticalDesc.vignetting[0] * sqradius
+                float correction = 1.f / (1.f + mOpticalDesc.vignetting[0] * sqradius
                     + mOpticalDesc.vignetting[1] * pow(sqradius, 2.f)
-                    + mOpticalDesc.vignetting[2] * pow(sqradius, 4.f);
+                    + mOpticalDesc.vignetting[2] * pow(sqradius, 4.f));
 
-                mVignettingMat.at<cv::Vec3f>(y, x)[0] = 1.f / correction;
-                mVignettingMat.at<cv::Vec3f>(y, x)[1] = 1.f / correction;
-                mVignettingMat.at<cv::Vec3f>(y, x)[2] = 1.f / correction;
+                for (int c = 0; c < nbrChannels; ++c)
+                    mVignettingMat.at<float>(x*nbrChannels + mWidth*nbrChannels*y) = correction;
             }
         }
 

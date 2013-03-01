@@ -29,6 +29,9 @@
 #include "opencv2/opencv.hpp"
 
 #include "blob.h"
+#include "source.h"
+
+using namespace std;
 
 class Detector
 {
@@ -36,36 +39,40 @@ class Detector
         Detector();
         Detector(int pParam);
 
-        static std::string getClassName() {return mClassName;}
-        static std::string getDocumentation() {return mDocumentation;}
+        static string getClassName() {return mClassName;}
+        static string getDocumentation() {return mDocumentation;}
 
         /* Detects objects in the capture given as a parameter, and returns
          * a message with informations about each blob
          * The two first values in the message are the number of blob,
          * and the size of each blob in the message
          */
-        virtual atom::Message detect(std::vector<cv::Mat> pCaptures) {}
+        virtual atom::Message detect(vector<cv::Mat> pCaptures) {}
         void setMask(cv::Mat pMask);
 
         virtual void setParameter(atom::Message pParam) {}
         atom::Message getParameter(atom::Message pParam);
         
-        std::string getName() {return mName;}
-        std::string getOscPath() {return mOscPath;}
+        void addSource(shared_ptr<Source> source);
+        
+        string getName() {return mName;}
+        string getOscPath() {return mOscPath;}
         unsigned int getSourceNbr() {return mSourceNbr;}
         cv::Mat getOutput() {return mOutputBuffer.clone();}
 
     protected:
         cv::Mat mOutputBuffer;
-        std::string mOscPath;
-        std::string mName;
+        string mOscPath;
+        string mName;
         unsigned int mSourceNbr;
 
         cv::Mat getMask(cv::Mat pCapture, int pInterpolation = CV_INTER_NN);
 
     private:
-        static std::string mClassName;
-        static std::string mDocumentation;
+        static string mClassName;
+        static string mDocumentation;
+
+        vector<weak_ptr<Source>> mSources;
 
         cv::Mat mSourceMask, mMask;
 };
@@ -75,7 +82,7 @@ class Detector
 cv::Mat getLeastSumConfiguration(cv::Mat* pDistances);
 cv::Mat getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv::Mat pAttributed, float &pSum, int pShift);
 
-template<class T> void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs)
+template<class T> void trackBlobs(vector<Blob::properties> &pProperties, vector<T> &pBlobs)
 {
     // First we update all the previous blobs we detected,
     // and keep their predicted new position
@@ -104,7 +111,7 @@ template<class T> void trackBlobs(std::vector<Blob::properties> &pProperties, st
     }
 
     cv::Mat lAttributedKeypoints = cv::Mat::zeros(pProperties.size(), 1, CV_8U);
-    typename std::vector<T>::iterator lBlob = pBlobs.begin();
+    typename vector<T>::iterator lBlob = pBlobs.begin();
     // We update the blobs which we were able to track
     for(int i = 0; i < lConfiguration.rows; ++i)
     {

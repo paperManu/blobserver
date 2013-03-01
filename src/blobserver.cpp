@@ -36,11 +36,16 @@
 #include "base_objects.h"
 #include "blob_2D.h"
 #include "configurator.h"
+#include "abstract-factory.h"
+#include "config.h"
+
 #include "source_opencv.h"
+#ifdef HAVE_SHMDATA
+#include "source_shmdata.h"
+#endif
 #include "detector_meanOutliers.h"
 #include "detector_lightSpots.h"
 #include "detector_objOnAPlane.h"
-#include "abstract-factory.h"
 
 static gboolean gVersion = FALSE;
 static gboolean gHide = FALSE;
@@ -66,16 +71,6 @@ static GOptionEntry gEntries[] =
 class App
 {
     public:
-        // Struct to contain a complete flow, from capture to client
-        struct Flow
-        {
-            std::vector<std::shared_ptr<Source>> sources;
-            std::shared_ptr<Detector> detector;
-            std::shared_ptr<OscClient> client;
-            unsigned int id;
-            bool run;
-        };
-
         ~App();
 
         static std::shared_ptr<App> getInstance();
@@ -109,7 +104,6 @@ class App
         // Threads
         std::shared_ptr<std::thread> mSourcesThread;
 
-        std::shared_ptr<Source> mSource;
         cv::Mat mMask; // TODO: set mask through a parameter
         // TODO: send mask through gstreamer! or from any source!
 
@@ -258,6 +252,8 @@ void App::registerClasses()
     // Register sources
     mSourceFactory.register_class<Source_OpenCV>(Source_OpenCV::getClassName(),
         Source_OpenCV::getDocumentation());
+    mSourceFactory.register_class<Source_Shmdata>(Source_Shmdata::getClassName(),
+        Source_Shmdata::getDocumentation());
 }
 
 /*****************/
@@ -357,7 +353,7 @@ int App::loop()
             cv::imshow("blobserver", lBuffers[lSourceNumber]);
         }
 
-        char lKey = cv::waitKey(5);
+        char lKey = cv::waitKey(16);
         if(lKey == 27) // Escape
             loop = false;
         if(lKey == 'w')
@@ -367,11 +363,6 @@ int App::loop()
         }
 
         frameNbr++;
-
-        timespec req, rem;
-        req.tv_sec = 0;
-        req.tv_nsec = req.tv_sec*1000000L;
-        nanosleep(&req, &rem);
     }
 
     return 0;
@@ -590,6 +581,8 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
                 }
                 if (!isInSources)
                     theApp->mSources.push_back(*source);
+
+                detector->addSource(*source);
             }
 
             theApp->mFlows.push_back(flow);
@@ -646,9 +639,9 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
         {
             if (all == true || detectorId == flow->id)
             {
+                lo_send(flow->client->get(), "/blobserver/disconnect", "s", "Disconnected");
                 theApp->mFlows.erase(flow);
                 std::cout << "Connection from address " << addressStr << " closed." << std::endl;
-                lo_send(address->get(), "/blobserver/disconnect", "s", "Disconnected");
             }
             else
             {
@@ -706,7 +699,7 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
             {
                 if (message.size() < 5)
                 {
-                    lo_send(address->get(), "/blobserver/setParameter", "s", "Wrong number of arguments");
+                    lo_send(flow->client->get(), "/blobserver/setParameter", "s", "Wrong number of arguments");
                     result = 1;
                 }
                 else
@@ -722,7 +715,7 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
             {
                 if (message.size() < 6)
                 {
-                    lo_send(address->get(), "/blobserver/setParameter", "s", "Wrong number of arguments");
+                    lo_send(flow->client->get(), "/blobserver/setParameter", "s", "Wrong number of arguments");
                     result = 1;
                 }
                 else
@@ -730,7 +723,7 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
                     int srcNbr = atom::toInt(message[3]);
                     if (srcNbr >= flow->sources.size())
                     {
-                        lo_send(address->get(), "/blobserver/setParameter", "s", "Wrong source index");
+                        lo_send(flow->client->get(), "/blobserver/setParameter", "s", "Wrong source index");
                         result = 1;
                     }
                     else
@@ -811,14 +804,14 @@ int App::oscHandlerGetParameter(const char* path, const char* types, lo_arg** ar
 
                 lo_message oscMsg = lo_message_new();
                 atom::message_build_to_lo_message(msg, oscMsg);
-                lo_send_message(address->get(), "/blobserver/getParameter", oscMsg);
+                lo_send_message(flow.client->get(), "/blobserver/getParameter", oscMsg);
             }
             // If the parameter is for the sources
             else if (entity == "Sources")
             {
                 if (message.size() < 5)
                 {
-                    lo_send(address->get(), "/blobserver/getParameter", "s", "Wrong number of arguments");
+                    lo_send(flow.client->get(), "/blobserver/getParameter", "s", "Wrong number of arguments");
                     result = 1;
                 }
                 else
@@ -845,7 +838,7 @@ int App::oscHandlerGetParameter(const char* path, const char* types, lo_arg** ar
 
                         lo_message oscMsg = lo_message_new();
                         atom::message_build_to_lo_message(msg, oscMsg);
-                        lo_send_message(address->get(), "/blobserver/getParameter", oscMsg);
+                        lo_send_message(flow.client->get(), "/blobserver/getParameter", oscMsg);
                     }
                 }
             }

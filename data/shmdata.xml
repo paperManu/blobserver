@@ -1,14 +1,14 @@
 <Blobserver>
     <Flow>
         <Detector>
-            <Type>Detector_LightSpots</Type>
+            <Type>Detector_MeanOutliers</Type>
         </Detector>
         <Source>
-            <Type>Source_OpenCV</Type>
-            <Subsource>300</Subsource>
+            <Type>Source_Shmdata</Type>
+            <Subsource>0</Subsource>
             <Param>
-                <Name>framerate</Name>
-                <Value>30</Value>
+                <Name>location</Name>
+                <Value>/tmp/cam0-rgb</Value>
             </Param>
         </Source>
         <Client>

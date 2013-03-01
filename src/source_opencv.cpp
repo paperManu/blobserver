@@ -48,7 +48,7 @@ bool Source_OpenCV::connect()
     
     int channels;
     channels = (int)(mCamera.get(CV_CAP_PROP_FORMAT));
-    mFramerate = (unsigned int)((channels >> 3) + 1); // See CV_MAKETYPE in types_c.h in OpenCV
+    channels = (unsigned int)((channels >> 3) + 1); // See CV_MAKETYPE in types_c.h in OpenCV
 
     mId = (unsigned int)(mCamera.get(CV_CAP_PROP_GUID));
 
@@ -66,7 +66,7 @@ bool Source_OpenCV::disconnect()
 bool Source_OpenCV::grabFrame()
 {
     bool result = mCamera.grab();
-    mUpdated = true;
+    mUpdated = result;
     return result;
 }
 

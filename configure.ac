@@ -10,24 +10,23 @@ AC_INIT([BLOBSERVER],
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE()
+AC_CONFIG_HEADERS([src/config.h])
 
 # Check for C and C++ compilers
 AC_PROG_CXX
 AC_PROG_CC
 
 AC_MSG_CHECKING([to see if compiler understands -std=gnu++0x])
-CXXFLAGS="$CFLAGS -std=gnu++0x"
-#CXXFLAGS="-g3 -O0 -std=gnu++0x"
+#CXXFLAGS="$CFLAGS -std=gnu++0x"
+CXXFLAGS="-g3 -O0 -std=gnu++0x"
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ ], [ ])], [
-  CXXFLAGS="$CFLAGS -std=gnu++0x"
-#  CXXFLAGS="-g3 -O0 -std=gnu++0x"
+#  CXXFLAGS="$CFLAGS -std=gnu++0x"
+  CXXFLAGS="-g3 -O0 -std=gnu++0x"
   AC_MSG_RESULT([yes])
 ], [
   AC_MSG_RESULT([no])
   AC_MSG_ERROR([compiler does not understand -std=c++0x])
 ])
-
-
 
 # Check for header files
 AC_HEADER_STDC
@@ -42,6 +41,16 @@ fi
 PKG_CHECK_MODULES([OPENCV], [opencv >= 2.3])
 if test "x${have_opencv}" = "xfalse" ; then
     AC_MSG_ERROR([Missing opencv])
+fi
+
+# Shmdata
+PKG_CHECK_MODULES([SHMDATA], [shmdata-0.6 shmdata-any-0.6])
+if test "x${have_shmdata}" = "xfalse" ; then
+    AC_DEFINE([HAVE_SHMDATA], [0], [libshmdata not detected])
+    AC_MSG_WARN([Missing shmdata])
+else
+    AC_DEFINE([HAVE_SHMDATA], [1], [libshmdata detected])
+    AC_MSG_WARN([Shmdata detected])
 fi
 
 # Liblo

@@ -30,7 +30,7 @@
 #include "source.h"
 #include "detector.h"
 
-/**************************/
+/*************/
 // lo_address in an object
 class OscClient
 {
@@ -42,6 +42,17 @@ class OscClient
 
     private:
         lo_address mAddress;
+};
+
+/*************/
+// Struct to contain a complete flow, from capture to client
+struct Flow
+{
+    std::vector<std::shared_ptr<Source>> sources;
+    std::shared_ptr<Detector> detector;
+    std::shared_ptr<OscClient> client;
+    unsigned int id;
+    bool run;
 };
 
 #endif // BASE_OBJECTS_H

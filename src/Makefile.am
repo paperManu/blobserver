@@ -13,7 +13,8 @@ blobserver_SOURCES = \
     detector_lightSpots.cpp \
     detector_objOnAPlane.cpp \
     source.cpp \
-    source_opencv.cpp
+    source_opencv.cpp \
+    source_shmdata.cpp
 
 noinst_HEADERS = \
     blob.h \
@@ -32,6 +33,7 @@ blobserver_CXXFLAGS = \
     $(LIBLO_CFLAGS) \
     $(LIBATOM_CFLAGS) \
     $(LCMS_CFLAGS) \
+    $(SHMDATA_CFLAGS) \
     $(XML2_CFLAGS)
 
 blobserver_LDADD = \
@@ -40,6 +42,7 @@ blobserver_LDADD = \
     $(LIBLO_LIBS) \
     $(LIBATOM_LIBS) \
     $(LCMS_LIBS) \
+    $(SHMDATA_LIBS) \
     $(XML2_LIBS)
 
 # Blobcontroler

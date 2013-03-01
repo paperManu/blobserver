@@ -29,6 +29,8 @@
 #include "lcms2.h"
 #include "atom/message.h"
 
+using namespace std;
+
 class Source
 {
     public:
