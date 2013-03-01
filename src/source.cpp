@@ -10,6 +10,7 @@ Source::Source()
     mDocumentation = "N/A";
 
     mBuffer = cv::Mat::zeros(1, 1, CV_8U);
+    mCorrectedBuffer = mBuffer.clone();
 
     mWidth = 0;
     mHeight = 0;
@@ -48,19 +49,23 @@ cv::Mat Source::retrieveCorrectedFrame()
 {
     if (mUpdated)
     {
-        mBuffer = retrieveFrame();
+        mCorrectedBuffer = retrieveFrame();
 
         if (mICCTransform != NULL)
-            cmsDoTransform(mICCTransform, mBuffer.data, mBuffer.data, mBuffer.total());
+            cmsDoTransform(mICCTransform, mCorrectedBuffer.data, mCorrectedBuffer.data, mCorrectedBuffer.total());
         if (mCorrectVignetting)
-            mBuffer = correctVignetting(mBuffer);
+            mBuffer = correctVignetting(mCorrectedBuffer);
         if (mCorrectDistortion)
-            mBuffer = correctDistortion(mBuffer);
+            mBuffer = correctDistortion(mCorrectedBuffer);
 
         mUpdated = false;
-    }
 
-    return mBuffer.clone();
+        return mCorrectedBuffer.clone();
+    }
+    else
+    {
+        return mCorrectedBuffer.clone();
+    }
 }
 
 /************/

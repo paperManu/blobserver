@@ -57,7 +57,6 @@ class Source_Shmdata : public Source
         static string mDocumentation;
 
         shmdata_any_reader_t* mReader;
-        mutable mutex mMutex;
 
         void make(int pParam);
         static void onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,

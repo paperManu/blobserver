@@ -25,9 +25,10 @@
  #ifndef SOURCE_H
  #define SOURCE_H
 
-#include "opencv2/opencv.hpp"
-#include "lcms2.h"
-#include "atom/message.h"
+#include <mutex>
+#include <opencv2/opencv.hpp>
+#include <lcms2.h>
+#include <atom/message.h>
 
 using namespace std;
 
@@ -66,7 +67,9 @@ class Source
 
     protected:
         cv::Mat mBuffer; // Image buffer
+        cv::Mat mCorrectedBuffer; // Corrected image buffer
         bool mUpdated;
+        mutable mutex mMutex;
 
         // Base caracteristics of the source
         std::string mName;
