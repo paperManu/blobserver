@@ -25,6 +25,7 @@
 #ifndef BASE_OBJECTS_H
 #define BASE_OBJECTS_H
 
+#include <opencv2/opencv.hpp>
 #include <lo/lo.h>
 #include <shmdata/any-data-writer.h>
 
@@ -48,39 +49,33 @@ class OscClient
 };
 
 /*************/
+// Simple class to send image through shm
+class ShmImage
+{
+    public:
+        ShmImage(const char* filename);
+        ~ShmImage();
+        void setImage(cv::Mat& image, const unsigned long long timestamp = 0);
+
+    private:
+        shmdata_any_writer_t* _writer;
+        std::string _filename;
+        int _type;
+        unsigned int _width, _height, _bpp;
+
+        void init(const unsigned int width, const unsigned int height, int type);
+};
+
+/*************/
 // Struct to contain a complete flow, from capture to client
 struct Flow
 {
     vector<shared_ptr<Source>> sources;
     shared_ptr<Detector> detector;
+    shared_ptr<ShmImage> shm;
     shared_ptr<OscClient> client;
     unsigned int id;
     bool run;
-};
-
-/*************/
-// Simple class to send image through shm
-class ShmImage
-{
-    public:
-        enum image_type
-        {
-            rgb = 0,
-            depth
-        };
-
-    public:
-        ShmImage(const char* filename, const image_type type);
-        ~ShmImage();
-        void setImage(const unsigned char* image, const unsigned int width, const unsigned int height, const unsigned int bpp, const unsigned long long timestamp = 0);
-
-    private:
-        shmdata_any_writer_t* _writer;
-        std::string _filename;
-        image_type _type;
-        unsigned int _width, _height;
-
-        void init(const unsigned int width, const unsigned int height, const unsigned int bpp);
 };
 
 #endif // BASE_OBJECTS_H

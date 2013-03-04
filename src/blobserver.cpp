@@ -29,6 +29,7 @@
 #include <mutex>
 #include <thread>
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <opencv2/opencv.hpp>
 #include <lo/lo.h>
 #include <atom/osc.h>
@@ -86,6 +87,8 @@ class App
         // Attributes
         // Singleton
         static std::shared_ptr<App> mInstance;
+
+        bool mRun;
 
         // Factories
         factory::AbstractFactory<Detector, std::string, std::string, int> mDetectorFactory;
@@ -177,7 +180,25 @@ int App::init(int argc, char** argv)
     else
         lNetProto = LO_UDP;
 
+
+    cout << "Cleaning up shared memory in /tmp..." << endl;
+    GDir* directory;
+    GError* error;
+    directory = g_dir_open((const gchar*)"/tmp", 0, &error);
+    const gchar* filename;
+    while ((filename = g_dir_read_name(directory)) != NULL)
+    {
+        if (strstr((const char*)filename, (const char*)"blobserver") != NULL)
+        {
+            char buffer[128];
+            sprintf(buffer, "/tmp/%s", filename);
+            cout << "Removing file " << buffer << endl;
+            g_remove((const gchar*)buffer);
+        }
+    }
+
     // Create the thread which will grab from all sources
+    mRun = true;
     mSourcesThread.reset(new std::thread(updateSources));
 
     // Server
@@ -270,8 +291,7 @@ int App::loop()
     bool lShowCamera = !gHide;
     int lSourceNumber = 0;
 
-    bool loop = true;
-    while(loop)
+    while(mRun)
     {
         std::vector<cv::Mat> lBuffers;
         std::vector<std::string> lBufferNames;
@@ -313,7 +333,7 @@ int App::loop()
                     return;
 
                 // Retrieve the frames from all sources in this flow
-                // Their is no risk for sources to disappear here, so no
+                // There is no risk for sources to disappear here, so no
                 // need for a mutex (they are freed earlier)
                 std::vector<cv::Mat> frames;
                 for (int i = 0; i < flow.sources.size(); ++i)
@@ -322,8 +342,10 @@ int App::loop()
                 // Apply the detector on these frames
                 atom::Message message = flow.detector->detect(frames);
 
-                // Lock everything to add result to buffers, and send OSC messages
-                lBuffers.push_back(flow.detector->getOutput());
+                cv::Mat output = flow.detector->getOutput();
+                lBuffers.push_back(output);
+                flow.shm->setImage(output);
+
                 lBufferNames.push_back(flow.detector->getName());
 
                 // Send messages
@@ -361,7 +383,7 @@ int App::loop()
 
         char lKey = cv::waitKey(16);
         if(lKey == 27) // Escape
-            loop = false;
+            mRun = false;
         if(lKey == 'w')
         {
             lSourceNumber = (lSourceNumber+1)%lBuffers.size();
@@ -371,6 +393,8 @@ int App::loop()
         frameNbr++;
     }
 
+    mSourcesThread->join();
+
     return 0;
 }
 
@@ -379,9 +403,7 @@ void App::updateSources()
 {
     std::shared_ptr<App> theApp = App::getInstance();
 
-    bool run = true;
-
-    while(run)
+    while(theApp->mRun)
     {
         {
             std::lock_guard<std::mutex> lock(theApp->mSourceMutex);
@@ -571,6 +593,10 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             flow.id = theApp->getValidId();
             flow.run = false;
 
+            char shmFile[128];
+            sprintf(shmFile, "/tmp/blobserver_output_%i", flow.id);
+            flow.shm.reset(new ShmImage(shmFile));
+
             std::vector<std::shared_ptr<Source>>::const_iterator source;
             for (source = sources.begin(); source != sources.end(); ++source)
             {
@@ -588,6 +614,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
                 if (!isInSources)
                     theApp->mSources.push_back(*source);
 
+                // Adds a weak ptr to sources to the detector, for it to control them
                 detector->addSource(*source);
             }
 
