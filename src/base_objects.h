@@ -25,7 +25,8 @@
 #ifndef BASE_OBJECTS_H
 #define BASE_OBJECTS_H
 
-#include "lo/lo.h"
+#include <lo/lo.h>
+#include <shmdata/any-data-writer.h>
 
 #include "source.h"
 #include "detector.h"
@@ -55,6 +56,31 @@ struct Flow
     shared_ptr<OscClient> client;
     unsigned int id;
     bool run;
+};
+
+/*************/
+// Simple class to send image through shm
+class ShmImage
+{
+    public:
+        enum image_type
+        {
+            rgb = 0,
+            depth
+        };
+
+    public:
+        ShmImage(const char* filename, const image_type type);
+        ~ShmImage();
+        void setImage(const unsigned char* image, const unsigned int width, const unsigned int height, const unsigned int bpp, const unsigned long long timestamp = 0);
+
+    private:
+        shmdata_any_writer_t* _writer;
+        std::string _filename;
+        image_type _type;
+        unsigned int _width, _height;
+
+        void init(const unsigned int width, const unsigned int height, const unsigned int bpp);
 };
 
 #endif // BASE_OBJECTS_H

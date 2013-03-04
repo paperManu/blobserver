@@ -4,6 +4,7 @@ bin_PROGRAMS = \
 
 # Blobserver
 blobserver_SOURCES = \
+    base_objects.cpp \
     blobserver.cpp \
     blob.cpp \
     blob_2D.cpp \
@@ -17,6 +18,7 @@ blobserver_SOURCES = \
     source_shmdata.cpp
 
 noinst_HEADERS = \
+    base_objects.h \
     blob.h \
     blob_2D.h \
     configurator.h \
@@ -47,6 +49,7 @@ blobserver_LDADD = \
 
 # Blobcontroler
 blobcontroller_SOURCES = \
+    base_objects.cpp \
     blobcontroller.cpp \
     configurator.cpp
 
@@ -55,6 +58,7 @@ blobcontroller_CXXFLAGS = \
     $(OPENCV_CFLAGS) \
     $(LIBLO_CFLAGS) \
     $(LIBATOM_CFLAGS) \
+    $(SHMDATA_CFLAGS) \
     $(XML2_CFLAGS)
 
 blobcontroller_LDADD = \
@@ -62,4 +66,5 @@ blobcontroller_LDADD = \
     $(OPENCV_LIBS) \
     $(LIBLO_LIBS) \
     $(LIBATOM_LIBS) \
+    $(SHMDATA_LIBS) \
     $(XML2_LIBS)

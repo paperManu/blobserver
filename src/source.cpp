@@ -10,7 +10,7 @@ Source::Source()
     mDocumentation = "N/A";
 
     mBuffer = cv::Mat::zeros(1, 1, CV_8U);
-    mCorrectedBuffer = mBuffer.clone();
+    mCorrectedBuffer = cv::Mat::zeros(480, 640, CV_8UC3);
 
     mWidth = 0;
     mHeight = 0;

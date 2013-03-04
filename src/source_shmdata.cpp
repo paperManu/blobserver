@@ -164,13 +164,14 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
     lock_guard<mutex> lock(context->mMutex);
 
     string dataType(type_description);
-    regex regRgb, regGray, regBpp, regWidth, regHeight, regRed, regBlue;
+    regex regRgb, regGray, regYUV, regBpp, regWidth, regHeight, regRed, regBlue, regFormatYUV;
     try
     {
         // GCC 4.6 does not support the full regular expression. Some work around is needed,
         // this is why this may seem complicated for nothing ...
         regRgb = regex("(video/x-raw-rgb)(.*)", regex_constants::extended);
         regGray = regex("(video/x-raw-gray)(.*)", regex_constants::extended);
+        regYUV = regex("(video/x-raw-yuv)(.*)", regex_constants::extended);
         regBpp = regex("(.*bpp=\\(int\\))(.*)", regex_constants::extended);
         regWidth = regex("(.*width=\\(int\\))(.*)", regex_constants::extended);
         regHeight = regex("(.*height=\\(int\\))(.*)", regex_constants::extended);
@@ -183,13 +184,14 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
         return;
     }
 
-    if (regex_match(dataType, regRgb) || regex_match(dataType, regGray))
+    if (regex_match(dataType, regRgb) || regex_match(dataType, regGray) || regex_match(dataType, regYUV))
     {
         int bpp, width, height, red, green, blue, channels;
         bool isGray = false;
+        bool isYUV = false;
 
         smatch match;
-        string substr;
+        string substr, format;
 
         if (regex_match(dataType, match, regBpp))
         {
@@ -217,7 +219,10 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
         }
         else
         {
-            isGray = true;
+            if (regex_match(dataType, regYUV))
+                isYUV = true;
+            else
+                isGray = true;
         }
         if (regex_match(dataType, match, regBlue))
         {
@@ -232,6 +237,11 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
             channels = 3;
         else if (bpp == 32)
             channels = 4;
+        else if (isYUV)
+        {
+            bpp = 16;
+            channels = 3;
+        }
 
         if (width == 0 || height == 0 || bpp == 0)
             return;
@@ -246,17 +256,26 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
                 context->mBuffer = cv::Mat::zeros(height, width, CV_8U);
             else if (channels == 1 && bpp == 16)
                 context->mBuffer = cv::Mat::zeros(height, width, CV_16U);
+            else if (channels == 2)
+                context->mBuffer = cv::Mat::zeros(height, width, CV_8UC2);
             else if (channels == 3)
                 context->mBuffer = cv::Mat::zeros(height, width, CV_8UC3);
             else if (channels == 4)
                 context->mBuffer = cv::Mat::zeros(height, width, CV_8UC4);
         }
 
-        cv::Mat bufferMat = cv::Mat::zeros(height, width, context->mBuffer.type());
+        cv::Mat bufferMat;
+        if (!isYUV)
+            bufferMat = cv::Mat::zeros(height, width, context->mBuffer.type());
+        else
+            bufferMat = cv::Mat::zeros(height, width, CV_8UC2);
+
         memcpy((char*)(bufferMat.data), (const char*)data, width*height*bpp/8);
 
-        if (red > blue && channels >= 3)
+        if (red > blue && channels >= 3 && !isGray && !isYUV)
             cvtColor(bufferMat, context->mBuffer, CV_BGR2RGB);
+        else if (isYUV)
+            cvtColor(bufferMat, context->mBuffer, CV_YUV2BGRA_UYVY);
         else
             context->mBuffer = bufferMat;
 
