@@ -28,7 +28,10 @@ Configurator::Configurator():
 Configurator::~Configurator()
 {
     if (mOscServer != NULL)
+    {
         lo_server_thread_stop(mOscServer);
+        lo_server_thread_free(mOscServer);
+    }
 }
 
 /*************/

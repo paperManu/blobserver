@@ -64,7 +64,7 @@ static GOptionEntry gEntries[] =
     {"version", 'v', 0, G_OPTION_ARG_NONE, &gVersion, "Shows version of this software", NULL},
     {"config", 'C', 0, G_OPTION_ARG_STRING, &gConfigFile, "Specify a configuration file to load at startup", NULL},
     {"hide", 'H', 0, G_OPTION_ARG_NONE, &gHide, "Hides the camera window", NULL},
-    {"verbose", 'V', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
+    {"verbose", 'V', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the out", NULL},
     {"mask", 'm', 0, G_OPTION_ARG_STRING, &gMaskFilename, "Specifies a mask which will be applied to all detectors", NULL},
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
     {NULL}
@@ -77,7 +77,7 @@ class App
     public:
         ~App();
 
-        static std::shared_ptr<App> getInstance();
+        static shared_ptr<App> getInstance();
 
         // Initialization, depending on arguments
         int init(int argc, char** argv);
@@ -89,28 +89,28 @@ class App
         /***********/
         // Attributes
         // Singleton
-        static std::shared_ptr<App> mInstance;
+        static shared_ptr<App> mInstance;
 
         bool mRun;
 
         // Factories
-        factory::AbstractFactory<Detector, std::string, std::string, int> mDetectorFactory;
-        factory::AbstractFactory<Source, std::string, std::string, int> mSourceFactory;
+        factory::AbstractFactory<Detector, string, string, int> mDetectorFactory;
+        factory::AbstractFactory<Source, string, string, int> mSourceFactory;
 
         // liblo related
         lo_server_thread mOscServer;
 
         // detection related
-        std::vector<std::shared_ptr<Source>> mSources;
-        std::vector<Flow> mFlows;
+        vector<shared_ptr<Source>> mSources;
+        vector<Flow> mFlows;
         // A mutex to prevent unexpected changes in flows
-        std::mutex mFlowMutex;
-        std::mutex mSourceMutex;
+        mutex mFlowMutex;
+        mutex mSourceMutex;
         // A thread pool for detectors
-        std::shared_ptr<ThreadPool> mThreadPool;
+        shared_ptr<ThreadPool> mThreadPool;
 
         // Threads
-        std::shared_ptr<std::thread> mSourcesThread;
+        shared_ptr<thread> mSourcesThread;
 
         cv::Mat mMask; // TODO: set mask through a parameter
         // TODO: send mask through gstreamer! or from any source!
@@ -144,7 +144,7 @@ class App
         static int oscHandlerGetSources(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
 };
 
-std::shared_ptr<App> App::mInstance(nullptr);
+shared_ptr<App> App::mInstance(nullptr);
 unsigned int App::mCurrentId = 0;
 
 /*****************/
@@ -161,7 +161,7 @@ App::~App()
 }
 
 /*****************/
-std::shared_ptr<App> App::getInstance()
+shared_ptr<App> App::getInstance()
 {
     if(App::mInstance.get() == nullptr)
         App::mInstance.reset(new App);
@@ -205,7 +205,7 @@ int App::init(int argc, char** argv)
 
     // Create the thread which will grab from all sources
     mRun = true;
-    mSourcesThread.reset(new std::thread(updateSources));
+    mSourcesThread.reset(new thread(updateSources));
 
     // Server
     mOscServer = lo_server_thread_new_with_proto("9002", lNetProto, App::oscError);
@@ -227,7 +227,7 @@ int App::init(int argc, char** argv)
     }
 
     // Configuration file needs to be loaded in a thread
-    std::thread loadConfig([] ()
+    thread loadConfig([] ()
     {
         if (gConfigFile != NULL)
         {
@@ -253,7 +253,7 @@ int App::parseArgs(int argc, char** argv)
 
     if (!g_option_context_parse(context, &argc, &argv, &error))
     {
-        std::cout << "Error while parsing options: " << error->message << std::endl;
+        cout << "Error while parsing options: " << error->message << endl;
         return 1;
     }
 
@@ -264,7 +264,7 @@ int App::parseArgs(int argc, char** argv)
 
     if (gVersion)
     {
-        std::cout << PACKAGE_TARNAME << " " << PACKAGE_VERSION << std::endl;
+        cout << PACKAGE_TARNAME << " " << PACKAGE_VERSION << endl;
         return 1;
     }
 
@@ -301,25 +301,25 @@ int App::loop()
     nap.tv_sec = 0;
     nap.tv_nsec = 1e6;
 
-    std::mutex lMutex;
+    mutex lMutex;
 
     while(mRun)
     {
-        std::vector<cv::Mat> lBuffers;
-        std::vector<std::string> lBufferNames;
+        vector<cv::Mat> lBuffers;
+        vector<string> lBufferNames;
 
         // First buffer is a black screen. No special reason, except we need
         // a first buffer
         lBuffers.push_back(cv::Mat::zeros(480, 640, CV_8UC3));
-        lBufferNames.push_back(std::string("This is Blobserver"));
+        lBufferNames.push_back(string("This is Blobserver"));
 
         // Retrive the capture from all the sources
         {
-            std::lock_guard<std::mutex> lock(mSourceMutex);
+            lock_guard<mutex> lock(mSourceMutex);
 
             // First we grab, then we retrieve all frames
             // This way, sync between frames is better
-            std::for_each (mSources.begin(), mSources.end(), [&] (std::shared_ptr<Source> source)
+            for_each (mSources.begin(), mSources.end(), [&] (shared_ptr<Source> source)
             {
                 cv::Mat frame = source->retrieveCorrectedFrame();
 
@@ -331,18 +331,18 @@ int App::loop()
                 int id = atom::toInt(msg[1]);
                 char name[16];
                 sprintf(name, "%i", id);
-                lBufferNames.push_back(source->getName() + std::string(" ") + std::string(name));
+                lBufferNames.push_back(source->getName() + string(" ") + string(name));
             } );
         }
 
         // Go through the flows
         {
-            std::lock_guard<std::mutex> lock(mFlowMutex);
+            lock_guard<mutex> lock(mFlowMutex);
             vector<shared_ptr<thread> > threads;
             threads.resize(mFlows.size());
 
             // Update all sources for all flows
-            //std::for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
+            //for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
             for (int index = 0; index < mFlows.size(); ++index)
             {
                 Flow* flow = &mFlows[index];
@@ -355,12 +355,12 @@ int App::loop()
                     // Retrieve the frames from all sources in this flow
                     // There is no risk for sources to disappear here, so no
                     // need for a mutex (they are freed earlier)
-                    shared_ptr<std::vector<cv::Mat> > frames;
-                    frames.reset(new std::vector<cv::Mat>);
+                    shared_ptr<vector<cv::Mat> > frames;
+                    frames.reset(new vector<cv::Mat>);
                     {
                         for (int i = 0; i < flow->sources.size(); ++i)
                         {
-                            std::lock_guard<std::mutex> lock(lMutex);
+                            lock_guard<mutex> lock(lMutex);
                             frames->push_back(flow->sources[i]->retrieveCorrectedFrame());
                         }
                     }
@@ -372,7 +372,7 @@ int App::loop()
             // Wait for all detectors to finish
             mThreadPool->waitAllThreads(); 
 
-            std::for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
+            for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
             {
                 if (flow.run == false)
                     return;
@@ -426,7 +426,7 @@ int App::loop()
         if(lKey == 'w')
         {
             lSourceNumber = (lSourceNumber+1)%lBuffers.size();
-            std::cout << "Buffer displayed: " << lBufferNames[lSourceNumber] << std::endl;
+            cout << "Buffer displayed: " << lBufferNames[lSourceNumber] << endl;
         }
 
         frameNbr++;
@@ -440,7 +440,7 @@ int App::loop()
 /*****************/
 void App::updateSources()
 {
-    std::shared_ptr<App> theApp = App::getInstance();
+    shared_ptr<App> theApp = App::getInstance();
 
     timespec time;
     time.tv_sec = 0;
@@ -449,20 +449,20 @@ void App::updateSources()
     while(theApp->mRun)
     {
         {
-            std::lock_guard<std::mutex> lock(theApp->mSourceMutex);
+            lock_guard<mutex> lock(theApp->mSourceMutex);
             
-            std::vector<std::shared_ptr<Source>>::iterator iter;
+            vector<shared_ptr<Source>>::iterator iter;
             // First we grab, then we retrieve all frames
             // This way, sync between frames is better
             for (iter = theApp->mSources.begin(); iter != theApp->mSources.end(); ++iter)
             {
-                std::shared_ptr<Source> source = (*iter);
+                shared_ptr<Source> source = (*iter);
                 source->grabFrame();
             
                 // We also check if this source is still used
                 if (source.use_count() == 2) // 2, because this ptr and the one in the vector
                 {
-                    std::cout << "Source " << source->getName() << " is no longer used. Disconnecting." << std::endl;
+                    cout << "Source " << source->getName() << " is no longer used. Disconnecting." << endl;
                     theApp->mSources.erase(iter);
                     --iter;
                 }
@@ -476,7 +476,7 @@ void App::updateSources()
 /*****************/
 void App::oscError(int num, const char* msg, const char* path)
 {
-    std::cout << "liblo server error " << num << std::endl;
+    cout << "liblo server error " << num << endl;
 }
 
 /*****************/
@@ -484,14 +484,14 @@ int App::oscGenericHandler(const char* path, const char* types, lo_arg** argv, i
 {
     if(gVerbose)
     {
-        std::cout << "Unhandled message received:" << std::endl;
+        cout << "Unhandled message received:" << endl;
 
         for(int i = 0; i < argc; ++i)
         {
             lo_arg_pp((lo_type)(types[i]), argv[i]);
         }
 
-        std::cout << std::endl;
+        cout << endl;
     }
 
     return 1;
@@ -500,7 +500,7 @@ int App::oscGenericHandler(const char* path, const char* types, lo_arg** argv, i
 /*****************/
 int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
-    std::shared_ptr<App> theApp = App::getInstance();
+    shared_ptr<App> theApp = App::getInstance();
 
     // Messge must be : ip / port / detector / source0 / subsource0 / source1 / ...
     atom::Message message;
@@ -519,12 +519,12 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     }
     
     //lo_address address = lo_address_new(atom::toString(message[0]).c_str(), port);
-    std::shared_ptr<OscClient> address(new OscClient(lo_address_new(atom::toString(message[0]).c_str(), port)));
+    shared_ptr<OscClient> address(new OscClient(lo_address_new(atom::toString(message[0]).c_str(), port)));
 
     int error = lo_address_errno(address->get());
     if (error != 0)
     {
-        std::cout << "Wrong address received, error " << error << std::endl;
+        cout << "Wrong address received, error " << error << endl;
         return 1;
     }
     else
@@ -537,7 +537,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 
         // Check arguments
         // First argument is the chosen detector, next ones are sources
-        std::string detectorName;
+        string detectorName;
         try
         {
             detectorName = atom::toString(message[2]);
@@ -549,7 +549,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         }
 
         // Create the specified detector
-        std::shared_ptr<Detector> detector;
+        shared_ptr<Detector> detector;
         if (theApp->mDetectorFactory.key_exists(detectorName))
             detector = theApp->mDetectorFactory.create(detectorName);
         else
@@ -562,7 +562,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         unsigned int sourceNbr = detector->getSourceNbr();
         
         // Allocate all the sources
-        std::vector<std::shared_ptr<Source>> sources;
+        vector<shared_ptr<Source>> sources;
         atom::Message::const_iterator iter;
         for (iter = message.begin()+3; iter != message.end(); iter+=2)
         {
@@ -572,7 +572,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
                 return 1;
             }
 
-            std::string sourceName;
+            string sourceName;
             int sourceIndex;
             try
             {
@@ -587,7 +587,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 
             // Check if this source is not already connected
             bool alreadyConnected = false;
-            std::vector<std::shared_ptr<Source>>::const_iterator iterSource;
+            vector<shared_ptr<Source>>::const_iterator iterSource;
             for (iterSource = theApp->mSources.begin(); iterSource != theApp->mSources.end(); ++iterSource)
             {
                 if (iterSource->get()->getName() == sourceName && iterSource->get()->getSubsourceNbr() == (unsigned int)sourceIndex)
@@ -599,12 +599,12 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 
             if (!alreadyConnected)
             {
-                std::shared_ptr<Source> source;
+                shared_ptr<Source> source;
                 if (theApp->mSourceFactory.key_exists(sourceName))
                     source = theApp->mSourceFactory.create(sourceName, sourceIndex);
                 else
                 {
-                    std::string error = "Unable to create source ";
+                    string error = "Unable to create source ";
                     error += sourceName;
                     lo_send(address->get(), "/blobserver/connect", "s", error.c_str());
                     return 1;
@@ -612,7 +612,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
                 
                 if (!source->connect())
                 {
-                    std::string error = "Unable to connect to source ";
+                    string error = "Unable to connect to source ";
                     error += sourceName;
                     lo_send(address->get(), "/blobserver/connect", "s", error.c_str());
                     return 1;
@@ -625,8 +625,8 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         // If enough sources have been specified
         if (sources.size() >= sourceNbr)
         {
-            std::lock_guard<std::mutex> lock(theApp->mFlowMutex);
-            std::lock_guard<std::mutex> lockToo(theApp->mSourceMutex);
+            lock_guard<mutex> lock(theApp->mFlowMutex);
+            lock_guard<mutex> lockToo(theApp->mSourceMutex);
 
             // We can create the flow!
             Flow flow;
@@ -640,7 +640,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             sprintf(shmFile, "/tmp/blobserver_output_%i", flow.id);
             flow.shm.reset(new ShmImage(shmFile));
 
-            std::vector<std::shared_ptr<Source>>::const_iterator source;
+            vector<shared_ptr<Source>>::const_iterator source;
             for (source = sources.begin(); source != sources.end(); ++source)
             {
                 flow.sources.push_back(*source);
@@ -648,7 +648,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
                 // Add the sources to the mSources vector
                 // (if they are not already there)
                 bool isInSources = false;
-                std::vector<std::shared_ptr<Source>>::const_iterator iter;
+                vector<shared_ptr<Source>>::const_iterator iter;
                 for (iter = theApp->mSources.begin(); iter != theApp->mSources.end(); ++iter)
                 {
                     if (iter->get()->getName() == source->get()->getName() && iter->get()->getSubsourceNbr() == source->get()->getSubsourceNbr())
@@ -679,17 +679,17 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 /*****************/
 int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
-    std::shared_ptr<App> theApp = App::getInstance();
+    shared_ptr<App> theApp = App::getInstance();
     
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
 
-    std::string addressStr = atom::toString(message[0]);
-    std::shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
+    string addressStr = atom::toString(message[0]);
+    shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
     int error = lo_address_errno(address->get());
     if (error != 0)
     {
-        std::cout << "Wrong address received, error " << error << std::endl;
+        cout << "Wrong address received, error " << error << endl;
         return 1;
     }
     
@@ -707,17 +707,17 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
         detectorId = atom::toInt(message[1]);
 
     // Delete flows related to this address, according to the parameter
-    std::lock_guard<std::mutex> lock(theApp->mFlowMutex);
-    std::vector<Flow>::iterator flow;
+    lock_guard<mutex> lock(theApp->mFlowMutex);
+    vector<Flow>::iterator flow;
     for (flow = theApp->mFlows.begin(); flow != theApp->mFlows.end();)
     {
-        if (std::string(lo_address_get_url(flow->client->get())) == std::string(lo_address_get_url(address->get())))
+        if (string(lo_address_get_url(flow->client->get())) == string(lo_address_get_url(address->get())))
         {
             if (all == true || detectorId == flow->id)
             {
                 lo_send(flow->client->get(), "/blobserver/disconnect", "s", "Disconnected");
                 theApp->mFlows.erase(flow);
-                std::cout << "Connection from address " << addressStr << " closed." << std::endl;
+                cout << "Connection from address " << addressStr << " closed." << endl;
             }
             else
             {
@@ -736,13 +736,13 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
 /*****************/
 int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
-    std::shared_ptr<App> theApp = App::getInstance();    
+    shared_ptr<App> theApp = App::getInstance();    
 
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
         
-    std::string addressStr = atom::toString(message[0]);
-    std::shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
+    string addressStr = atom::toString(message[0]);
+    shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
 
     // Message must contain ip address, flow id, target (detector or src), src number if applicable, parameter and value
     // or just ip address, flow id, and start/stop
@@ -755,7 +755,7 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
     int error = lo_address_errno(address->get());
     if (error != 0)
     {
-        std::cout << "Wrong address received, error " << error << std::endl;
+        cout << "Wrong address received, error " << error << endl;
         return 1;
     }
 
@@ -763,12 +763,12 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
     int result = 0;
 
     unsigned int flowId = (unsigned int)(atom::toInt(message[1]));
-    std::vector<Flow>::iterator flow;
+    vector<Flow>::iterator flow;
     for (flow = theApp->mFlows.begin(); flow != theApp->mFlows.end(); ++flow)
     {
         if (flow->id == flowId)
         {
-            std::lock_guard<std::mutex> lock(theApp->mFlowMutex);
+            lock_guard<mutex> lock(theApp->mFlowMutex);
 
             // If the parameter is for the detector
             if (atom::toString(message[2]) == "Detector")
@@ -828,15 +828,15 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
 /*****************/
 int App::oscHandlerGetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
-    std::shared_ptr<App> theApp = App::getInstance();
+    shared_ptr<App> theApp = App::getInstance();
 
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
 
-    std::shared_ptr<OscClient> address;
+    shared_ptr<OscClient> address;
     try
     {
-        std::string addressStr = atom::toString(message[0]);
+        string addressStr = atom::toString(message[0]);
         address.reset(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
     }
     catch (...)
@@ -851,7 +851,7 @@ int App::oscHandlerGetParameter(const char* path, const char* types, lo_arg** ar
     }
 
     unsigned int flowId;
-    std::string entity;
+    string entity;
 
     try
     {
@@ -865,11 +865,11 @@ int App::oscHandlerGetParameter(const char* path, const char* types, lo_arg** ar
 
     // Go through the flows
     int result = 0;
-    std::for_each (theApp->mFlows.begin(), theApp->mFlows.end(), [&] (Flow flow)
+    for_each (theApp->mFlows.begin(), theApp->mFlows.end(), [&] (Flow flow)
     {
         if (flow.id == flowId)
         {
-            std::lock_guard<std::mutex> lock(theApp->mFlowMutex);
+            lock_guard<mutex> lock(theApp->mFlowMutex);
 
             // If the parameter is for the detector
             if (entity == "Detector")
@@ -927,7 +927,7 @@ int App::oscHandlerGetParameter(const char* path, const char* types, lo_arg** ar
 /*****************/
 int App::oscHandlerGetDetectors(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
-    std::shared_ptr<App> theApp = App::getInstance();
+    shared_ptr<App> theApp = App::getInstance();
 
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
@@ -935,10 +935,10 @@ int App::oscHandlerGetDetectors(const char* path, const char* types, lo_arg** ar
     if (message.size() < 1)
         return 1;
 
-    std::shared_ptr<OscClient> address;
+    shared_ptr<OscClient> address;
     try
     {
-        std::string addressStr = atom::toString(message[0]);
+        string addressStr = atom::toString(message[0]);
         address.reset(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
     }
     catch (atom::BadTypeTagError exception)
@@ -947,12 +947,12 @@ int App::oscHandlerGetDetectors(const char* path, const char* types, lo_arg** ar
     }
 
     // Get all the available detectors
-    std::vector<std::string> keys = theApp->mDetectorFactory.get_keys();
+    vector<string> keys = theApp->mDetectorFactory.get_keys();
 
     atom::Message outMessage;
-    std::for_each (keys.begin(), keys.end(), [&] (std::string key)
+    for_each (keys.begin(), keys.end(), [&] (string key)
     {
-        std::cout << key << std::endl;
+        cout << key << endl;
         outMessage.push_back(atom::StringValue::create(key.c_str()));
     } );
 
@@ -965,12 +965,12 @@ int App::oscHandlerGetDetectors(const char* path, const char* types, lo_arg** ar
 /*****************/
 int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
-    std::shared_ptr<App> theApp = App::getInstance();
+    shared_ptr<App> theApp = App::getInstance();
 
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
 
-    std::string addressStr;
+    string addressStr;
     try
     {
         addressStr = atom::toString(message[0]);
@@ -979,13 +979,13 @@ int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv
     {
         return 1;
     }
-    std::shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
+    shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
     
     // If we have another parameter, it means we want to get availables subsources
     atom::Message outMessage;
     if (message.size() > 1)
     {
-        std::string sourceName;
+        string sourceName;
         try
         {
             sourceName = atom::toString(message[1]);
@@ -996,7 +996,7 @@ int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv
         }
 
         // We try to create the named source
-        std::shared_ptr<Source> source;
+        shared_ptr<Source> source;
         if (theApp->mSourceFactory.key_exists(sourceName))
             source = theApp->mSourceFactory.create(sourceName, -1);
         else
@@ -1008,9 +1008,9 @@ int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv
     else
     {
         // Get all the available sources
-        std::vector<std::string> keys = theApp->mSourceFactory.get_keys();
+        vector<string> keys = theApp->mSourceFactory.get_keys();
 
-        std::for_each (keys.begin(), keys.end(), [&] (std::string key)
+        for_each (keys.begin(), keys.end(), [&] (string key)
         {
             outMessage.push_back(atom::StringValue::create(key.c_str()));
         } );
@@ -1023,7 +1023,7 @@ int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv
 /*****************/
 int main(int argc, char** argv)
 {
-    std::shared_ptr<App> theApp = App::getInstance();
+    shared_ptr<App> theApp = App::getInstance();
     int ret;
 
     ret = theApp->init(argc, argv);
