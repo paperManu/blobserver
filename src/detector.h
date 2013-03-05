@@ -48,8 +48,9 @@ class Detector
          * and the size of each blob in the message
          */
         virtual atom::Message detect(vector<cv::Mat> pCaptures) {}
-        void setMask(cv::Mat pMask);
+        atom::Message getLastMessage() {return mLastMessage;}
 
+        void setMask(cv::Mat pMask);
         virtual void setParameter(atom::Message pParam) {}
         atom::Message getParameter(atom::Message pParam);
         
@@ -62,6 +63,8 @@ class Detector
 
     protected:
         cv::Mat mOutputBuffer;
+        atom::Message mLastMessage;
+
         string mOscPath;
         string mName;
         unsigned int mSourceNbr;

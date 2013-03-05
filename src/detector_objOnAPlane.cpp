@@ -148,8 +148,8 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
     // And we send and print them
     atom::Message message;
     // Include the number and size of each blob in the message
-    message.push_back(atom::IntValue::create((int)mBlobs.size()));
-    message.push_back(atom::IntValue::create(6));
+    mLastMessage.push_back(atom::IntValue::create((int)mBlobs.size()));
+    mLastMessage.push_back(atom::IntValue::create(6));
     
     for(int i = 0; i < mBlobs.size(); ++i)
     {
@@ -168,18 +168,18 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
         cv::putText(realDetected, lNbrStr, cv::Point(lX, lY), cv::FONT_HERSHEY_COMPLEX, 0.66, cv::Scalar(128.0, 128.0, 128.0, 128.0));
 
         // Add this blob to the message
-        message.push_back(atom::IntValue::create(lX));
-        message.push_back(atom::IntValue::create(lY));
-        message.push_back(atom::IntValue::create(lSize));
-        message.push_back(atom::IntValue::create(ldX));
-        message.push_back(atom::IntValue::create(ldY));
-        message.push_back(atom::IntValue::create(lId));
+        mLastMessage.push_back(atom::IntValue::create(lX));
+        mLastMessage.push_back(atom::IntValue::create(lY));
+        mLastMessage.push_back(atom::IntValue::create(lSize));
+        mLastMessage.push_back(atom::IntValue::create(ldX));
+        mLastMessage.push_back(atom::IntValue::create(ldY));
+        mLastMessage.push_back(atom::IntValue::create(lId));
     }
 
     // Save the result in a buffer
     mOutputBuffer = realDetected;
 
-    return message;
+    return mLastMessage;
 }
 
 /*****************/

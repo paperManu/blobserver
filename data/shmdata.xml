@@ -20,4 +20,25 @@
             <Port>9002</Port>
         </Server>
     </Flow>
+    <Flow>
+        <Detector>
+            <Type>Detector_MeanOutliers</Type>
+        </Detector>
+        <Source>
+            <Type>Source_OpenCV</Type>
+            <Subsource>300</Subsource>
+            <Param>
+                <Name>framerate</Name>
+                <Value>30</Value>
+            </Param>
+        </Source>
+        <Client>
+            <Address>localhost</Address>
+            <Port>9000</Port>
+        </Client>
+        <Server>
+            <Address>localhost</Address>
+            <Port>9002</Port>
+        </Server>
+    </Flow>
 </Blobserver>

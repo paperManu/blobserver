@@ -15,7 +15,8 @@ blobserver_SOURCES = \
     detector_objOnAPlane.cpp \
     source.cpp \
     source_opencv.cpp \
-    source_shmdata.cpp
+    source_shmdata.cpp \
+    threadPool.cpp
 
 noinst_HEADERS = \
     base_objects.h \

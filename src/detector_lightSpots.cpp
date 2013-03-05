@@ -113,8 +113,8 @@ atom::Message Detector_LightSpots::detect(std::vector<cv::Mat> pCaptures)
     // And we send and print them
     atom::Message message;
     // Include the number and size of each blob in the message
-    message.push_back(atom::IntValue::create((int)mLightBlobs.size()));
-    message.push_back(atom::IntValue::create(6));
+    mLastMessage.push_back(atom::IntValue::create((int)mLightBlobs.size()));
+    mLastMessage.push_back(atom::IntValue::create(6));
 
     for(int i = 0; i < mLightBlobs.size(); ++i)
     {
@@ -133,18 +133,18 @@ atom::Message Detector_LightSpots::detect(std::vector<cv::Mat> pCaptures)
         cv::putText(lLight, lNbrStr, cv::Point(lX, lY), cv::FONT_HERSHEY_COMPLEX, 0.66, cv::Scalar(128.0, 128.0, 128.0, 128.0));
 
         // Add this blob to the message
-        message.push_back(atom::IntValue::create(lX));
-        message.push_back(atom::IntValue::create(lY));
-        message.push_back(atom::IntValue::create(lSize));
-        message.push_back(atom::IntValue::create(ldX));
-        message.push_back(atom::IntValue::create(ldY));
-        message.push_back(atom::IntValue::create(lId));
+        mLastMessage.push_back(atom::IntValue::create(lX));
+        mLastMessage.push_back(atom::IntValue::create(lY));
+        mLastMessage.push_back(atom::IntValue::create(lSize));
+        mLastMessage.push_back(atom::IntValue::create(ldX));
+        mLastMessage.push_back(atom::IntValue::create(ldY));
+        mLastMessage.push_back(atom::IntValue::create(lId));
     }
 
     // Save the result in a buffer
     mOutputBuffer = lLight;
 
-    return message;
+    return mLastMessage;
 }
 
 /*************/

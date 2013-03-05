@@ -120,11 +120,10 @@ atom::Message Detector_MeanOutliers::detect(std::vector<cv::Mat> pCaptures)
     int lSpeedY = (int)(props.speed.y);
 
     // Constructing the message
-    atom::Message message;
     // Two first values are the number and size of each (the...) blob
-    message = atom::createMessage("iiiiiii", 1, 5, lX, lY, lNumber, lSpeedX, lSpeedY);
+    mLastMessage = atom::createMessage("iiiiiii", 1, 5, lX, lY, lNumber, lSpeedX, lSpeedY);
 
-    return message;
+    return mLastMessage;
 }
 
 /*************/

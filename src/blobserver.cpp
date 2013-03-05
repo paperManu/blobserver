@@ -34,11 +34,12 @@
 #include <lo/lo.h>
 #include <atom/osc.h>
 
+#include "config.h"
+#include "abstract-factory.h"
 #include "base_objects.h"
 #include "blob_2D.h"
 #include "configurator.h"
-#include "abstract-factory.h"
-#include "config.h"
+#include "threadPool.h"
 
 #include "source_opencv.h"
 #ifdef HAVE_SHMDATA
@@ -47,6 +48,8 @@
 #include "detector_meanOutliers.h"
 #include "detector_lightSpots.h"
 #include "detector_objOnAPlane.h"
+
+using namespace std;
 
 static gboolean gVersion = FALSE;
 static gboolean gHide = FALSE;
@@ -103,6 +106,8 @@ class App
         // A mutex to prevent unexpected changes in flows
         std::mutex mFlowMutex;
         std::mutex mSourceMutex;
+        // A thread pool for detectors
+        std::shared_ptr<ThreadPool> mThreadPool;
 
         // Threads
         std::shared_ptr<std::thread> mSourcesThread;
@@ -146,6 +151,7 @@ unsigned int App::mCurrentId = 0;
 App::App()
 {
     mCurrentId = 0;
+    mThreadPool.reset(new ThreadPool(5));
 }
 
 
@@ -291,6 +297,12 @@ int App::loop()
     bool lShowCamera = !gHide;
     int lSourceNumber = 0;
 
+    timespec nap;
+    nap.tv_sec = 0;
+    nap.tv_nsec = 1e6;
+
+    std::mutex lMutex;
+
     while(mRun)
     {
         std::vector<cv::Mat> lBuffers;
@@ -326,21 +338,48 @@ int App::loop()
         // Go through the flows
         {
             std::lock_guard<std::mutex> lock(mFlowMutex);
+            vector<shared_ptr<thread> > threads;
+            threads.resize(mFlows.size());
+
+            // Update all sources for all flows
+            //std::for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
+            for (int index = 0; index < mFlows.size(); ++index)
+            {
+                Flow* flow = &mFlows[index];
+                if (flow->run == false)
+                    continue;
+
+                // Apply the detector on these frames
+                mThreadPool->enqueue([=, &lMutex] ()
+                {
+                    // Retrieve the frames from all sources in this flow
+                    // There is no risk for sources to disappear here, so no
+                    // need for a mutex (they are freed earlier)
+                    shared_ptr<std::vector<cv::Mat> > frames;
+                    frames.reset(new std::vector<cv::Mat>);
+                    {
+                        for (int i = 0; i < flow->sources.size(); ++i)
+                        {
+                            std::lock_guard<std::mutex> lock(lMutex);
+                            frames->push_back(flow->sources[i]->retrieveCorrectedFrame());
+                        }
+                    }
+
+                    flow->detector->detect(*(frames.get()));
+                } );
+            }
+
+            // Wait for all detectors to finish
+            mThreadPool->waitAllThreads(); 
 
             std::for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
             {
                 if (flow.run == false)
                     return;
 
-                // Retrieve the frames from all sources in this flow
-                // There is no risk for sources to disappear here, so no
-                // need for a mutex (they are freed earlier)
-                std::vector<cv::Mat> frames;
-                for (int i = 0; i < flow.sources.size(); ++i)
-                    frames.push_back(flow.sources[i]->retrieveCorrectedFrame());
-
-                // Apply the detector on these frames
-                atom::Message message = flow.detector->detect(frames);
+                // Get the message resulting from the detection
+                atom::Message message;
+                message = flow.detector->getLastMessage();
 
                 cv::Mat output = flow.detector->getOutput();
                 lBuffers.push_back(output);
@@ -381,7 +420,7 @@ int App::loop()
             cv::imshow("blobserver", lBuffers[lSourceNumber]);
         }
 
-        char lKey = cv::waitKey(16);
+        char lKey = cv::waitKey(5);
         if(lKey == 27) // Escape
             mRun = false;
         if(lKey == 'w')

@@ -14,8 +14,6 @@ ShmImage::~ShmImage()
 {
     if (_writer != NULL)
         shmdata_any_writer_close(_writer);
-
-    cout << "pouetpouetpouet" << endl;
 }
 
 /*************/
