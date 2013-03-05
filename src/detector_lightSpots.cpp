@@ -128,9 +128,12 @@ atom::Message Detector_LightSpots::detect(std::vector<cv::Mat> pCaptures)
         lId = (int)mLightBlobs[i].getId();
 
         // Print the blob number on the blob
-        char lNbrStr[8];
-        sprintf(lNbrStr, "%i", lId);
-        cv::putText(lLight, lNbrStr, cv::Point(lX, lY), cv::FONT_HERSHEY_COMPLEX, 0.66, cv::Scalar(128.0, 128.0, 128.0, 128.0));
+        if (mVerbose)
+        {
+            char lNbrStr[8];
+            sprintf(lNbrStr, "%i", lId);
+            cv::putText(lLight, lNbrStr, cv::Point(lX, lY), cv::FONT_HERSHEY_COMPLEX, 0.66, cv::Scalar(128.0, 128.0, 128.0, 128.0));
+        }
 
         // Add this blob to the message
         mLastMessage.push_back(atom::IntValue::create(lX));
@@ -179,4 +182,6 @@ void Detector_LightSpots::setParameter(atom::Message pMessage)
             mMeasurementNoiseCov = atom::FloatValue::convert(*iter)->getFloat();
         }
     }
+
+    setBaseParameter(pMessage);
 }

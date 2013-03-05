@@ -62,9 +62,6 @@ atom::Message Detector_MeanOutliers::detect(std::vector<cv::Mat> pCaptures)
             if (lMask.at<uchar>(y, x) == 0)
                 lFiltered.at<uchar>(y, x) = 0;
         }
- 
-    // Save the result in a buffer
-    mOutputBuffer = lFiltered;
 
     // Calculate the barycenter of the outliers
     int lNumber = 0;
@@ -123,6 +120,12 @@ atom::Message Detector_MeanOutliers::detect(std::vector<cv::Mat> pCaptures)
     // Two first values are the number and size of each (the...) blob
     mLastMessage = atom::createMessage("iiiiiii", 1, 5, lX, lY, lNumber, lSpeedX, lSpeedY);
 
+    // Save the result in a buffer
+    if (mVerbose)
+        cv::putText(lFiltered, string("x"), cv::Point(lX, lY), cv::FONT_HERSHEY_COMPLEX, 0.66, cv::Scalar(128.0, 128.0, 128.0, 128.0));
+
+    mOutputBuffer = lFiltered;
+
     return mLastMessage;
 }
 
@@ -134,6 +137,8 @@ void Detector_MeanOutliers::setParameter(atom::Message pMessage)
     if ((*iter).get()->getTypeTag() == atom::StringValue::TYPE_TAG)
     {
         std::string cmd = atom::StringValue::convert(*iter)->getString();
+
+        std::cout << cmd << std::endl;
 
         ++iter;
         if (iter == pMessage.end())
@@ -160,4 +165,6 @@ void Detector_MeanOutliers::setParameter(atom::Message pMessage)
             mMeanBlob.setParameter("measurementNoiseCov", param);
         }
     }
+
+    setBaseParameter(pMessage);
 }

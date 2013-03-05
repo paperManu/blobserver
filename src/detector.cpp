@@ -9,6 +9,8 @@ Detector::Detector()
     mName = mClassName;
     mSourceNbr = 1;
 
+    mVerbose = true;
+
     mOutputBuffer = cv::Mat::zeros(0, 0, CV_8U);
     // By default, the mask is all white (all pixels are used)
     mSourceMask = cv::Mat::ones(1, 1, CV_8U);
@@ -52,6 +54,39 @@ atom::Message Detector::getParameter(atom::Message pParam)
         message.push_back(atom::StringValue::create(mOscPath.c_str()));
 
     return message;
+}
+
+/*****************/
+void Detector::setBaseParameter(atom::Message pParam)
+{
+    atom::Message message;
+
+    if (pParam.size() < 2)
+        return;
+    
+    std::string paramName;
+    try
+    {
+        paramName = atom::toString(pParam[0]);
+    }
+    catch (atom::BadTypeTagError error)
+    {
+        return;
+    }
+
+    if (paramName == "verbose")
+    {
+        int value;
+        try
+        {
+            value = atom::toInt(pParam[1]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+        mVerbose = value;
+    }
 }
 
 /*****************/

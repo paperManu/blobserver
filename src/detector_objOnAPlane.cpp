@@ -357,6 +357,8 @@ void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
 
         mMinArea = std::max(0.f, value);
     }
+    else
+        setBaseParameter(pMessage);
 }
 
 /*****************/

@@ -2,6 +2,10 @@
     <Flow>
         <Detector>
             <Type>Detector_MeanOutliers</Type>
+            <Param>
+                <Name>verbose</Name>
+                <Value>0</Value>
+            </Param>
         </Detector>
         <Source>
             <Type>Source_Shmdata</Type>
@@ -23,6 +27,10 @@
     <Flow>
         <Detector>
             <Type>Detector_MeanOutliers</Type>
+            <Param>
+                <Name>verbose</Name>
+                <Value>1</Value>
+            </Param>
         </Detector>
         <Source>
             <Type>Source_OpenCV</Type>

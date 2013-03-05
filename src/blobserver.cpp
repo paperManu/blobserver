@@ -64,7 +64,7 @@ static GOptionEntry gEntries[] =
     {"version", 'v', 0, G_OPTION_ARG_NONE, &gVersion, "Shows version of this software", NULL},
     {"config", 'C', 0, G_OPTION_ARG_STRING, &gConfigFile, "Specify a configuration file to load at startup", NULL},
     {"hide", 'H', 0, G_OPTION_ARG_NONE, &gHide, "Hides the camera window", NULL},
-    {"verbose", 'V', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the out", NULL},
+    {"verbose", 'V', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
     {"mask", 'm', 0, G_OPTION_ARG_STRING, &gMaskFilename, "Specifies a mask which will be applied to all detectors", NULL},
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
     {NULL}

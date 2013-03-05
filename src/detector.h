@@ -64,12 +64,14 @@ class Detector
     protected:
         cv::Mat mOutputBuffer;
         atom::Message mLastMessage;
+        bool mVerbose;
 
         string mOscPath;
         string mName;
         unsigned int mSourceNbr;
 
         cv::Mat getMask(cv::Mat pCapture, int pInterpolation = CV_INTER_NN);
+        void setBaseParameter(atom::Message pParam);
 
     private:
         static string mClassName;
@@ -78,6 +80,7 @@ class Detector
         vector<weak_ptr<Source>> mSources;
 
         cv::Mat mSourceMask, mMask;
+
 };
 
 // Useful functions
