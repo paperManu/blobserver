@@ -403,6 +403,10 @@ void App::updateSources()
 {
     std::shared_ptr<App> theApp = App::getInstance();
 
+    timespec time;
+    time.tv_sec = 0;
+    time.tv_nsec = 5e5;
+
     while(theApp->mRun)
     {
         {
@@ -426,7 +430,7 @@ void App::updateSources()
             }
         }
 
-        usleep(1000);
+        nanosleep(&time, NULL);
     }
 }
 
