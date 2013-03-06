@@ -43,6 +43,7 @@ class Detector_LightSpots : public Detector
     private:
         static std::string mClassName;
         static std::string mDocumentation;
+        static unsigned int mSourceNbr;
         
         cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
         std::vector<Blob2D> mLightBlobs; // Vector of detected and tracked blobs

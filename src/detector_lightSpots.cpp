@@ -4,6 +4,7 @@
 
 std::string Detector_LightSpots::mClassName = "Detector_LightSpots";
 std::string Detector_LightSpots::mDocumentation = "N/A";
+unsigned int Detector_LightSpots::mSourceNbr = 1;
 
 /*************/
 Detector_LightSpots::Detector_LightSpots()

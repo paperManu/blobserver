@@ -28,6 +28,8 @@
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <chrono>
+
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <opencv2/opencv.hpp>
@@ -59,6 +61,8 @@ static gchar* gConfigFile = NULL;
 static gchar* gMaskFilename = NULL;
 static gboolean gTcp = FALSE;
 
+static gboolean gBench = FALSE;
+
 static GOptionEntry gEntries[] =
 {
     {"version", 'v', 0, G_OPTION_ARG_NONE, &gVersion, "Shows version of this software", NULL},
@@ -67,6 +71,7 @@ static GOptionEntry gEntries[] =
     {"verbose", 'V', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
     {"mask", 'm', 0, G_OPTION_ARG_STRING, &gMaskFilename, "Specifies a mask which will be applied to all detectors", NULL},
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
+    {"bench", 'B', 0, G_OPTION_ARG_NONE, &gBench, "Enables printing timings of main loop, for debug purpose", NULL},
     {NULL}
 };
 
@@ -289,6 +294,14 @@ void App::registerClasses()
         Source_Shmdata::getDocumentation());
 }
 
+/*************/
+void timeSince(unsigned long long timestamp, std::string stage)
+{
+    auto now = chrono::high_resolution_clock::now();
+    unsigned long long currentTime = chrono::duration_cast<chrono::milliseconds>(now.time_since_epoch()).count();
+    std::cout << stage << " - " << (long long)currentTime - (long long)timestamp << "ms" << std::endl;
+}
+
 /*****************/
 int App::loop()
 {
@@ -297,14 +310,15 @@ int App::loop()
     bool lShowCamera = !gHide;
     int lSourceNumber = 0;
 
-    timespec nap;
-    nap.tv_sec = 0;
-    nap.tv_nsec = 1e6;
+    unsigned long long msecPeriod = 16;
 
     mutex lMutex;
 
     while(mRun)
     {
+        unsigned long long chronoStart;
+        chronoStart = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+
         vector<cv::Mat> lBuffers;
         vector<string> lBufferNames;
 
@@ -313,7 +327,7 @@ int App::loop()
         lBuffers.push_back(cv::Mat::zeros(480, 640, CV_8UC3));
         lBufferNames.push_back(string("This is Blobserver"));
 
-        // Retrive the capture from all the sources
+        // Retrieve the capture from all the sources
         {
             lock_guard<mutex> lock(mSourceMutex);
 
@@ -335,6 +349,9 @@ int App::loop()
             } );
         }
 
+        if (gBench)
+            timeSince(chronoStart, string("1 - Retrieve corrected frames"));
+
         // Go through the flows
         {
             lock_guard<mutex> lock(mFlowMutex);
@@ -355,22 +372,23 @@ int App::loop()
                     // Retrieve the frames from all sources in this flow
                     // There is no risk for sources to disappear here, so no
                     // need for a mutex (they are freed earlier)
-                    shared_ptr<vector<cv::Mat> > frames;
-                    frames.reset(new vector<cv::Mat>);
+                    vector<cv::Mat> frames;
                     {
                         for (int i = 0; i < flow->sources.size(); ++i)
                         {
                             lock_guard<mutex> lock(lMutex);
-                            frames->push_back(flow->sources[i]->retrieveCorrectedFrame());
+                            frames.push_back(flow->sources[i]->retrieveCorrectedFrame());
                         }
                     }
 
-                    flow->detector->detect(*(frames.get()));
+                    flow->detector->detect(frames);
                 } );
             }
-
             // Wait for all detectors to finish
             mThreadPool->waitAllThreads(); 
+
+            if (gBench)
+                timeSince(chronoStart, string("2.1 - Update detectors"));
 
             for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
             {
@@ -407,6 +425,9 @@ int App::loop()
                 // End of the frame
                 lo_send(flow.client->get(), "/blobserver/endFrame", "ii", frameNbr, flow.id);
             } );
+
+            if (gBench)
+                timeSince(chronoStart, string("2.2 - Update buffers"));
         }
 
         if (lShowCamera)
@@ -420,7 +441,7 @@ int App::loop()
             cv::imshow("blobserver", lBuffers[lSourceNumber]);
         }
 
-        char lKey = cv::waitKey(5);
+        char lKey = cv::waitKey(1);
         if(lKey == 27) // Escape
             mRun = false;
         if(lKey == 'w')
@@ -428,6 +449,18 @@ int App::loop()
             lSourceNumber = (lSourceNumber+1)%lBuffers.size();
             cout << "Buffer displayed: " << lBufferNames[lSourceNumber] << endl;
         }
+
+        unsigned long long chronoEnd = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+        unsigned long long chronoElapsed = chronoEnd - chronoStart;
+        
+        timespec nap;
+        nap.tv_sec = 0;
+        if (chronoElapsed < msecPeriod)
+            nap.tv_nsec = msecPeriod - chronoElapsed * 1e6;
+        else
+            nap.tv_nsec = 0;
+
+        nanosleep(&nap, NULL);
 
         frameNbr++;
     }
@@ -442,12 +475,12 @@ void App::updateSources()
 {
     shared_ptr<App> theApp = App::getInstance();
 
-    timespec time;
-    time.tv_sec = 0;
-    time.tv_nsec = 5e5;
+    unsigned long long msecPeriod = 16;
 
     while(theApp->mRun)
     {
+        unsigned long long chronoStart = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+
         {
             lock_guard<mutex> lock(theApp->mSourceMutex);
             
@@ -469,7 +502,17 @@ void App::updateSources()
             }
         }
 
-        nanosleep(&time, NULL);
+        unsigned long long chronoEnd = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+        unsigned long long chronoElapsed = chronoEnd - chronoStart;
+
+        timespec nap;
+        nap.tv_sec = 0;
+        if (chronoElapsed < msecPeriod)
+            nap.tv_nsec = msecPeriod - chronoElapsed * 1e6;
+        else
+            nap.tv_nsec = 0;
+
+        nanosleep(&nap, NULL);
     }
 }
 

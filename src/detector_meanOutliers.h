@@ -43,6 +43,7 @@ class Detector_MeanOutliers : public Detector
     private:
         static std::string mClassName;
         static std::string mDocumentation;
+        static unsigned int mSourceNbr;
 
         float mDetectionLevel; // Above std dev * mDetectionLevel, an object is detected
         int mFilterSize;

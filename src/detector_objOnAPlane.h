@@ -44,6 +44,7 @@ class Detector_ObjOnAPlane : public Detector
     private:
         static std::string mClassName;
         static std::string mDocumentation;
+        static unsigned int mSourceNbr;
 
         int mMaxTrackedBlobs;
         float mDetectionLevel;

@@ -20,7 +20,6 @@ void Source_OpenCV::make(int pParam)
 {
     mName = mClassName;
     mSubsourceNbr = pParam;
-    mBuffer = cv::Mat::zeros(0, 0, CV_8U);
 }
 
 /*************/
@@ -73,9 +72,11 @@ bool Source_OpenCV::grabFrame()
 /*************/
 cv::Mat Source_OpenCV::retrieveFrame()
 {
-    mCamera.retrieve(mBuffer);
+    cv::Mat buffer;
+    mCamera.retrieve(buffer);
+    mBuffer = buffer;
 
-    return mBuffer.clone();
+    return mBuffer.get();
 }
 
 /*************/

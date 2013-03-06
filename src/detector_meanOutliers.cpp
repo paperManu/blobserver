@@ -4,6 +4,7 @@
 
 std::string Detector_MeanOutliers::mClassName = "Detector_MeanOutliers";
 std::string Detector_MeanOutliers::mDocumentation = "N/A";
+unsigned int Detector_MeanOutliers::mSourceNbr = 1;
 
 /*************/
 Detector_MeanOutliers::Detector_MeanOutliers()

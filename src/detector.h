@@ -41,6 +41,7 @@ class Detector
 
         static string getClassName() {return mClassName;}
         static string getDocumentation() {return mDocumentation;}
+        static unsigned int getSourceNbr() {return mSourceNbr;}
 
         /* Detects objects in the capture given as a parameter, and returns
          * a message with informations about each blob
@@ -58,7 +59,6 @@ class Detector
         
         string getName() {return mName;}
         string getOscPath() {return mOscPath;}
-        unsigned int getSourceNbr() {return mSourceNbr;}
         cv::Mat getOutput() {return mOutputBuffer.clone();}
 
     protected:
@@ -68,7 +68,8 @@ class Detector
 
         string mOscPath;
         string mName;
-        unsigned int mSourceNbr;
+
+        vector<weak_ptr<Source>> mSources;
 
         cv::Mat getMask(cv::Mat pCapture, int pInterpolation = CV_INTER_NN);
         void setBaseParameter(atom::Message pParam);
@@ -76,8 +77,7 @@ class Detector
     private:
         static string mClassName;
         static string mDocumentation;
-
-        vector<weak_ptr<Source>> mSources;
+        static unsigned int mSourceNbr;
 
         cv::Mat mSourceMask, mMask;
 

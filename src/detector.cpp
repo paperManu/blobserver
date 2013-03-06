@@ -2,6 +2,7 @@
 
 std::string Detector::mClassName = "Detector";
 std::string Detector::mDocumentation = "N/A";
+unsigned int Detector::mSourceNbr = 1;
 
 /*************/
 Detector::Detector()

@@ -9,7 +9,6 @@ Source::Source()
     mName = mClassName;
     mDocumentation = "N/A";
 
-    mBuffer = cv::Mat::zeros(1, 1, CV_8U);
     mCorrectedBuffer = cv::Mat::zeros(480, 640, CV_8UC3);
 
     mWidth = 0;
@@ -54,17 +53,17 @@ cv::Mat Source::retrieveCorrectedFrame()
         if (mICCTransform != NULL)
             cmsDoTransform(mICCTransform, mCorrectedBuffer.data, mCorrectedBuffer.data, mCorrectedBuffer.total());
         if (mCorrectVignetting)
-            mBuffer = correctVignetting(mCorrectedBuffer);
+            mCorrectedBuffer = correctVignetting(mCorrectedBuffer);
         if (mCorrectDistortion)
-            mBuffer = correctDistortion(mCorrectedBuffer);
+            mCorrectedBuffer = correctDistortion(mCorrectedBuffer);
 
         mUpdated = false;
 
-        return mCorrectedBuffer.clone();
+        return mCorrectedBuffer;
     }
     else
     {
-        return mCorrectedBuffer.clone();
+        return mCorrectedBuffer;
     }
 }
 
@@ -191,10 +190,10 @@ atom::Message Source::getBaseParameter(atom::Message pParam)
 /************/
 cv::Mat Source::correctVignetting(cv::Mat pImg)
 {
-    if (mRecomputeVignettingMat == true || mVignettingMat.size() != mBuffer.size())
+    if (mRecomputeVignettingMat == true || mVignettingMat.size() != pImg.size())
     {
         // Vignetting description has changed, or grabbed image has not the same resolution
-        int nbrChannels = (mBuffer.type() >> CV_CN_SHIFT) + 1;
+        int nbrChannels = (pImg.type() >> CV_CN_SHIFT) + 1;
         int type = CV_MAKE_TYPE(CV_32F, nbrChannels);
         mVignettingMat = cv::Mat::zeros(mHeight, mWidth, type);
 
@@ -222,7 +221,7 @@ cv::Mat Source::correctVignetting(cv::Mat pImg)
     }
 
     cv::Mat resultMat;
-    cv::multiply(pImg, mVignettingMat, resultMat, 1.0, mBuffer.type());
+    cv::multiply(pImg, mVignettingMat, resultMat, 1.0, pImg.type());
 
     return resultMat;
 }
@@ -230,7 +229,7 @@ cv::Mat Source::correctVignetting(cv::Mat pImg)
 /************/
 cv::Mat Source::correctDistortion(cv::Mat pImg)
 {
-    if (mRecomputeDistortionMat == true || mDistortionMat.size() != mBuffer.size())
+    if (mRecomputeDistortionMat == true || mDistortionMat.size() != pImg.size())
     {
         // Distortion description has changed, or grabbed image has not the same resolution
         mDistortionMat = cv::Mat::zeros(mHeight, mWidth, CV_32FC2);
@@ -298,4 +297,34 @@ cmsHTRANSFORM Source::loadICCTransform(std::string pFile)
 
     std::cout << "ICC profile " << pFile << " correctly loaded" << std::endl;
     return transform;
+}
+
+/*************/
+MatBuffer::MatBuffer(unsigned int size)
+{
+    _mats.resize(size);
+    _head = 0;
+}
+
+/*************/
+MatBuffer::~MatBuffer()
+{
+}
+
+/*************/
+MatBuffer& MatBuffer::operator=(cv::Mat& mat)
+{
+    unsigned int head = _head;
+    unsigned int loc = (+1) % _mats.size();
+    _mats[loc] = mat;
+
+    _head = loc;
+
+    return *this;
+}
+
+/*************/
+cv::Mat MatBuffer::get()
+{
+    return _mats[_head];
 }

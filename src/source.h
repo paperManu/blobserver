@@ -22,16 +22,37 @@
  * The Source base class.
  */
 
- #ifndef SOURCE_H
- #define SOURCE_H
+#ifndef SOURCE_H
+#define SOURCE_H
 
+#include <atomic>
 #include <mutex>
+#include <vector>
+
 #include <opencv2/opencv.hpp>
 #include <lcms2.h>
 #include <atom/message.h>
 
 using namespace std;
 
+/*************/
+// Buffering of cv::Mat
+class MatBuffer
+{
+    public:
+        MatBuffer(unsigned int size = 2);
+        ~MatBuffer();
+
+        MatBuffer& operator=(cv::Mat& mat);
+        cv::Mat get();
+
+    private:
+        vector<cv::Mat> _mats;
+        atomic_uint _head;
+};
+
+/*************/
+// Source class
 class Source
 {
     public:
@@ -50,7 +71,7 @@ class Source
         virtual bool connect() {return true;}
         virtual bool disconnect() {return true;}
         virtual bool grabFrame() {}
-        virtual cv::Mat retrieveFrame() {return mBuffer;}
+        virtual cv::Mat retrieveFrame() {return mBuffer.get();}
         cv::Mat retrieveCorrectedFrame();
 
         virtual void setParameter(atom::Message pParam) {}
@@ -66,7 +87,7 @@ class Source
 
 
     protected:
-        cv::Mat mBuffer; // Image buffer
+        MatBuffer mBuffer; // Image buffer
         cv::Mat mCorrectedBuffer; // Corrected image buffer
         bool mUpdated;
         mutable mutex mMutex;
@@ -112,4 +133,4 @@ class Source
         cmsHTRANSFORM loadICCTransform(std::string pFile);
 };
 
- #endif // SOURCE_H
+#endif // SOURCE_H

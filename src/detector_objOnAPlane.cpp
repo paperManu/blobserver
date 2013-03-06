@@ -5,6 +5,7 @@ using namespace std;
 
 std::string Detector_ObjOnAPlane::mClassName = "Detector_ObjOnAPlane";
 std::string Detector_ObjOnAPlane::mDocumentation = "N/A";
+unsigned int Detector_ObjOnAPlane::mSourceNbr = 0;
 
 /*****************/
 Detector_ObjOnAPlane::Detector_ObjOnAPlane()
@@ -67,7 +68,6 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
     for_each (correctedCaptures.begin(), correctedCaptures.end(), [&] (cv::Mat capture)
     {
         cv::Mat resized;
-
         cv::resize(capture, resized, correctedCaptures[0].size(), 0, 0, cv::INTER_LINEAR);
         cv::cvtColor(resized, capture, CV_BGR2HSV);
     } );

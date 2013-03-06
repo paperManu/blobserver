@@ -24,7 +24,6 @@ void Source_Shmdata::make(int pParam)
 
     mName = mClassName;
     mSubsourceNbr = pParam;
-    mBuffer = cv::Mat::zeros(480, 640, CV_8UC3);
 }
 
 /*************/
@@ -58,7 +57,7 @@ bool Source_Shmdata::grabFrame()
 cv::Mat Source_Shmdata::retrieveFrame()
 {
     lock_guard<mutex> lock(mMutex);
-    return mBuffer.clone();
+    return mBuffer.get();
 }
 
 /*************/
@@ -246,39 +245,33 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
         if (width == 0 || height == 0 || bpp == 0)
             return;
 
-        if (context->mWidth != width || context->mHeight != height || context->mChannels != channels)
-        {
-            context->mWidth = width;
-            context->mHeight = height;
-            context->mChannels = channels;
+        cv::Mat buffer;
+        context->mWidth = width;
+        context->mHeight = height;
+        context->mChannels = channels;
 
-            if (channels == 1 && bpp == 8)
-                context->mBuffer = cv::Mat::zeros(height, width, CV_8U);
-            else if (channels == 1 && bpp == 16)
-                context->mBuffer = cv::Mat::zeros(height, width, CV_16U);
-            else if (channels == 2)
-                context->mBuffer = cv::Mat::zeros(height, width, CV_8UC2);
-            else if (channels == 3)
-                context->mBuffer = cv::Mat::zeros(height, width, CV_8UC3);
-            else if (channels == 4)
-                context->mBuffer = cv::Mat::zeros(height, width, CV_8UC4);
-        }
+        if (channels == 1 && bpp == 8)
+            buffer = cv::Mat::zeros(height, width, CV_8U);
+        else if (channels == 1 && bpp == 16)
+            buffer = cv::Mat::zeros(height, width, CV_16U);
+        else if (channels == 2)
+            buffer = cv::Mat::zeros(height, width, CV_8UC2);
+        else if (channels == 3)
+            buffer = cv::Mat::zeros(height, width, CV_8UC3);
+        else if (channels == 4)
+            buffer = cv::Mat::zeros(height, width, CV_8UC4);
 
-        cv::Mat bufferMat;
-        if (!isYUV)
-            bufferMat = cv::Mat::zeros(height, width, context->mBuffer.type());
-        else
-            bufferMat = cv::Mat::zeros(height, width, CV_8UC2);
+        if (isYUV)
+            buffer = cv::Mat::zeros(height, width, CV_8UC2);
 
-        memcpy((char*)(bufferMat.data), (const char*)data, width*height*bpp/8);
+        memcpy((char*)(buffer.data), (const char*)data, width*height*bpp/8);
 
         if (red > blue && channels >= 3 && !isGray && !isYUV)
-            cvtColor(bufferMat, context->mBuffer, CV_BGR2RGB);
+            cvtColor(buffer, buffer, CV_BGR2RGB);
         else if (isYUV)
-            cvtColor(bufferMat, context->mBuffer, CV_YUV2BGRA_UYVY);
-        else
-            context->mBuffer = bufferMat;
+            cvtColor(buffer, buffer, CV_YUV2BGRA_UYVY);
 
+        context->mBuffer = buffer;
         context->mUpdated = true;
     }
     else
