@@ -315,9 +315,8 @@ MatBuffer::~MatBuffer()
 MatBuffer& MatBuffer::operator=(cv::Mat& mat)
 {
     unsigned int head = _head;
-    unsigned int loc = (+1) % _mats.size();
+    unsigned int loc = (head+1) % _mats.size();
     _mats[loc] = mat;
-
     _head = loc;
 
     return *this;

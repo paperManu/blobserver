@@ -28,6 +28,34 @@
 #include "detector.h"
 #include "blob_2D.h"
 
+/*************/
+// Class for parallel masking
+template <typename PixType>
+class Parallel_Mask : public cv::ParallelLoopBody
+{
+    public:
+        Parallel_Mask(cv::Mat* buffer, cv::Mat* mask):
+            _buffer(buffer), _mask(mask) {}
+
+        void operator()(const cv::Range& r) const
+        {
+            for (int y = r.start; y < r.end; ++y)
+            {
+                for (int x = 0; x < _buffer->cols; ++x)
+                {
+                    if (_mask->at<uchar>(y, x) == 0)
+                        _buffer->at<PixType>(y, x) = PixType(0);
+                }
+            }
+        }
+
+    private:
+        cv::Mat* _buffer;
+        cv::Mat* _mask;
+};
+
+/*************/
+// Class Detector_MeanOutliers
 class Detector_MeanOutliers : public Detector
 {
     public:

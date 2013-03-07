@@ -57,12 +57,7 @@ atom::Message Detector_MeanOutliers::detect(std::vector<cv::Mat> pCaptures)
 
     // Apply the mask
     cv::Mat lMask = getMask(lFiltered, CV_INTER_LINEAR);
-    for (int x = 0; x < lFiltered.cols; ++x)
-        for (int y = 0; y < lFiltered.rows; ++y)
-        {
-            if (lMask.at<uchar>(y, x) == 0)
-                lFiltered.at<uchar>(y, x) = 0;
-        }
+    cv::parallel_for_(cv::Range(0, lFiltered.rows), Parallel_Mask<uchar>(&lFiltered, &lMask));
 
     // Calculate the barycenter of the outliers
     int lNumber = 0;

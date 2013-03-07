@@ -51,7 +51,7 @@ bool Source_OpenCV::connect()
 
     mId = (unsigned int)(mCamera.get(CV_CAP_PROP_GUID));
 
-    return true;    
+    return true;
 }
 
 /*************/
@@ -138,6 +138,19 @@ void Source_OpenCV::setParameter(atom::Message pParam)
 
         mCamera.set(CV_CAP_PROP_FPS, paramValue);
         mFramerate = (unsigned int)(mCamera.get(CV_CAP_PROP_FPS));
+    }
+    else if (paramName == "iso")
+    {
+        try
+        {
+            paramValue = atom::toFloat(pParam[1]);
+        }
+        catch (atom::BadTypeTagError exception)
+        {
+            return;
+        }
+
+        mCamera.set(CV_CAP_PROP_ISO_SPEED, paramValue);
     }
     else if (paramName == "cameraNumber")
     {

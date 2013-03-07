@@ -208,10 +208,6 @@ int App::init(int argc, char** argv)
         }
     }
 
-    // Create the thread which will grab from all sources
-    mRun = true;
-    mSourcesThread.reset(new thread(updateSources));
-
     // Server
     mOscServer = lo_server_thread_new_with_proto("9002", lNetProto, App::oscError);
     if (mOscServer != NULL)
@@ -232,16 +228,16 @@ int App::init(int argc, char** argv)
     }
 
     // Configuration file needs to be loaded in a thread
-    thread loadConfig([] ()
     {
-        if (gConfigFile != NULL)
-        {
-            Configurator configurator;
-            configurator.loadXML((char*)gConfigFile);
-        }
-    } );
+        Configurator configurator;
+        configurator.loadXML((char*)gConfigFile);
+    }
 
-    loadConfig.detach();
+    // Create the thread which will grab from all sources
+    // This must be run AFTER loading the configuration, as some params
+    // can't be changed after the first grab for some sources
+    mRun = true;
+    mSourcesThread.reset(new thread(updateSources));
 
     return 0;
 }
@@ -329,7 +325,7 @@ int App::loop()
 
         // Retrieve the capture from all the sources
         {
-            lock_guard<mutex> lock(mSourceMutex);
+            //lock_guard<mutex> lock(mSourceMutex);
 
             // First we grab, then we retrieve all frames
             // This way, sync between frames is better

@@ -282,6 +282,11 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
             }
         }
 
+        timespec nap;
+        nap.tv_sec = 0;
+        nap.tv_nsec = 1e8;
+        nanosleep(&nap, NULL);
+
         {
             // Now we can start the flow
             atom::Message message;
