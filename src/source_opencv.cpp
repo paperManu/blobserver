@@ -152,6 +152,46 @@ void Source_OpenCV::setParameter(atom::Message pParam)
 
         mCamera.set(CV_CAP_PROP_ISO_SPEED, paramValue);
     }
+    else if (paramName == "exposureTime")
+    {
+        try
+        {
+            paramValue = atom::toFloat(pParam[1]);
+        }
+        catch (atom::BadTypeTagError exception)
+        {
+            return;
+        }
+
+        mCamera.set(CV_CAP_PROP_AUTO_EXPOSURE, 0);
+        mCamera.set(CV_CAP_PROP_EXPOSURE, paramValue);
+    }
+    else if (paramName == "whiteBalanceRed")
+    {
+        try
+        {
+            paramValue = atom::toFloat(pParam[1]);
+        }
+        catch (atom::BadTypeTagError exception)
+        {
+            return;
+        }
+
+        mCamera.set(CV_CAP_PROP_WHITE_BALANCE_BLUE_U, paramValue);
+    }
+    else if (paramName == "whiteBalanceBlue")
+    {
+        try
+        {
+            paramValue = atom::toFloat(pParam[1]);
+        }
+        catch (atom::BadTypeTagError exception)
+        {
+            return;
+        }
+
+        mCamera.set(CV_CAP_PROP_WHITE_BALANCE_RED_V, paramValue);
+    }
     else if (paramName == "cameraNumber")
     {
         try
@@ -194,6 +234,11 @@ atom::Message Source_OpenCV::getParameter(atom::Message pParam)
         msg.push_back(atom::IntValue::create(mWidth));
     else if (paramName == "framerate")
         msg.push_back(atom::IntValue::create(mFramerate));
+    else if (paramName == "exposureTime")
+    {
+        int value = mCamera.get(CV_CAP_PROP_EXPOSURE);
+        msg.push_back(atom::IntValue::create(value));
+    }
     else if (paramName == "subsourcenbr")
         msg.push_back(atom::IntValue::create(mSubsourceNbr));
     else

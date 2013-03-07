@@ -325,5 +325,6 @@ MatBuffer& MatBuffer::operator=(cv::Mat& mat)
 /*************/
 cv::Mat MatBuffer::get()
 {
-    return _mats[_head];
+    unsigned int loc = _head;
+    return _mats[loc];
 }

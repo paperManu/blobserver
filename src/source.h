@@ -40,7 +40,7 @@ using namespace std;
 class MatBuffer
 {
     public:
-        MatBuffer(unsigned int size = 2);
+        MatBuffer(unsigned int size = 3);
         ~MatBuffer();
 
         MatBuffer& operator=(cv::Mat& mat);
