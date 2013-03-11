@@ -88,6 +88,14 @@ else
     HELP2MAN=:
 fi
 
+AC_CHECK_PROGS([DOXYGEN], [doxygen])
+if test -z "x$DOXYGEN" = "xtrue" ; then
+    AC_MSG_WARN([Doxygen not found - documentation will not be generated])
+fi
+
+AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
+AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([Doxyfile])])
+
 AC_CONFIG_FILES([
     Makefile
     src/Makefile

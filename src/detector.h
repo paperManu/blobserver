@@ -33,41 +33,88 @@
 
 using namespace std;
 
+/*************/
+//! Base Detector class, from which all detectors derive
 class Detector
 {
     public:
+        /**
+         * \brief Constructor
+         */
         Detector();
         Detector(int pParam);
 
+        /**
+         * \brief Gets the class name of the detector
+         */
         static string getClassName() {return mClassName;}
+        /**
+         * \brief Gets the class documentation of the detector
+         */
         static string getDocumentation() {return mDocumentation;}
+        /**
+         * \brief Get the number of sources this detector needs
+         */
         static unsigned int getSourceNbr() {return mSourceNbr;}
 
-        /* Detects objects in the capture given as a parameter, and returns
-         * a message with informations about each blob
-         * The two first values in the message are the number of blob,
-         * and the size of each blob in the message
+        /**
+         * Detects objects in the capture given as a parameter, and returns a message with informations about each blob
+         * The two first values in the message are the number of blob, and the size of each blob in the message
+         * \param pCaptures A vector containing all captures. Their number should match mSourceNbr.
          */
         virtual atom::Message detect(vector<cv::Mat> pCaptures) {}
+        
+        /**
+         * \brief Returns the message from the last call to detect()
+         */
         atom::Message getLastMessage() {return mLastMessage;}
 
+        /**
+         * \brief Sets the mask to use on detection
+         */
         void setMask(cv::Mat pMask);
+        
+        /**
+         * \brief Sets a parameter
+         * \param pParam A message containing the name of the parameter, and its desired value
+         */
         virtual void setParameter(atom::Message pParam) {}
+
+        /**
+         * \brief Gets the current value for a given parameter
+         * \param pParam A message containing the name of the parameter
+         * \return Returns a message containing the name of the parameter and its current value
+         */
         atom::Message getParameter(atom::Message pParam);
         
+        /**
+         * \brief Gives a ptr to the detector, for it to control the source (if needed)
+         * \param source A shared_ptr to the source. A weak_ptr is created from it.
+         */
         void addSource(shared_ptr<Source> source);
         
+        /**
+         * \brief Gets the name to use in the osc path when sending the message related to this detector
+         */
         string getName() {return mName;}
+
+        /**
+         * \brief Gets the full OSC path to use for sending message from this detector
+         */
         string getOscPath() {return mOscPath;}
+
+        /**
+         * \brief Gets the resulting image from the detector.
+         */
         cv::Mat getOutput() {return mOutputBuffer.clone();}
 
     protected:
-        cv::Mat mOutputBuffer;
-        atom::Message mLastMessage;
+        cv::Mat mOutputBuffer; //!< The output buffer, resulting from the detection
+        atom::Message mLastMessage; //!< Last message built by detect()
         bool mVerbose;
 
-        string mOscPath;
-        string mName;
+        string mOscPath; //!< OSC path for the detector, to be set in child class
+        string mName; // !< Name of the detector, to be set in child class
 
         vector<weak_ptr<Source>> mSources;
 
@@ -75,9 +122,9 @@ class Detector
         void setBaseParameter(atom::Message pParam);
 
     private:
-        static string mClassName;
-        static string mDocumentation;
-        static unsigned int mSourceNbr;
+        static string mClassName; //!< Class name, to be set in child class
+        static string mDocumentation; //!< Class documentation, to be set in child class
+        static unsigned int mSourceNbr; //!< Number of sources needed for the detector, to be set in child class
 
         cv::Mat mSourceMask, mMask;
 
