@@ -297,8 +297,8 @@ void App::registerClasses()
 void timeSince(unsigned long long timestamp, std::string stage)
 {
     auto now = chrono::high_resolution_clock::now();
-    unsigned long long currentTime = chrono::duration_cast<chrono::milliseconds>(now.time_since_epoch()).count();
-    std::cout << stage << " - " << (long long)currentTime - (long long)timestamp << "ms" << std::endl;
+    unsigned long long currentTime = chrono::duration_cast<chrono::microseconds>(now.time_since_epoch()).count();
+    std::cout << stage << " - " << ((long long)currentTime - (long long)timestamp)/1000 << "ms" << std::endl;
 }
 
 /*****************/
@@ -309,14 +309,14 @@ int App::loop()
     bool lShowCamera = !gHide;
     int lSourceNumber = 0;
 
-    unsigned long long msecPeriod = 16;
+    unsigned long long usecPeriod = 33333;
 
     mutex lMutex;
 
     while(mRun)
     {
         unsigned long long chronoStart;
-        chronoStart = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+        chronoStart = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
 
         vector<cv::Mat> lBuffers;
         vector<string> lBufferNames;
@@ -460,13 +460,13 @@ int App::loop()
             cout << "Buffer displayed: " << lBufferNames[lSourceNumber] << endl;
         }
 
-        unsigned long long chronoEnd = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+        unsigned long long chronoEnd = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
         unsigned long long chronoElapsed = chronoEnd - chronoStart;
         
         timespec nap;
         nap.tv_sec = 0;
-        if (chronoElapsed < msecPeriod)
-            nap.tv_nsec = (msecPeriod - chronoElapsed) * 1e6;
+        if (chronoElapsed < usecPeriod)
+            nap.tv_nsec = (usecPeriod - chronoElapsed) * 1e3;
         else
             nap.tv_nsec = 0;
 
