@@ -13,6 +13,7 @@ blobserver_SOURCES = \
     detector_meanOutliers.cpp \
     detector_lightSpots.cpp \
     detector_objOnAPlane.cpp \
+    detector_nop.cpp \
     source.cpp \
     source_opencv.cpp \
     source_shmdata.cpp \
@@ -27,8 +28,11 @@ noinst_HEADERS = \
     detector_meanOutliers.h \
     detector_lightSpots.h \
     detector_objOnAPlane.h \
+    detector_nop.h \
     source.h \
-    source_opencv.h
+    source_opencv.h \
+    source_shmdata.h \
+    threadPool.h
 
 blobserver_CXXFLAGS = \
     $(GLIB_CFLAGS) \

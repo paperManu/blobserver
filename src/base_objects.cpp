@@ -37,17 +37,17 @@ void ShmImage::init(const unsigned int width, const unsigned int height, int typ
     char buffer[256] = "";
     if (type == CV_8UC3)
     {
-        sprintf(buffer, "video/x-raw-rgb,bpp=%i,endianness=4321,depth=%i,red_mask=16711680,green_mask=65280,blue_mask=255,width=%i,height=%i,framerate=30/1", 24, 24, width, height);
+        sprintf(buffer, "video/x-raw-rgb,bpp=%i,endianness=4321,depth=%i,red_mask=255,green_mask=65280,blue_mask=16711680,width=%i,height=%i,framerate=60/1", 24, 24, width, height);
         _bpp = 24;
     }
     else if (type == CV_8U)
     {
-        sprintf(buffer, "video/x-raw-gray,bpp=%i,endianness=1234,depth=%i,width=%i,height=%i,framerate=30/1", 8, 8, width, height);
+        sprintf(buffer, "video/x-raw-gray,bpp=%i,endianness=1234,depth=%i,width=%i,height=%i,framerate=60/1", 8, 8, width, height);
         _bpp = 8;
     }
     else if (type == CV_16U)
     {
-        sprintf(buffer, "video/x-raw-gray,bpp=%i,endianness=1234,depth=%i,width=%i,height=%i,framerate=30/1", 16, 16, width, height);
+        sprintf(buffer, "video/x-raw-gray,bpp=%i,endianness=1234,depth=%i,width=%i,height=%i,framerate=60/1", 16, 16, width, height);
         _bpp = 16;
     }
 

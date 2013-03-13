@@ -13,7 +13,7 @@ doxyfile.stamp:
 
 CLEANFILES = doxyfile.stamp
 
-all-local: doxyfile.stamp
+doc: doxyfile.stamp
 clean-local:
 	rm -rf $(top_srcdir)/doc/man/*
 endif

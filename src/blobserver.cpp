@@ -47,8 +47,9 @@
 #ifdef HAVE_SHMDATA
 #include "source_shmdata.h"
 #endif
-#include "detector_meanOutliers.h"
 #include "detector_lightSpots.h"
+#include "detector_meanOutliers.h"
+#include "detector_nop.h"
 #include "detector_objOnAPlane.h"
 
 using namespace std;
@@ -276,6 +277,8 @@ int App::parseArgs(int argc, char** argv)
 void App::registerClasses()
 {
     // Register detectors
+    mDetectorFactory.register_class<Detector_Nop>(Detector_Nop::getClassName(),
+        Detector_Nop::getDocumentation());
     mDetectorFactory.register_class<Detector_LightSpots>(Detector_LightSpots::getClassName(),
         Detector_LightSpots::getDocumentation());
     mDetectorFactory.register_class<Detector_MeanOutliers>(Detector_MeanOutliers::getClassName(),
@@ -405,8 +408,18 @@ int App::loop()
                 // Beginning of the frame
                 lo_send(flow.client->get(), "/blobserver/startFrame", "ii", frameNbr, flow.id);
 
-                int nbr = atom::toInt(message[0]);
-                int size = atom::toInt(message[1]);
+                int nbr, size;
+                if (message.size() < 2)
+                {
+                    nbr = 0;
+                    size = 0;
+                }
+                else
+                {
+                    nbr = atom::toInt(message[0]);
+                    size = atom::toInt(message[1]);
+                }
+
                 for (int i = 0; i < nbr; ++i)
                 {
                     atom::Message msg;
@@ -432,9 +445,10 @@ int App::loop()
             if (lSourceNumber >= lBuffers.size())
                 lSourceNumber = 0;
 
-            cv::putText(lBuffers[lSourceNumber], lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
+            cv::Mat displayMat = lBuffers[lSourceNumber].clone();
+            cv::putText(displayMat, lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
                 cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
-            cv::imshow("blobserver", lBuffers[lSourceNumber]);
+            cv::imshow("blobserver", displayMat);
         }
 
         char lKey = cv::waitKey(1);
@@ -452,11 +466,14 @@ int App::loop()
         timespec nap;
         nap.tv_sec = 0;
         if (chronoElapsed < msecPeriod)
-            nap.tv_nsec = msecPeriod - chronoElapsed * 1e6;
+            nap.tv_nsec = (msecPeriod - chronoElapsed) * 1e6;
         else
             nap.tv_nsec = 0;
 
         nanosleep(&nap, NULL);
+
+        if (gBench)
+            timeSince(chronoStart, string("3 - Total frame time"));
 
         frameNbr++;
     }
