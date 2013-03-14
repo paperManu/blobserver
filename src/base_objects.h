@@ -43,6 +43,11 @@ class OscClient
         ~OscClient() {lo_address_free(mAddress);}
 
         lo_address get() {return mAddress;}
+        void replace(lo_address newAddress)
+        {
+            lo_address_free(mAddress);
+            mAddress = newAddress;
+        }
 
     private:
         lo_address mAddress;

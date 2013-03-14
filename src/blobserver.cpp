@@ -148,6 +148,7 @@ class App
         static int oscGenericHandler(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerSignIn(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerSignOut(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
+        static int oscHandlerChangePort(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerSetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
@@ -223,6 +224,7 @@ int App::init(int argc, char** argv)
     {
         lo_server_thread_add_method(mOscServer, "/blobserver/signIn", NULL, App::oscHandlerSignIn, NULL);
         lo_server_thread_add_method(mOscServer, "/blobserver/signOut", NULL, App::oscHandlerSignOut, NULL);
+        lo_server_thread_add_method(mOscServer, "/blobserver/changePort", NULL, App::oscHandlerChangePort, NULL);
         lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, App::oscHandlerConnect, NULL);
         lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", NULL, App::oscHandlerDisconnect, NULL);
         lo_server_thread_add_method(mOscServer, "/blobserver/setParameter", NULL, App::oscHandlerSetParameter, NULL);
@@ -602,6 +604,7 @@ int App::oscHandlerSignIn(const char* path, const char* types, lo_arg** argv, in
             return 0;
         }
 
+        lock_guard<mutex> lock(theApp->mFlowMutex);
         theApp->mClients[addressStr] = address;
         lo_send(address->get(), "/blobserver/sinIn", "s", "Sucessfully signed in to the blobserver.");
     }
@@ -652,7 +655,61 @@ int App::oscHandlerSignOut(const char* path, const char* types, lo_arg** argv, i
         oscHandlerDisconnect((const char*)"", types, argv, argc, data, user_data);
 
         // Remove the client from the list
+        lock_guard<mutex> lock(theApp->mFlowMutex);
         theApp->mClients.erase(addressStr);
+    }
+
+    return 0;
+}
+
+/*****************/
+int App::oscHandlerChangePort(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
+{
+    shared_ptr<App> theApp = App::getInstance();
+    
+    atom::Message message;
+    atom::message_build_from_lo_args(message, types, argv, argc);
+
+    string addressStr;
+    try
+    {
+        addressStr = atom::toString(message[0]);
+    }
+    catch (atom::BadTypeTagError exception)
+    {
+        return 0;
+    }
+
+    shared_ptr<OscClient> address;
+    if (theApp->mClients.find(addressStr) != theApp->mClients.end())
+    {
+        address = theApp->mClients[addressStr];
+    }
+    else
+    {
+        return 0;
+    }
+
+    if (message.size() != 2)
+    {
+        lo_send(address->get(), "/blobserver/changePort", "s", "Wrong number of arguments.");
+    }
+
+    char port[8];
+    try
+    {
+        int portNbr = atom::toInt(message[1]);
+        sprintf(port, "%i", portNbr);
+    }
+    catch (atom::BadTypeTagError exception)
+    {
+        return 1;
+    }
+
+    // Change the port number
+    {
+        lock_guard<mutex> lock(theApp->mFlowMutex);
+        theApp->mClients[addressStr]->replace(lo_address_new(addressStr.c_str(), port));
     }
 
     return 0;
@@ -877,7 +934,7 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
 
     if (message.size() != 1 && message.size() != 2)
     {
-        lo_send(address->get(), "/blobserver/disconnect", "s", "Wrong number of arguments");
+        lo_send(address->get(), "/blobserver/disconnect", "s", "Wrong number of arguments.");
         return 1;
     }
     
