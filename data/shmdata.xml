@@ -12,7 +12,7 @@
             <Subsource>0</Subsource>
             <Param>
                 <Name>location</Name>
-                <Value>/tmp/switcher_default_pouet_video</Value>
+                <Value>/tmp/switcher_default_cam0_video</Value>
             </Param>
         </Source>
         <Client>

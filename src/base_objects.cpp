@@ -20,13 +20,14 @@ ShmImage::~ShmImage()
 void ShmImage::setImage(cv::Mat& image, const unsigned long long timestamp)
 {
     if (_width != image.cols || _height != image.rows || _type != image.type())
-        init(image.cols, image.rows, image.type());
+        if (!init(image.cols, image.rows, image.type()))
+            return;
 
     shmdata_any_writer_push_data(_writer, (void*)(image.data), _width*_height*_bpp/8, 0, NULL, NULL);
 }
 
 /*************/
-void ShmImage::init(const unsigned int width, const unsigned int height, int type)
+bool ShmImage::init(const unsigned int width, const unsigned int height, int type)
 {
     if (_writer != NULL)
         shmdata_any_writer_close(_writer);
@@ -50,6 +51,10 @@ void ShmImage::init(const unsigned int width, const unsigned int height, int typ
         sprintf(buffer, "video/x-raw-gray,bpp=%i,endianness=1234,depth=%i,width=%i,height=%i,framerate=30/1", 16, 16, width, height);
         _bpp = 16;
     }
+    else
+    {
+        return false;
+    }
 
     dataType = std::string(buffer);
     shmdata_any_writer_set_data_type(_writer, dataType.c_str());
@@ -61,6 +66,7 @@ void ShmImage::init(const unsigned int width, const unsigned int height, int typ
             _bpp = 0;
             std::cout << "**** The file " << _filename.c_str() << " exists, therefore a shmdata cannot be operated with this path." << std::endl;
             shmdata_any_writer_close(_writer);
+            return true;
     }
 
     _width = width;
@@ -68,4 +74,6 @@ void ShmImage::init(const unsigned int width, const unsigned int height, int typ
     _type = type;
 
     shmdata_any_writer_start(_writer);
+
+    return true;
 }

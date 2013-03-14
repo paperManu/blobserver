@@ -371,7 +371,6 @@ int App::loop()
             threads.resize(mFlows.size());
 
             // Update all sources for all flows
-            //for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
             for (int index = 0; index < mFlows.size(); ++index)
             {
                 Flow* flow = &mFlows[index];

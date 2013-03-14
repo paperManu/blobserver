@@ -34,7 +34,7 @@ atom::Message Detector_Nop::detect(vector<cv::Mat> pCaptures)
     if (pCaptures.size() == 0)
         return mLastMessage;
 
-    mOutputBuffer = pCaptures[0];
+    mOutputBuffer = pCaptures[0].clone();
 
     mFrameNumber++;
     mLastMessage = atom::createMessage("iii", 1, 1, mFrameNumber);

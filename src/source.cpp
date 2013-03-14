@@ -4,7 +4,8 @@ std::string Source::mClassName = "Source";
 std::string Source::mDocumentation = "N/A";
 
 /*************/
-Source::Source()
+Source::Source():
+    mUpdated(false)
 {
     mName = mClassName;
     mDocumentation = "N/A";
@@ -303,6 +304,8 @@ cmsHTRANSFORM Source::loadICCTransform(std::string pFile)
 MatBuffer::MatBuffer(unsigned int size)
 {
     _mats.resize(size);
+    cv::Mat dummyMat = cv::Mat::zeros(480, 640, CV_8UC3);
+    _mats[0] = dummyMat;
     _head = 0;
 }
 
