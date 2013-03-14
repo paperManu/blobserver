@@ -29,6 +29,7 @@
 #include <mutex>
 #include <thread>
 #include <chrono>
+#include <map>
 
 #include <glib.h>
 #include <glib/gstdio.h>
@@ -61,6 +62,7 @@ static gboolean gVerbose = FALSE;
 static gchar* gConfigFile = NULL;
 static gchar* gMaskFilename = NULL;
 static gboolean gTcp = FALSE;
+static gchar* gPort = NULL;
 
 static gboolean gBench = FALSE;
 
@@ -72,6 +74,7 @@ static GOptionEntry gEntries[] =
     {"verbose", 'V', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
     {"mask", 'm', 0, G_OPTION_ARG_STRING, &gMaskFilename, "Specifies a mask which will be applied to all detectors", NULL},
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
+    {"port", 'p', 0, G_OPTION_ARG_STRING, &gPort, "Specifies TCP port to use for server (default 9002", NULL},
     {"bench", 'B', 0, G_OPTION_ARG_NONE, &gBench, "Enables printing timings of main loop, for debug purpose", NULL},
     {NULL}
 };
@@ -108,6 +111,7 @@ class App
 
         // detection related
         vector<shared_ptr<Source>> mSources;
+        map<string, shared_ptr<OscClient>> mClients;
         vector<Flow> mFlows;
         // A mutex to prevent unexpected changes in flows
         mutex mFlowMutex;
@@ -142,6 +146,8 @@ class App
         // OSC related, server side
         static void oscError(int num, const char* msg, const char* path);
         static int oscGenericHandler(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
+        static int oscHandlerSignIn(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
+        static int oscHandlerSignOut(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerSetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
@@ -180,6 +186,8 @@ int App::init(int argc, char** argv)
     // Register source and detector classes
     registerClasses();
 
+    gPort = (gchar*)"9002";
+
     // Parse arguments
     int ret = parseArgs(argc, argv);
     if(ret)
@@ -210,9 +218,11 @@ int App::init(int argc, char** argv)
     }
 
     // Server
-    mOscServer = lo_server_thread_new_with_proto("9002", lNetProto, App::oscError);
+    mOscServer = lo_server_thread_new_with_proto(gPort, lNetProto, App::oscError);
     if (mOscServer != NULL)
     {
+        lo_server_thread_add_method(mOscServer, "/blobserver/signIn", NULL, App::oscHandlerSignIn, NULL);
+        lo_server_thread_add_method(mOscServer, "/blobserver/signOut", NULL, App::oscHandlerSignOut, NULL);
         lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, App::oscHandlerConnect, NULL);
         lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", NULL, App::oscHandlerDisconnect, NULL);
         lo_server_thread_add_method(mOscServer, "/blobserver/setParameter", NULL, App::oscHandlerSetParameter, NULL);
@@ -554,6 +564,101 @@ int App::oscGenericHandler(const char* path, const char* types, lo_arg** argv, i
 }
 
 /*****************/
+int App::oscHandlerSignIn(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
+{
+    shared_ptr<App> theApp = App::getInstance();
+
+    atom::Message message;
+    atom::message_build_from_lo_args(message, types, argv, argc);
+
+    if (message.size() < 2)
+    {
+        cout << "Wrong number of arguments received." << endl;
+        return 1;
+    }
+
+    char port[8];
+    string addressStr;
+    try
+    {
+        addressStr = atom::toString(message[0]);
+
+        int portNbr = atom::toInt(message[1]);
+        sprintf(port, "%i", portNbr);
+    }
+    catch (atom::BadTypeTagError exception)
+    {
+        return 1;
+    }
+
+    // Check wether this address is already signed in
+    if (theApp->mClients.find(addressStr) == theApp->mClients.end())
+    {
+        shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), port)));
+        int error = lo_address_errno(address->get());
+        if (error != 0)
+        {
+            cout << "Received address wrongly formated." << endl;
+            return 0;
+        }
+
+        theApp->mClients[addressStr] = address;
+        lo_send(address->get(), "/blobserver/sinIn", "s", "Sucessfully signed in to the blobserver.");
+    }
+    // If already connect, we send a message to say so
+    else
+    {
+        shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), port)));
+        int error = lo_address_errno(address->get());
+        if (error != 0)
+        {
+            cout << "Received address wrongly formated." << endl;
+            return 0;
+        }
+
+        lo_send(address->get(), "/blobserver/signIn", "s", "This address seem to be already connected on another port.");
+    }
+
+    return 0;
+}
+
+/*****************/
+int App::oscHandlerSignOut(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
+{
+    shared_ptr<App> theApp = App::getInstance();
+
+    atom::Message message;
+    atom::message_build_from_lo_args(message, types, argv, argc);
+
+    if (message.size() != 1)
+    {
+        cout << "Wrong number of arguments received." << endl;
+        return 1;
+    }
+
+    string addressStr;
+    try
+    {
+        addressStr = atom::toString(message[0]);
+    }
+    catch (atom::BadTypeTagError exception)
+    {
+        return 1;
+    }
+
+    if (theApp->mClients.find(addressStr) != theApp->mClients.end())
+    {
+        // Disconnect all flows related to this address
+        oscHandlerDisconnect((const char*)"", types, argv, argc, data, user_data);
+
+        // Remove the client from the list
+        theApp->mClients.erase(addressStr);
+    }
+
+    return 0;
+}
+
+/*****************/
 int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
     shared_ptr<App> theApp = App::getInstance();
@@ -564,8 +669,10 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 
 
     char port[8];
+    string addressStr;
     try
     {
+        addressStr = atom::toString(message[0]);
         int portNbr = atom::toInt(message[1]);
         sprintf(port, "%i", portNbr);
     }
@@ -574,162 +681,170 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         return 1;
     }
     
-    //lo_address address = lo_address_new(atom::toString(message[0]).c_str(), port);
-    shared_ptr<OscClient> address(new OscClient(lo_address_new(atom::toString(message[0]).c_str(), port)));
-
-    int error = lo_address_errno(address->get());
-    if (error != 0)
+    // Check if the client is signed in
+    shared_ptr<OscClient> address;
+    if (theApp->mClients.find(addressStr) != theApp->mClients.end())
     {
-        cout << "Wrong address received, error " << error << endl;
-        return 1;
+        address = theApp->mClients[addressStr];
     }
     else
     {
-        if (message.size() < 5)
+        address.reset(new OscClient(lo_address_new(addressStr.c_str(), port)));
+        int error = lo_address_errno(address->get());
+        if (error != 0)
         {
-            lo_send(address->get(), "/blobserver/connect", "s", "Too few arguments");
-            return 1; 
+            cout << "Address wrongly formated, error " << error << endl;
+            return 0;
         }
 
-        // Check arguments
-        // First argument is the chosen detector, next ones are sources
-        string detectorName;
+        lo_send(address->get(), "/blobserver/connect", "s", "Please sign in before sending commands.");
+        return 0;
+    }
+
+    if (message.size() < 5)
+    {
+        lo_send(address->get(), "/blobserver/connect", "s", "Too few arguments");
+        return 1; 
+    }
+
+    // Check arguments
+    // First argument is the chosen detector, next ones are sources
+    string detectorName;
+    try
+    {
+        detectorName = atom::toString(message[2]);
+    }
+    catch (atom::BadTypeTagError typeError)
+    {
+        lo_send(address->get(), "/blobserver/connect", "s", "Expected a detector type at position 2");
+        return 1;
+    }
+
+    // Create the specified detector
+    shared_ptr<Detector> detector;
+    if (theApp->mDetectorFactory.key_exists(detectorName))
+        detector = theApp->mDetectorFactory.create(detectorName);
+    else
+    {
+        lo_send(address->get(), "/blobserver/connect", "s", "Detector type not recognized");
+        return 1;
+    }
+
+    // Check how many cameras we need for it
+    unsigned int sourceNbr = detector->getSourceNbr();
+    
+    // Allocate all the sources
+    vector<shared_ptr<Source>> sources;
+    atom::Message::const_iterator iter;
+    for (iter = message.begin()+3; iter != message.end(); iter+=2)
+    {
+        if (iter+1 == message.end())
+        {
+            lo_send(address->get(), "/blobserver/connect", "s", "Missing sub-source number");
+            return 1;
+        }
+
+        string sourceName;
+        int sourceIndex;
         try
         {
-            detectorName = atom::toString(message[2]);
+            sourceName = atom::toString(*iter);
+            sourceIndex = atom::toInt(*(iter+1));
         }
         catch (atom::BadTypeTagError typeError)
         {
-            lo_send(address->get(), "/blobserver/connect", "s", "Expected a detector type at position 2");
+            lo_send(address->get(), "/blobserver/connect", "s", "Expected integer as a sub-source number");
             return 1;
         }
 
-        // Create the specified detector
-        shared_ptr<Detector> detector;
-        if (theApp->mDetectorFactory.key_exists(detectorName))
-            detector = theApp->mDetectorFactory.create(detectorName);
-        else
+        // Check if this source is not already connected
+        bool alreadyConnected = false;
+        vector<shared_ptr<Source>>::const_iterator iterSource;
+        for (iterSource = theApp->mSources.begin(); iterSource != theApp->mSources.end(); ++iterSource)
         {
-            lo_send(address->get(), "/blobserver/connect", "s", "Detector type not recognized");
-            return 1;
-        }
-
-        // Check how many cameras we need for it
-        unsigned int sourceNbr = detector->getSourceNbr();
-        
-        // Allocate all the sources
-        vector<shared_ptr<Source>> sources;
-        atom::Message::const_iterator iter;
-        for (iter = message.begin()+3; iter != message.end(); iter+=2)
-        {
-            if (iter+1 == message.end())
+            if (iterSource->get()->getName() == sourceName && iterSource->get()->getSubsourceNbr() == (unsigned int)sourceIndex)
             {
-                lo_send(address->get(), "/blobserver/connect", "s", "Missing sub-source number");
-                return 1;
-            }
-
-            string sourceName;
-            int sourceIndex;
-            try
-            {
-                sourceName = atom::toString(*iter);
-                sourceIndex = atom::toInt(*(iter+1));
-            }
-            catch (atom::BadTypeTagError typeError)
-            {
-                lo_send(address->get(), "/blobserver/connect", "s", "Expected integer as a sub-source number");
-                return 1;
-            }
-
-            // Check if this source is not already connected
-            bool alreadyConnected = false;
-            vector<shared_ptr<Source>>::const_iterator iterSource;
-            for (iterSource = theApp->mSources.begin(); iterSource != theApp->mSources.end(); ++iterSource)
-            {
-                if (iterSource->get()->getName() == sourceName && iterSource->get()->getSubsourceNbr() == (unsigned int)sourceIndex)
-                {
-                    sources.push_back(*iterSource);
-                    alreadyConnected = true;
-                }
-            }
-
-            if (!alreadyConnected)
-            {
-                shared_ptr<Source> source;
-                if (theApp->mSourceFactory.key_exists(sourceName))
-                    source = theApp->mSourceFactory.create(sourceName, sourceIndex);
-                else
-                {
-                    string error = "Unable to create source ";
-                    error += sourceName;
-                    lo_send(address->get(), "/blobserver/connect", "s", error.c_str());
-                    return 1;
-                }
-                
-                if (!source->connect())
-                {
-                    string error = "Unable to connect to source ";
-                    error += sourceName;
-                    lo_send(address->get(), "/blobserver/connect", "s", error.c_str());
-                    return 1;
-                }
-
-                sources.push_back(source);
+                sources.push_back(*iterSource);
+                alreadyConnected = true;
             }
         }
 
-        // If enough sources have been specified
-        if (sources.size() >= sourceNbr)
+        if (!alreadyConnected)
         {
-            lock_guard<mutex> lock(theApp->mFlowMutex);
-            lock_guard<mutex> lockToo(theApp->mSourceMutex);
-
-            // We can create the flow!
-            Flow flow;
+            shared_ptr<Source> source;
+            if (theApp->mSourceFactory.key_exists(sourceName))
+                source = theApp->mSourceFactory.create(sourceName, sourceIndex);
+            else
+            {
+                string error = "Unable to create source ";
+                error += sourceName;
+                lo_send(address->get(), "/blobserver/connect", "s", error.c_str());
+                return 1;
+            }
             
-            flow.detector = detector;
-            flow.client = address;
-            flow.id = theApp->getValidId();
-            flow.run = false;
-
-            char shmFile[128];
-            sprintf(shmFile, "/tmp/blobserver_output_%i", flow.id);
-            flow.shm.reset(new ShmImage(shmFile));
-
-            vector<shared_ptr<Source>>::const_iterator source;
-            for (source = sources.begin(); source != sources.end(); ++source)
+            if (!source->connect())
             {
-                flow.sources.push_back(*source);
-
-                // Add the sources to the mSources vector
-                // (if they are not already there)
-                bool isInSources = false;
-                vector<shared_ptr<Source>>::const_iterator iter;
-                for (iter = theApp->mSources.begin(); iter != theApp->mSources.end(); ++iter)
-                {
-                    if (iter->get()->getName() == source->get()->getName() && iter->get()->getSubsourceNbr() == source->get()->getSubsourceNbr())
-                        isInSources = true;
-                }
-                if (!isInSources)
-                    theApp->mSources.push_back(*source);
-
-                // Adds a weak ptr to sources to the detector, for it to control them
-                detector->addSource(*source);
+                string error = "Unable to connect to source ";
+                error += sourceName;
+                lo_send(address->get(), "/blobserver/connect", "s", error.c_str());
+                return 1;
             }
 
-            theApp->mFlows.push_back(flow);
-
-            // Tell the client that he is connected, and give him the flow id
-            lo_send(address->get(), "/blobserver/connect", "si", "Connected", (int)flow.id);
+            sources.push_back(source);
         }
-        else
-        {
-            lo_send(address->get(), "/blobserver/connect", "s", "The specified detector needs more sources");
-            return 1;
-        }
-        
-        return 0;
     }
+
+    // If enough sources have been specified
+    if (sources.size() >= sourceNbr)
+    {
+        lock_guard<mutex> lock(theApp->mFlowMutex);
+        lock_guard<mutex> lockToo(theApp->mSourceMutex);
+
+        // We can create the flow!
+        Flow flow;
+        
+        flow.detector = detector;
+        flow.client = address;
+        flow.id = theApp->getValidId();
+        flow.run = false;
+
+        char shmFile[128];
+        sprintf(shmFile, "/tmp/blobserver_output_%i", flow.id);
+        flow.shm.reset(new ShmImage(shmFile));
+
+        vector<shared_ptr<Source>>::const_iterator source;
+        for (source = sources.begin(); source != sources.end(); ++source)
+        {
+            flow.sources.push_back(*source);
+
+            // Add the sources to the mSources vector
+            // (if they are not already there)
+            bool isInSources = false;
+            vector<shared_ptr<Source>>::const_iterator iter;
+            for (iter = theApp->mSources.begin(); iter != theApp->mSources.end(); ++iter)
+            {
+                if (iter->get()->getName() == source->get()->getName() && iter->get()->getSubsourceNbr() == source->get()->getSubsourceNbr())
+                    isInSources = true;
+            }
+            if (!isInSources)
+                theApp->mSources.push_back(*source);
+
+            // Adds a weak ptr to sources to the detector, for it to control them
+            detector->addSource(*source);
+        }
+
+        theApp->mFlows.push_back(flow);
+
+        // Tell the client that he is connected, and give him the flow id
+        lo_send(address->get(), "/blobserver/connect", "si", "Connected", (int)flow.id);
+    }
+    else
+    {
+        lo_send(address->get(), "/blobserver/connect", "s", "The specified detector needs more sources");
+        return 1;
+    }
+    
+    return 0;
 }
 
 /*****************/
@@ -740,15 +855,26 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
 
-    string addressStr = atom::toString(message[0]);
-    shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
-    int error = lo_address_errno(address->get());
-    if (error != 0)
+    string addressStr;
+    try
     {
-        cout << "Wrong address received, error " << error << endl;
-        return 1;
+        addressStr = atom::toString(message[0]);
     }
-    
+    catch (atom::BadTypeTagError exception)
+    {
+        return 0;
+    }
+
+    shared_ptr<OscClient> address;
+    if (theApp->mClients.find(addressStr) != theApp->mClients.end())
+    {
+        address = theApp->mClients[addressStr];
+    }
+    else
+    {
+        return 0;
+    }
+
     if (message.size() != 1 && message.size() != 2)
     {
         lo_send(address->get(), "/blobserver/disconnect", "s", "Wrong number of arguments");
@@ -797,21 +923,32 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
         
-    string addressStr = atom::toString(message[0]);
-    shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
+    string addressStr;
+    try
+    {
+        addressStr = atom::toString(message[0]);
+    }
+    catch (atom::BadTypeTagError exception)
+    {
+        return 1;
+    }
+
+    // Check if the client is signed in
+    shared_ptr<OscClient> address;
+    if (theApp->mClients.find(addressStr) != theApp->mClients.end())
+    {
+        address = theApp->mClients[addressStr];
+    }
+    else
+    {
+        return 0;
+    }
 
     // Message must contain ip address, flow id, target (detector or src), src number if applicable, parameter and value
     // or just ip address, flow id, and start/stop
     if (message.size() < 3)
     {
         lo_send(address->get(), "/blobserver/setParameter", "s", "Wrong number of arguments");
-        return 1;
-    }
-    
-    int error = lo_address_errno(address->get());
-    if (error != 0)
-    {
-        cout << "Wrong address received, error " << error << endl;
         return 1;
     }
 
@@ -889,15 +1026,24 @@ int App::oscHandlerGetParameter(const char* path, const char* types, lo_arg** ar
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
 
-    shared_ptr<OscClient> address;
+    string addressStr;
     try
     {
-        string addressStr = atom::toString(message[0]);
-        address.reset(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
+        addressStr = atom::toString(message[0]);
     }
-    catch (...)
+    catch (atom::BadTypeTagError exception)
     {
-        return 1;
+        return 0;
+    }
+
+    shared_ptr<OscClient> address;
+    if (theApp->mClients.find(addressStr) != theApp->mClients.end())
+    {
+        address = theApp->mClients[addressStr];
+    }
+    else
+    {
+        return 0;
     }
 
     if (message.size() < 4)
@@ -991,15 +1137,24 @@ int App::oscHandlerGetDetectors(const char* path, const char* types, lo_arg** ar
     if (message.size() < 1)
         return 1;
 
-    shared_ptr<OscClient> address;
+    string addressStr;
     try
     {
-        string addressStr = atom::toString(message[0]);
-        address.reset(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
+        addressStr = atom::toString(message[0]);
     }
     catch (atom::BadTypeTagError exception)
     {
-        return 1;
+        return 0;
+    }
+
+    shared_ptr<OscClient> address;
+    if (theApp->mClients.find(addressStr) != theApp->mClients.end())
+    {
+        address = theApp->mClients[addressStr];
+    }
+    else
+    {
+        return 0;
     }
 
     // Get all the available detectors
@@ -1031,11 +1186,20 @@ int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv
     {
         addressStr = atom::toString(message[0]);
     }
-    catch (...)
+    catch (atom::BadTypeTagError exception)
     {
-        return 1;
+        return 0;
     }
-    shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), "9000")));
+
+    shared_ptr<OscClient> address;
+    if (theApp->mClients.find(addressStr) != theApp->mClients.end())
+    {
+        address = theApp->mClients[addressStr];
+    }
+    else
+    {
+        return 0;
+    }
     
     // If we have another parameter, it means we want to get availables subsources
     atom::Message outMessage;

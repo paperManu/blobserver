@@ -8,19 +8,6 @@ Configurator::Configurator():
     mReady(false),
     mVerbose(false)
 {
-    mOscServer = lo_server_thread_new("9000", Configurator::oscError);
-    if (mOscServer != NULL)
-    {
-        lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, Configurator::oscHandlerConnect, this);
-        lo_server_thread_add_method(mOscServer, NULL, NULL, Configurator::oscGenericHandler, this);
-        lo_server_thread_start(mOscServer);
-        mReady = true;
-    }
-    else
-    {
-        cout << "Couldn't set up Osc server for loading configuration file" << endl;
-    }
-
     mLastIndexReceived = 0;
 }
 
@@ -37,12 +24,6 @@ Configurator::~Configurator()
 /*************/
 void Configurator::loadXML(const char* filename)
 {
-    if (!mReady)
-    {
-        cout << "Osc server not up - can't load configuration file." << endl;
-        return;
-    }
-
     cout << "Attempting to read XML file " << filename << endl;
 
     xmlDocPtr doc;
@@ -148,6 +129,29 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
         checkString(serverPort, string("9002"));
 
         address.reset(new OscClient(lo_address_new(server.c_str(), serverPort.c_str())));
+
+        // We know the client port, we can launch our own server to receive messages from blobserver
+        {
+            char buffer[8];
+            sprintf(buffer, "%i", clientPort);
+            mOscServer = lo_server_thread_new(buffer, Configurator::oscError);
+
+            if (mOscServer != NULL)
+            {
+                lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, Configurator::oscHandlerConnect, this);
+                lo_server_thread_add_method(mOscServer, NULL, NULL, Configurator::oscGenericHandler, this);
+                lo_server_thread_start(mOscServer);
+                mReady = true;
+            }
+            else
+            {
+                cout << "Couldn't set up Osc server for loading configuration file" << endl;
+                return false;
+            }
+        }
+
+        // We need to sign in to the server before anything
+        lo_send(address->get(), "/blobserver/signIn", "si", client.c_str(), clientPort);
 
         // Create and send the message to create this flow
         {
