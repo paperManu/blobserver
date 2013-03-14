@@ -241,6 +241,7 @@ int App::init(int argc, char** argv)
     }
 
     // Configuration file needs to be loaded in a thread
+    if (gConfigFile != NULL)
     {
         Configurator configurator;
         configurator.loadXML((char*)gConfigFile);

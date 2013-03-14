@@ -15,11 +15,7 @@ Configurator::Configurator():
 /*************/
 Configurator::~Configurator()
 {
-    if (mOscServer != NULL)
-    {
-        lo_server_thread_stop(mOscServer);
-        lo_server_thread_free(mOscServer);
-    }
+
 }
 
 /*************/
@@ -79,6 +75,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
     } simpleFlow;
 
     shared_ptr<OscClient> address; 
+    lo_server_thread oscServer = NULL;
 
     string nullString = string("");
 
@@ -134,27 +131,28 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
         // We know the client port, we can launch our own server to receive messages from blobserver
         int configuratorPort = clientPort;
         // We want to use an unused port for this
-        while (mOscServer == NULL)
+        while (oscServer == NULL)
         {
             configuratorPort += 10;
             char buffer[8];
             sprintf(buffer, "%i", configuratorPort);
-            mOscServer = lo_server_thread_new(buffer, Configurator::oscError);
+            oscServer = lo_server_thread_new(buffer, Configurator::oscError);
         }
 
-        lo_server_thread_add_method(mOscServer, "/blobserver/connect", NULL, Configurator::oscHandlerConnect, this);
-        lo_server_thread_add_method(mOscServer, NULL, NULL, Configurator::oscGenericHandler, this);
-        lo_server_thread_start(mOscServer);
+        lo_server_thread_add_method(oscServer, "/blobserver/connect", NULL, Configurator::oscHandlerConnect, this);
+        lo_server_thread_add_method(oscServer, NULL, NULL, Configurator::oscGenericHandler, this);
+        lo_server_thread_start(oscServer);
         mReady = true;
 
         // We need to sign in to the server before anything
         lo_send(address->get(), "/blobserver/signIn", "si", client.c_str(), configuratorPort);
+        // We send a message to set client port to configuratorPort, in case we were already signed in
+        lo_send(address->get(), "/blobserver/changePort", "si", client.c_str(), configuratorPort);
 
         // Create and send the message to create this flow
         {
             atom::Message message;
             message.push_back(atom::StringValue::create(client.c_str()));
-            //message.push_back(atom::IntValue::create(configuratorPort));
             message.push_back(atom::StringValue::create(detector.c_str()));
             for (int i = 0; i < sources.size(); ++i)
             {
@@ -302,6 +300,12 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
             atom::message_build_to_lo_message(message, oscMessage);
             lo_send_message(address->get(), "/blobserver/setParameter", oscMessage);
             lo_message_free(oscMessage);
+        }
+
+        if (oscServer != NULL)
+        {
+            lo_server_thread_stop(oscServer);
+            lo_server_thread_free(oscServer);
         }
     }
 
