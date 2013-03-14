@@ -154,7 +154,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
         {
             atom::Message message;
             message.push_back(atom::StringValue::create(client.c_str()));
-            message.push_back(atom::IntValue::create(configuratorPort));
+            //message.push_back(atom::IntValue::create(configuratorPort));
             message.push_back(atom::StringValue::create(detector.c_str()));
             for (int i = 0; i < sources.size(); ++i)
             {

@@ -725,13 +725,11 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     atom::message_build_from_lo_args(message, types, argv, argc);
 
 
-    char port[8];
+    //char port[8];
     string addressStr;
     try
     {
         addressStr = atom::toString(message[0]);
-        int portNbr = atom::toInt(message[1]);
-        sprintf(port, "%i", portNbr);
     }
     catch (atom::BadTypeTagError exception)
     {
@@ -746,19 +744,10 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     }
     else
     {
-        address.reset(new OscClient(lo_address_new(addressStr.c_str(), port)));
-        int error = lo_address_errno(address->get());
-        if (error != 0)
-        {
-            cout << "Address wrongly formated, error " << error << endl;
-            return 0;
-        }
-
-        lo_send(address->get(), "/blobserver/connect", "s", "Please sign in before sending commands.");
         return 0;
     }
 
-    if (message.size() < 5)
+    if (message.size() < 4)
     {
         lo_send(address->get(), "/blobserver/connect", "s", "Too few arguments");
         return 1; 
@@ -769,7 +758,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     string detectorName;
     try
     {
-        detectorName = atom::toString(message[2]);
+        detectorName = atom::toString(message[1]);
     }
     catch (atom::BadTypeTagError typeError)
     {
@@ -793,7 +782,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     // Allocate all the sources
     vector<shared_ptr<Source>> sources;
     atom::Message::const_iterator iter;
-    for (iter = message.begin()+3; iter != message.end(); iter+=2)
+    for (iter = message.begin()+2; iter != message.end(); iter+=2)
     {
         if (iter+1 == message.end())
         {
