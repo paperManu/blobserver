@@ -378,22 +378,28 @@ bool Configurator::getParamValuesFrom(const xmlDocPtr doc, const xmlNodePtr cur,
             {
                 xmlChar* key = xmlNodeListGetString(doc, lCur->xmlChildrenNode, 1);
                 paramName = string((char*)key);
-    
+                
                 while (true)
                 {
                     if (!xmlStrcmp(lCur->name, (const xmlChar*)"Value"))
                     {
                         xmlChar* key = xmlNodeListGetString(doc, lCur->xmlChildrenNode, 1);
                         stringstream str(string((char*)key));
-                        float tmpValue;
-                        str >> tmpValue;
-                        if (!str)
+
+                        bool isInteger = false;
+                        while (str)
                         {
-                            values.push_back(atom::StringValue::create((char*)key));
-                        }
-                        else
-                        {
-                            values.push_back(atom::FloatValue::create(tmpValue));
+                            float tmpValue;
+                            str >> tmpValue;
+                            if (!str && isInteger == false)
+                            {
+                                values.push_back(atom::StringValue::create((char*)key));
+                            }
+                            else if (str)
+                            {
+                                isInteger = true;
+                                values.push_back(atom::FloatValue::create(tmpValue));
+                            }
                         }
                     }
                     

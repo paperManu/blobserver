@@ -24,6 +24,7 @@ void Source_Shmdata::make(int pParam)
 
     mName = mClassName;
     mSubsourceNbr = pParam;
+    mId = pParam;
 }
 
 /*************/

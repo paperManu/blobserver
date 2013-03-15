@@ -163,9 +163,12 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
         lId = (int)mBlobs[i].getId();
 
         // Print the blob number on the blob
-        char lNbrStr[8];
-        sprintf(lNbrStr, "%i", lId);
-        cv::putText(realDetected, lNbrStr, cv::Point(lX, lY), cv::FONT_HERSHEY_COMPLEX, 0.66, cv::Scalar(128.0, 128.0, 128.0, 128.0));
+        if (mVerbose)
+        {
+            char lNbrStr[8];
+            sprintf(lNbrStr, "%i", lId);
+            cv::putText(realDetected, lNbrStr, cv::Point(lX, lY), cv::FONT_HERSHEY_COMPLEX, 0.66, cv::Scalar(128.0, 128.0, 128.0, 128.0));
+        }
 
         // Add this blob to the message
         mLastMessage.push_back(atom::IntValue::create(lX));
