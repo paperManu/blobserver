@@ -56,7 +56,7 @@ atom::Message Detector_MeanOutliers::detect(std::vector<cv::Mat> pCaptures)
     cv::dilate(lEroded, lFiltered, cv::Mat(), cv::Point(-1, -1), mFilterSize);
 
     // Apply the mask
-    cv::Mat lMask = getMask(lFiltered, CV_INTER_LINEAR);
+    cv::Mat lMask = getMask(lFiltered, cv::INTER_NEAREST);
     cv::parallel_for_(cv::Range(0, lFiltered.rows), Parallel_Mask<uchar>(&lFiltered, &lMask));
 
     // Calculate the barycenter of the outliers
@@ -140,22 +140,22 @@ void Detector_MeanOutliers::setParameter(atom::Message pMessage)
         if (iter == pMessage.end())
             return;
 
-        if (cmd == "setDetectionLevel" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
+        if (cmd == "detectionLevel" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
         {
             float param = atom::FloatValue::convert(*iter)->getFloat();
             mDetectionLevel = std::max(0.f, param);
         }
-        else if (cmd == "setFilterSize" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
+        else if (cmd == "filterSize" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
         {
             float param = atom::FloatValue::convert(*iter)->getFloat();
             mFilterSize= std::max(0.f, param);
         }
-        else if (cmd == "setProcessNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
+        else if (cmd == "processNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
         {
             float param = atom::FloatValue::convert(*iter)->getFloat();
             mMeanBlob.setParameter("processNoiseCov", param);
         }
-        else if (cmd == "setMeasurementNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
+        else if (cmd == "measurementNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
         {
             float param = atom::FloatValue::convert(*iter)->getFloat();
             mMeanBlob.setParameter("measurementNoiseCov", param);

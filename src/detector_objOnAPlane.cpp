@@ -1,8 +1,78 @@
 #include "detector_objOnAPlane.h"
 
-//using namespace atom;
 using namespace std;
 
+/*****************/
+// Class for parallel remap
+/*****************/
+class Parallel_Remap : public cv::ParallelLoopBody
+{
+    public:
+        Parallel_Remap(vector<cv::Mat>* imgs, vector<cv::Mat>* maps, vector<cv::Mat>* output, bool verbose, cv::Size size):
+            _imgs(imgs), _maps(maps), _outputs(output), _verbose(verbose), _size(size) {}
+
+        void operator()(const cv::Range& r) const
+        {
+            cv::Mat* img = &(*_imgs)[r.start];
+            cv::Mat* map = &(*_maps)[r.start + 1];
+            cv::Mat* output = &(*_outputs)[r.start];
+            for (int idx = r.start; idx < r.end; ++idx, ++img, ++map, ++output)
+            {
+                cv::Mat buffer;
+                cv::remap(*img, buffer, *map, cv::Mat(), cv::INTER_AREA);
+                
+                cv::resize(buffer, *output, _size, 0, 0, cv::INTER_LINEAR);
+                cv::cvtColor(*output, *output, CV_BGR2HSV);
+            }
+        }
+
+    private:
+        vector<cv::Mat>* _imgs;
+        vector<cv::Mat>* _maps;
+        vector<cv::Mat>* _outputs;
+        bool _verbose;
+        cv::Size _size;
+};
+
+/*****************/
+// Class for parallel comparison
+/*****************/
+class Parallel_Compare : public cv::ParallelLoopBody
+{
+    public:
+        Parallel_Compare(cv::Mat* master, cv::Mat* capture, cv::Mat* result, float level):
+            _master(master), _capture(capture), _result(result), _level(level) {}
+
+        void operator()(const cv::Range& r) const
+        {
+            cv::Vec3b* master = &(_master->at<cv::Vec3b>(r.start, 0));
+            cv::Vec3b* capture = &(_capture->at<cv::Vec3b>(r.start, 0));
+            uchar* result = &(_result->at<uchar>(r.start, 0));
+            for (int y = r.start; y != r.end; ++y, master += _master->cols, capture += _capture->cols, result += _result->cols)
+            {
+                for (int x = 0; x < _master->cols; ++x)
+                {
+                    cv::Vec3b mst = *(master + x);
+                    cv::Vec3b cpt = *(capture + x);
+                    float dist = sqrtf(pow((float)mst[0]-(float)cpt[0], 2.f)
+                        + pow((float)mst[1]-(float)cpt[1], 2.f)
+                        + pow((float)mst[2]-(float)cpt[2], 2.f));
+                    if (dist > _level)
+                        *(result + x) = 255;
+                }
+            }
+        }
+
+    private:
+        cv::Mat* _master;
+        cv::Mat* _capture;
+        cv::Mat* _result;
+        float _level;
+};
+
+/*****************/
+// Definition of Detector_ObjOnAPlane
+/*****************/
 std::string Detector_ObjOnAPlane::mClassName = "Detector_ObjOnAPlane";
 std::string Detector_ObjOnAPlane::mDocumentation = "N/A";
 unsigned int Detector_ObjOnAPlane::mSourceNbr = 0;
@@ -42,35 +112,10 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
         updateMaps(pCaptures);
 
     // Conversion of captures from their own space to a common space
+    // Also, resizes them all to the same size, and converts them to HSV
     std::vector<cv::Mat> correctedCaptures;
-
-    int index = 0;
-    std::vector<cv::Mat>::iterator iterCapture;
-    std::vector<cv::Mat>::const_iterator iterMap;
-    for (iterCapture = pCaptures.begin(), iterMap = mMaps.begin()+1;
-        iterCapture != pCaptures.end();
-        ++iterCapture, ++iterMap)
-    {
-        cv::Mat capture = *iterCapture;
-        cv::Mat map = *iterMap;
-
-        cv::Mat correctedCapture;
-        cv::remap(capture, correctedCapture, map, cv::Mat(), cv::INTER_AREA);
-        char str[16];
-        sprintf(str, "capture %i", index);
-        index++;
-        cv::imshow(str, correctedCapture);
-        correctedCaptures.push_back(correctedCapture);
-    }
-
-    // Resize all captures to match the first one,
-    // and convert all of them to HSV
-    for_each (correctedCaptures.begin(), correctedCaptures.end(), [&] (cv::Mat capture)
-    {
-        cv::Mat resized;
-        cv::resize(capture, resized, correctedCaptures[0].size(), 0, 0, cv::INTER_LINEAR);
-        cv::cvtColor(resized, capture, CV_BGR2HSV);
-    } );
+    correctedCaptures.resize(pCaptures.size());
+    cv::parallel_for_(cv::Range(0, pCaptures.size()), Parallel_Remap(&pCaptures, &mMaps, &correctedCaptures, mVerbose, pCaptures[0].size()));
 
     // Compare the first capture to all the others
     cv::Mat master = correctedCaptures[0];
@@ -78,25 +123,13 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
 
     for_each (correctedCaptures.begin(), correctedCaptures.end(), [&] (cv::Mat capture)
     {
-
-        for (int x = 0; x < master.cols; ++x)
-        {
-            for (int y = 0; y < master.rows; ++y)
-            {
-                cv::Vec3b mst = master.at<cv::Vec3b>(y, x);
-                cv::Vec3b cpt = capture.at<cv::Vec3b>(y, x);
-                float dist = sqrtf(pow((float)mst[0]-(float)cpt[0], 2.f)
-                    + pow((float)mst[1]-(float)cpt[1], 2.f)
-                    + pow((float)mst[2]-(float)cpt[2], 2.f));
-                if (dist > mDetectionLevel)
-                    detected.at<uchar>(y, x) = 255;
-            }
-        }
+        cv::parallel_for_(cv::Range(0, master.rows), Parallel_Compare(&master, &capture, &detected, mDetectionLevel));
     } );
+
     
     // Convert the detection to real space
     cv::Mat realDetected;
-    cv::remap(detected, realDetected, mMaps[0], cv::Mat(), cv::INTER_NEAREST);
+    cv::remap(detected, realDetected, mMaps[0], cv::Mat(), cv::INTER_LINEAR);
 
     // Erode and dilate to suppress noise
     cv::Mat lEroded;
@@ -105,12 +138,7 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
 
     // Apply the mask
     cv::Mat lMask = getMask(realDetected, cv::INTER_NEAREST);
-    for (int x = 0; x < realDetected.cols; ++x)
-        for (int y = 0; y < realDetected.rows; ++y)
-        {
-            if (lMask.at<uchar>(y, x) == 0)
-                realDetected.at<uchar>(y, x) = 0;
-        }
+    cv::parallel_for_(cv::Range(0, realDetected.rows), Parallel_Mask<uchar>(&realDetected, &lMask));
 
     // Detect blobs
     std::vector<std::vector<cv::Point>> contours;
@@ -146,8 +174,8 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
     }
 
     // And we send and print them
-    atom::Message message;
     // Include the number and size of each blob in the message
+    mLastMessage.clear();
     mLastMessage.push_back(atom::IntValue::create((int)mBlobs.size()));
     mLastMessage.push_back(atom::IntValue::create(6));
     
@@ -179,6 +207,7 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
         mLastMessage.push_back(atom::IntValue::create(lId));
     }
 
+    cout << mLastMessage.size() << endl;
     // Save the result in a buffer
     mOutputBuffer = realDetected;
 
@@ -229,7 +258,7 @@ void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
         }
     }
     // Replace all the current spaces at once
-    else if (cmd == "setSpaces")
+    else if (cmd == "spaces")
     {
         if (pMessage.size() <= 2)
             return;
@@ -285,7 +314,7 @@ void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
         mSpaces.clear();
         mMapsUpdated = false;
     }
-    else if (cmd == "setDetectionLevel")
+    else if (cmd == "detectionLevel")
     {
         float value;
         
@@ -300,7 +329,7 @@ void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
 
         mDetectionLevel = std::max(0.f, value);
     }
-    else if (cmd == "setProcessNoiseCov")
+    else if (cmd == "processNoiseCov")
     {
         float value;
         
@@ -315,7 +344,7 @@ void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
 
         mProcessNoiseCov = std::max(0.f, value);
     }
-    else if (cmd == "setMeasurementNoiseCov")
+    else if (cmd == "measurementNoiseCov")
     {
         float value;
         
@@ -330,7 +359,7 @@ void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
 
         mMeasurementNoiseCov = std::max(0.f, value);
     }
-    else if (cmd == "setFilterSize")
+    else if (cmd == "filterSize")
     {
         float value;
         
@@ -345,7 +374,7 @@ void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
 
         mFilterSize = std::max(0.f, value);
     }
-    else if (cmd == "setMinBlobArea")
+    else if (cmd == "minBlobArea")
     {
         float value;
         
@@ -359,6 +388,21 @@ void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
         }
 
         mMinArea = std::max(0.f, value);
+    }
+    else if (cmd == "maxTrackedBlobs")
+    {
+        float value;
+        
+        try
+        {
+            value = toFloat(pMessage[1]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+
+        mMaxTrackedBlobs = std::max(0.f, value);
     }
     else
         setBaseParameter(pMessage);

@@ -34,6 +34,34 @@
 using namespace std;
 
 /*************/
+// Class for parallel masking
+template <typename PixType>
+class Parallel_Mask : public cv::ParallelLoopBody
+{
+    public:
+        Parallel_Mask(cv::Mat* buffer, cv::Mat* mask):
+            _buffer(buffer), _mask(mask) {}
+
+        void operator()(const cv::Range& r) const
+        {
+            PixType* buffer = &(_buffer->at<PixType>(r.start, 0));
+            PixType* mask = &(_mask->at<uchar>(r.start, 0));
+            for (int y = r.start; y != r.end; ++y, buffer += _buffer->cols*sizeof(PixType), mask += _mask->cols*sizeof(uchar))
+            {
+                for (int x = 0; x < _buffer->cols; ++x)
+                {
+                    if (*(mask + x*sizeof(uchar)) == 0)
+                        *(buffer + x*sizeof(PixType)) = PixType(0);
+                }
+            }
+        }
+
+    private:
+        cv::Mat* _buffer;
+        cv::Mat* _mask;
+};
+
+/*************/
 //! Base Detector class, from which all detectors derive
 class Detector
 {
@@ -159,7 +187,7 @@ template<class T> void trackBlobs(vector<Blob::properties> &pProperties, vector<
             }
         }
 
-        // We associate each tracked blobs with the fittest blob, using a least square approach
+        // We associate each tracked blobs with the fittest blob, using a least square sum approach
         lConfiguration = getLeastSumConfiguration(&lTrackMat);
     }
 

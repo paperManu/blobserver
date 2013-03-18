@@ -17,11 +17,11 @@ AC_PROG_CXX
 AC_PROG_CC
 
 AC_MSG_CHECKING([to see if compiler understands -std=gnu++0x])
-#CXXFLAGS="$CFLAGS -std=gnu++0x"
-CXXFLAGS="-g3 -O0 -std=gnu++0x"
+CXXFLAGS="$CFLAGS -std=gnu++0x"
+#CXXFLAGS="-g3 -O0 -std=gnu++0x"
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ ], [ ])], [
-#  CXXFLAGS="$CFLAGS -std=gnu++0x"
-  CXXFLAGS="-g3 -O0 -std=gnu++0x"
+  CXXFLAGS="$CFLAGS -std=gnu++0x"
+#  CXXFLAGS="-g3 -O0 -std=gnu++0x"
   AC_MSG_RESULT([yes])
 ], [
   AC_MSG_RESULT([no])

@@ -302,8 +302,10 @@ void App::registerClasses()
     // Register sources
     mSourceFactory.register_class<Source_OpenCV>(Source_OpenCV::getClassName(),
         Source_OpenCV::getDocumentation());
+#ifdef HAVE_SHMDATA
     mSourceFactory.register_class<Source_Shmdata>(Source_Shmdata::getClassName(),
         Source_Shmdata::getDocumentation());
+#endif // HAVE_SHMDATA
 }
 
 /*************/

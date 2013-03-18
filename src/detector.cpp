@@ -121,7 +121,6 @@ cv::Mat getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv
     // We try without shifting anything
     for(int i = 0; i < pAttributed.rows + lMaxShift; ++i)
     {
-
         // If we do not shift
         if(i < pAttributed.rows)
         {

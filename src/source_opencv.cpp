@@ -166,6 +166,19 @@ void Source_OpenCV::setParameter(atom::Message pParam)
         mCamera.set(CV_CAP_PROP_AUTO_EXPOSURE, 0);
         mCamera.set(CV_CAP_PROP_EXPOSURE, paramValue);
     }
+    else if (paramName == "gain")
+    {
+        try
+        {
+            paramValue = atom::toFloat(pParam[1]);
+        }
+        catch (atom::BadTypeTagError exception)
+        {
+            return;
+        }
+
+        mCamera.set(CV_CAP_PROP_GAIN, paramValue);
+    }
     else if (paramName == "whiteBalanceRed")
     {
         try

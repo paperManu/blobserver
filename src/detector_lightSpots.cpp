@@ -112,8 +112,8 @@ atom::Message Detector_LightSpots::detect(std::vector<cv::Mat> pCaptures)
     }
 
     // And we send and print them
-    atom::Message message;
     // Include the number and size of each blob in the message
+    mLastMessage.clear();
     mLastMessage.push_back(atom::IntValue::create((int)mLightBlobs.size()));
     mLastMessage.push_back(atom::IntValue::create(6));
 
@@ -164,21 +164,21 @@ void Detector_LightSpots::setParameter(atom::Message pMessage)
         if (iter == pMessage.end())
             return;
 
-        if (cmd == "setDetectionLevel" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
+        if (cmd == "detectionLevel" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
         {
             float param = atom::FloatValue::convert(*iter)->getFloat();
             mDetectionLevel = std::max(0.f, param);
         }
-        else if (cmd == "setFilterSize" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
+        else if (cmd == "filterSize" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
         {
             float param = atom::FloatValue::convert(*iter)->getFloat();
             mFilterSize= std::max(0.f, param);
         }
-        else if (cmd == "setProcessNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
+        else if (cmd == "processNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
         {
             mProcessNoiseCov = atom::FloatValue::convert(*iter)->getFloat();
         }
-        else if (cmd == "setMeasurementNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
+        else if (cmd == "measurementNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
         {
             mMeasurementNoiseCov = atom::FloatValue::convert(*iter)->getFloat();
         }
