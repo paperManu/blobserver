@@ -1,7 +1,8 @@
 #include "blob.h"
 
 /*************/
-Blob::Blob()
+Blob::Blob():
+    mLifetime(0)
 {
     static int lIdCounter = 0;
     lIdCounter++;

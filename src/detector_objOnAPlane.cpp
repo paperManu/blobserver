@@ -95,7 +95,7 @@ void Detector_ObjOnAPlane::make()
     mName = mClassName;
     mOscPath = "/blobserver/objOnAPlane";
 
-    mMaxTrackedBlobs = 8;
+    mMaxTrackedBlobs = 16;
     mDetectionLevel = 10.0;
     mFilterSize = 3;
     mMinArea = 32;
@@ -207,7 +207,6 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
         mLastMessage.push_back(atom::IntValue::create(lId));
     }
 
-    cout << mLastMessage.size() << endl;
     // Save the result in a buffer
     mOutputBuffer = realDetected;
 

@@ -25,6 +25,8 @@
 #ifndef DETECTOR_H
 #define DETECTOR_H
 
+#include <algorithm>
+
 #include "atom/message.h"
 #include "opencv2/opencv.hpp"
 
@@ -160,10 +162,39 @@ class Detector
 
 // Useful functions
 // trackBlobs is used to keep track of blobs through frames
-cv::Mat getLeastSumConfiguration(cv::Mat* pDistances);
-cv::Mat getLeastSumForLevel(cv::Mat pConfig, cv::Mat* pDistances, int pLevel, cv::Mat pAttributed, float &pSum, int pShift);
+/*************/
+template<class T>
+class BlobPair
+{
+    public:
+        BlobPair(T* current, Blob::properties* measure):
+            _current(current), _measure(measure)
+        {
+            _dist = _current->getDistanceFromPrediction(*_measure);
+        }
 
-template<class T> void trackBlobs(vector<Blob::properties> &pProperties, vector<T> &pBlobs)
+        T* getCurrent() const {return _current;}
+        Blob::properties* getMeasure() const {return _measure;}
+
+        bool operator< (const BlobPair<T>& second) const
+        {
+            if (this->_dist > second.getDist())
+                return true;
+            else
+                return false;
+        }
+
+        float getDist() const {return _dist;}
+
+    private:
+        T* _current;
+        Blob::properties* _measure;
+        float _dist;
+};
+
+/*************/
+template<class T>
+void trackBlobs(vector<Blob::properties> &pProperties, vector<T> &pBlobs, int pLifetime = 30)
 {
     // First we update all the previous blobs we detected,
     // and keep their predicted new position
@@ -172,57 +203,90 @@ template<class T> void trackBlobs(vector<Blob::properties> &pProperties, vector<
     
     // Then we compare all these prediction with real measures and
     // associate them together
-    cv::Mat lConfiguration;
+    vector<BlobPair<T> > lPairs;
     if(pBlobs.size() != 0)
     {
-        cv::Mat lTrackMat = cv::Mat::zeros(pProperties.size(), pBlobs.size(), CV_32F);
+        vector<BlobPair<T> > lSearchPairs;
 
         // Compute the squared distance between all new blobs, and all tracked ones
-        for(int i = 0; i < pProperties.size(); ++i)
+        for (int i = 0; i < pProperties.size(); ++i)
         {
-            for(int j = 0; j < pBlobs.size(); ++j)
+            for (int j = 0; j < pBlobs.size(); ++j)
             {
-                Blob::properties properties = pProperties[i];
-                lTrackMat.at<float>(i, j) = pBlobs[j].getDistanceFromPrediction(properties);
+                BlobPair<T> lPair(&pBlobs[j], &pProperties[i]);
+                lSearchPairs.push_back(lPair);
             }
         }
 
-        // We associate each tracked blobs with the fittest blob, using a least square sum approach
-        lConfiguration = getLeastSumConfiguration(&lTrackMat);
+        // We loop through the pairs to find the closest ones
+        while (lSearchPairs.size())
+        {
+            make_heap(lSearchPairs.begin(), lSearchPairs.end());
+            // Get the nearest new blob
+            pop_heap(lSearchPairs.begin(), lSearchPairs.end());
+            BlobPair<T> nearest = lSearchPairs.back();
+            lSearchPairs.pop_back();
+            lPairs.push_back(nearest);
+
+            // Delete pairs with the same current blob
+            // as well as pairs with the same new blob
+            for (int j = 0; j < lSearchPairs.size();)
+            {
+                if (lSearchPairs[j].getCurrent() == nearest.getCurrent())
+                    lSearchPairs.erase(lSearchPairs.begin() + j);
+                else if (lSearchPairs[j].getMeasure() == nearest.getMeasure())
+                    lSearchPairs.erase(lSearchPairs.begin() + j);
+                else
+                    j++;
+            }
+        }
     }
 
-    cv::Mat lAttributedKeypoints = cv::Mat::zeros(pProperties.size(), 1, CV_8U);
-    typename vector<T>::iterator lBlob = pBlobs.begin();
     // We update the blobs which we were able to track
-    for(int i = 0; i < lConfiguration.rows; ++i)
+    for (int i = 0; i < lPairs.size(); ++i)
     {
-        int lIndex = lConfiguration.at<uchar>(i);
-        if(lIndex < 255)
-        {
-            lBlob->setNewMeasures(pProperties[lIndex]);
-            lBlob++;
-            lAttributedKeypoints.at<uchar>(lIndex) = 255;
-        }
+        lPairs[i].getCurrent()->setNewMeasures(*(lPairs[i].getMeasure()));
+        lPairs[i].getCurrent()->renewLifetime();
     }
-    // We delete the blobs we couldn't track
-    //for(lBlob = mLightBlobs.begin(); lBlob != mLightBlobs.end(); lBlob++)
-    for(int i = 0; i < lConfiguration.rows; ++i)
+    // We delete the blobs we were not able to track
+    for (int i = 0; i < pBlobs.size();)
     {
-        int lIndex = lConfiguration.at<uchar>(i);
-        if(lIndex == 255)
+        bool isIn = false;
+        for (int j = 0; j < lPairs.size(); ++j)
         {
-            pBlobs.erase(pBlobs.begin()+i);
+            if (lPairs[j].getCurrent() == &pBlobs[i])
+                isIn = true;
         }
+
+        if (!isIn)
+        {
+            pBlobs[i].getOlder();
+            if (pBlobs[i].getLifetime() < 0)
+            {
+                pBlobs.erase(pBlobs.begin() + i);
+            }
+            else
+                i++;
+        }
+        else
+            i++;
     }
     // And we create new blobs for the new objects detected
-    for(int i = 0; i < lAttributedKeypoints.rows; ++i)
+    for (int i = 0; i < pProperties.size(); ++i)
     {
-        int lIndex = lAttributedKeypoints.at<uchar>(i);
-        if(lIndex == 0)
+        bool isIn = false;
+        for (int j = 0; j < lPairs.size(); ++j)
         {
-            T lNewBlob;
-            lNewBlob.init(pProperties[i]);
-            pBlobs.push_back(lNewBlob);
+            if (lPairs[j].getMeasure() == &pProperties[i])
+                isIn = true;
+        }
+
+        if (!isIn)
+        {
+            T newBlob;
+            newBlob.init(pProperties[i]);
+            newBlob.setLifetime(pLifetime);
+            pBlobs.push_back(newBlob);
         }
     }
 }

@@ -52,12 +52,19 @@ class Blob
         virtual void setNewMeasures(properties pNewBlob) {};
         virtual float getDistanceFromPrediction(properties pBlob) {};
         
+        void setLifetime(int time) {mTotalLifetime = mLifetime = time;}
+        void renewLifetime() {mLifetime = mTotalLifetime;}
+        void getOlder() {mLifetime--;}
+        int getLifetime() const {return mLifetime;}
+
         properties getBlob();
         bool isUpdated();
 
     protected:
         bool updated;
         
+        int mTotalLifetime;
+        int mLifetime;
         properties mProperties;
         properties mPrediction;
 
