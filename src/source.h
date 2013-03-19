@@ -47,7 +47,6 @@ class MatBuffer
          * \param size The size of the buffer
          */
         MatBuffer(unsigned int size = 3);
-        ~MatBuffer();
 
         /**
          * \brief Assigns a new value to the buffer, automatically marked as the current head value
@@ -179,6 +178,12 @@ class Source
         unsigned int mWidth, mHeight;
         unsigned int mChannels;
         unsigned int mFramerate;
+
+        float mExposureTime;
+        float mAperture;
+        float mGain;
+        float mISO;
+
         unsigned int mSubsourceNbr;
         unsigned int mId;
         
@@ -190,6 +195,9 @@ class Source
         static std::string mClassName; //!< Class name, to be set in child class
         static std::string mDocumentation; //!< Class documentation, to be set in child class
         
+        // Noise reduction parameter
+        bool mFilterNoise;
+
         // Distorsion parameters
         bool mCorrectDistortion; //!< Flag set if distortion correction is activated
         bool mCorrectVignetting; //!< Flag set if vignetting correction is activated
@@ -205,17 +213,30 @@ class Source
         bool mRecomputeDistortionMat;
 
         // HDRi builder
-        HdriBuilder mHDRi;
-
+        HdriBuilder mHdriBuilder;
+        bool mHdriActive;
+        float mHdriStartExposure, mHdriStepSize;
+        int mHdriSteps;
         // Color correction
         cmsHTRANSFORM mICCTransform;
 
-        // Methods to correct the optical distortion
-        cv::Mat correctVignetting(cv::Mat pImg);
-        cv::Mat correctDistortion(cv::Mat pImg);
+        /************/
+        // Methods
+        /************/
+        float getEV();
 
-        // Methods related to colorimetry. Default output profile is sRGB
+        // Noise correction
+        void filterNoise(cv::Mat& pImg);
+
+        // Methods to correct the optical distortion
+        void correctVignetting(cv::Mat& pImg);
+        void correctDistortion(cv::Mat& pImg);
+
+        // Method related to colorimetry. Default output profile is sRGB
         cmsHTRANSFORM loadICCTransform(std::string pFile);
+
+        // Method to create a HDRI from LDRIs
+        void createHdri(cv::Mat& pImg);
 };
 
 #endif // SOURCE_H

@@ -1,6 +1,6 @@
 #include "hdribuilder.h"
 
-/*******************************************/
+/*************/
 HdriBuilder::HdriBuilder()
 {
     mMinSum = 0.1f;
@@ -10,12 +10,12 @@ HdriBuilder::HdriBuilder()
     mHDRi.create(0, 0, CV_32FC3);
 }
 
-/*******************************************/
+/*************/
 HdriBuilder::~HdriBuilder()
 {
 }
 
-/*******************************************/
+/*************/
 bool HdriBuilder::addLDR(const Mat *pImage, float pEV)
 {
     LDRi lLDRi;
@@ -56,13 +56,13 @@ bool HdriBuilder::addLDR(const Mat *pImage, float pEV)
     }
 }
 
-/*******************************************/
+/*************/
 Mat HdriBuilder::getHDRI()
 {
     return mHDRi;
 }
 
-/*******************************************/
+/*************/
 bool HdriBuilder::computeHDRI()
 {
     // If no LDRi were submitted
@@ -149,7 +149,7 @@ bool HdriBuilder::computeHDRI()
     return true;
 }
 
-/*******************************************/
+/*************/
 float HdriBuilder::getGaussian(unsigned char pValue)
 {
     float lSigma = 40;
@@ -162,7 +162,7 @@ float HdriBuilder::getGaussian(unsigned char pValue)
     return lValue;
 }
 
-/*******************************************/
+/*************/
 void HdriBuilder::orderLDRi()
 {
     if(mLDRi.size() == 0)

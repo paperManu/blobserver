@@ -116,6 +116,15 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
     std::vector<cv::Mat> correctedCaptures;
     correctedCaptures.resize(pCaptures.size());
     cv::parallel_for_(cv::Range(0, pCaptures.size()), Parallel_Remap(&pCaptures, &mMaps, &correctedCaptures, mVerbose, pCaptures[0].size()));
+    if (mVerbose)
+    {
+        for (int i = 0; i < correctedCaptures.size(); ++i)
+        {
+            char str[16];
+            sprintf(str, "capture %i", i);
+            cv::imshow(str, correctedCaptures[i]);
+        }
+    }
 
     // Compare the first capture to all the others
     cv::Mat master = correctedCaptures[0];
@@ -125,7 +134,6 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
     {
         cv::parallel_for_(cv::Range(0, master.rows), Parallel_Compare(&master, &capture, &detected, mDetectionLevel));
     } );
-
     
     // Convert the detection to real space
     cv::Mat realDetected;
@@ -144,7 +152,6 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
     cv::findContours(realDetected, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_TC89_L1);
-    cv::drawContours(realDetected, contours, -1, cv::Scalar(255, 0, 0), 2);
 
     std::vector<Blob::properties> lProperties;
     for(int i = 0; i < std::min((int)(contours.size()), mMaxTrackedBlobs); ++i)
@@ -159,7 +166,10 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
         properties.speed.y = 0.f;
 
         if (properties.size > mMinArea)
+        {
+            cv::drawContours(realDetected, contours, i, cv::Scalar(255, 0, 0), 2);
             lProperties.push_back(properties);
+        }
     }
 
     // We want to track them
@@ -431,8 +441,7 @@ void Detector_ObjOnAPlane::updateMaps(std::vector<cv::Mat> pCaptures)
         origin = space[0];
         
         // We have an ortho base, we can use the dot product
-        std::vector<cv::Vec2f> newCoords;
-        newCoords.push_back(origin);
+
 
         cv::Vec2f max = 0.f;
         std::vector<cv::Vec2f>::iterator iterPoint;
@@ -449,21 +458,30 @@ void Detector_ObjOnAPlane::updateMaps(std::vector<cv::Mat> pCaptures)
             {
                 origin[0] += coords[0];
                 coords[0] = 0.f;
-
             }
             if (coords[1] < 0.f)
             {
                 origin[1] += coords[1];
                 coords[1] = 0.f;
             }
+        }
+
+        std::vector<cv::Vec2f> newCoords;
+        newCoords.push_back(origin);
+        for (iterPoint = space.begin()+1; iterPoint != space.end(); ++iterPoint)
+        {
+            cv::Vec2f point = *iterPoint;
+            cv::Vec2f vector = point - origin;
+
+            cv::Vec2f coords;
+            coords[0] = vector.dot(baseX);
+            coords[1] = vector.dot(baseY);
 
             max[0] = std::max(max[0], coords[0]);
             max[1] = std::max(max[1], coords[1]);
-            
-            // New coords for the point
+
             newCoords.push_back(coords);
         }
-        // TODO: coords should be all recalculated after this loop
 
         // Create the map
         float ratio = (float)(max[1])/(float)(max[0]);

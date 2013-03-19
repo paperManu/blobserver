@@ -16,8 +16,16 @@ Source::Source():
     mHeight = 0;
     mChannels = 0;
     mFramerate = 0;
+
+    mExposureTime = 1.f;
+    mAperture = 1.f;
+    mGain = 0.f;
+    mISO = 100.f;
+
     mSubsourceNbr = 0;
     mId = 0;
+
+    mFilterNoise = false;
 
     mCorrectDistortion = false;
     mCorrectVignetting = false;
@@ -29,6 +37,8 @@ Source::Source():
     mRecomputeDistortionMat = false;
 
     mICCTransform = NULL;
+
+    mHdriActive = false;
 }
 
 /************/
@@ -49,14 +59,22 @@ cv::Mat Source::retrieveCorrectedFrame()
 {
     if (mUpdated)
     {
-        mCorrectedBuffer = retrieveFrame();
+        cv::Mat buffer = retrieveFrame();
 
-        if (mICCTransform != NULL)
-            cmsDoTransform(mICCTransform, mCorrectedBuffer.data, mCorrectedBuffer.data, mCorrectedBuffer.total());
+        if (mFilterNoise)
+            filterNoise(buffer);
         if (mCorrectVignetting)
-            mCorrectedBuffer = correctVignetting(mCorrectedBuffer);
+            correctVignetting(buffer);
+        if (mICCTransform != NULL)
+            cmsDoTransform(mICCTransform, buffer.data, buffer.data, buffer.total());
         if (mCorrectDistortion)
-            mCorrectedBuffer = correctDistortion(mCorrectedBuffer);
+            correctDistortion(buffer);
+        if (mHdriActive)
+            createHdri(buffer);
+
+        // Some modifiers will not output a valid image every frame
+        if (buffer.rows != 0 && buffer.cols != 0)
+            mCorrectedBuffer = buffer;
 
         mUpdated = false;
 
@@ -104,6 +122,26 @@ void Source::setBaseParameter(atom::Message pParam)
         }
         else
             return;
+    }
+    else if (paramName == "noiseFiltering")
+    {
+        if (pParam.size() == 2)
+        {
+            int value;
+            try
+            {
+                value = atom::toInt(pParam[1]);
+            }
+            catch (atom::BadTypeTagError error)
+            {
+                return;
+            }
+
+            if (value)
+                mFilterNoise = true;
+            else
+                mFilterNoise = false;
+        }
     }
     else if (paramName == "distortion")
     {
@@ -161,6 +199,24 @@ void Source::setBaseParameter(atom::Message pParam)
             cmsDeleteTransform(mICCTransform);
         mICCTransform = loadICCTransform(filename);
     }
+    else if (paramName == "hdri")
+    {
+        if (pParam.size() != 4)
+            return;
+
+        try
+        {
+            mHdriStartExposure = atom::toFloat(pParam[1]);
+            mHdriStepSize = atom::toFloat(pParam[2]);
+            mHdriSteps = atom::toInt(pParam[3]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+
+        mHdriActive = true;
+    }
 }
 
 /************/
@@ -189,7 +245,20 @@ atom::Message Source::getBaseParameter(atom::Message pParam)
 }
 
 /************/
-cv::Mat Source::correctVignetting(cv::Mat pImg)
+float Source::getEV()
+{
+    return log2(mAperture*mAperture*(1/mExposureTime)*100/mISO)-mGain/6.f;
+}
+
+/************/
+void Source::filterNoise(cv::Mat& pImg)
+{
+    // We apply a simple median filter of size 1px to reduce noise
+    cv::medianBlur(pImg, pImg, 3);
+}
+
+/************/
+void Source::correctVignetting(cv::Mat& pImg)
 {
     if (mRecomputeVignettingMat == true || mVignettingMat.size() != pImg.size())
     {
@@ -221,14 +290,11 @@ cv::Mat Source::correctVignetting(cv::Mat pImg)
         mRecomputeVignettingMat = false;
     }
 
-    cv::Mat resultMat;
-    cv::multiply(pImg, mVignettingMat, resultMat, 1.0, pImg.type());
-
-    return resultMat;
+    cv::multiply(pImg, mVignettingMat, pImg, 1.0, pImg.type());
 }
 
 /************/
-cv::Mat Source::correctDistortion(cv::Mat pImg)
+void Source::correctDistortion(cv::Mat& pImg)
 {
     if (mRecomputeDistortionMat == true || mDistortionMat.size() != pImg.size())
     {
@@ -273,7 +339,7 @@ cv::Mat Source::correctDistortion(cv::Mat pImg)
     cv::Mat resultMat;
     cv::remap(pImg, resultMat, mDistortionMat, cv::Mat(), cv::INTER_LINEAR);
 
-    return resultMat;
+    pImg = resultMat;
 }
 
 /************/
@@ -301,17 +367,47 @@ cmsHTRANSFORM Source::loadICCTransform(std::string pFile)
 }
 
 /*************/
+void Source::createHdri(cv::Mat& pImg)
+{
+    static int ldriCount = -1;
+    // If we just started HDRI capture, we need to set the exposure to the start value
+    atom::Message message;
+    message.push_back(atom::StringValue::create("exposureTime"));
+    if (ldriCount == -1)
+    {
+        message.push_back(atom::FloatValue::create(mHdriStartExposure));
+        setParameter(message);
+        return;
+    }
+
+    // Add current frame to the HdriBuilder
+    mHdriBuilder.addLDR(&pImg, getEV());
+    ldriCount++;
+
+    // Change the exposure time for the next frame
+    if (ldriCount < mHdriSteps)
+    {
+        message.push_back(atom::FloatValue::create(mExposureTime*pow(2.0, mHdriStepSize)));
+        pImg.create(480, 640, CV_32FC3);
+    }
+    else
+    {
+        mHdriBuilder.computeHDRI();
+        pImg = mHdriBuilder.getHDRI();
+
+        message.push_back(atom::FloatValue::create(mHdriStartExposure));
+        ldriCount = 0;
+    }
+    setParameter(message);
+}
+
+/*************/
 MatBuffer::MatBuffer(unsigned int size)
 {
     _mats.resize(size);
     cv::Mat dummyMat = cv::Mat::zeros(480, 640, CV_8UC3);
     _mats[0] = dummyMat;
     _head = 0;
-}
-
-/*************/
-MatBuffer::~MatBuffer()
-{
 }
 
 /*************/

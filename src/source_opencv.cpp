@@ -64,6 +64,9 @@ bool Source_OpenCV::disconnect()
 /*************/
 bool Source_OpenCV::grabFrame()
 {
+    if (!mCamera.isOpened())
+        return false;
+
     bool result = mCamera.grab();
     mUpdated = result;
     return result;
@@ -165,6 +168,7 @@ void Source_OpenCV::setParameter(atom::Message pParam)
 
         mCamera.set(CV_CAP_PROP_AUTO_EXPOSURE, 0);
         mCamera.set(CV_CAP_PROP_EXPOSURE, paramValue);
+        mExposureTime = (float)(mCamera.get(CV_CAP_PROP_EXPOSURE));
     }
     else if (paramName == "gain")
     {
@@ -178,6 +182,7 @@ void Source_OpenCV::setParameter(atom::Message pParam)
         }
 
         mCamera.set(CV_CAP_PROP_GAIN, paramValue);
+        mGain = (float)(mCamera.get(CV_CAP_PROP_GAIN));
     }
     else if (paramName == "whiteBalanceRed")
     {
