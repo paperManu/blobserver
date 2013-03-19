@@ -33,6 +33,8 @@
 #include <lcms2.h>
 #include <atom/message.h>
 
+#include "hdribuilder.h"
+
 using namespace std;
 
 /*************/
@@ -201,6 +203,9 @@ class Source
         cv::Mat mDistortionMat;
         bool mRecomputeVignettingMat;
         bool mRecomputeDistortionMat;
+
+        // HDRi builder
+        HdriBuilder mHDRi;
 
         // Color correction
         cmsHTRANSFORM mICCTransform;

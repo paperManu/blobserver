@@ -14,6 +14,7 @@ blobserver_SOURCES = \
     detector_lightSpots.cpp \
     detector_objOnAPlane.cpp \
     detector_nop.cpp \
+	hdribuilder.cpp \
     source.cpp \
     source_opencv.cpp \
     source_shmdata.cpp \
@@ -29,6 +30,7 @@ noinst_HEADERS = \
     detector_lightSpots.h \
     detector_objOnAPlane.h \
     detector_nop.h \
+	hdribuilder.h \
     source.h \
     source_opencv.h \
     source_shmdata.h \
