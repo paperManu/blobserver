@@ -25,6 +25,7 @@
 #include <iostream>
 #include <limits>
 #include <stdio.h>
+#include <stdlib.h>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -93,6 +94,8 @@ class App
 
         // Main loop
         int loop();
+
+        void stop();
 
     private:
         /***********/
@@ -182,8 +185,23 @@ shared_ptr<App> App::getInstance()
 }
 
 /*****************/
+void App::stop()
+{
+    mRun = false;
+}
+
+/*****************/
+void leave (int sig)
+{
+    shared_ptr<App> theApp = App::getInstance();
+    theApp->stop();
+}
+
+/*****************/
 int App::init(int argc, char** argv)
 {
+    (void) signal(SIGINT, leave);
+
     // Register source and detector classes
     registerClasses();
 
@@ -492,6 +510,7 @@ int App::loop()
         frameNbr++;
     }
 
+    cout << "Leaving..." << endl;
     mSourcesThread->join();
 
     return 0;
