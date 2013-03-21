@@ -27,8 +27,11 @@
 
 #include <opencv2/opencv.hpp>
 #include <lo/lo.h>
-#include <shmdata/any-data-writer.h>
 
+#include "config.h"
+#if HAVE_SHMDATA
+#include <shmdata/any-data-writer.h>
+#endif
 #include "source.h"
 #include "detector.h"
 
@@ -53,6 +56,7 @@ class OscClient
         lo_address mAddress;
 };
 
+#if HAVE_SHMDATA
 /*************/
 // Simple class to send image through shm
 class ShmImage
@@ -70,6 +74,7 @@ class ShmImage
 
         bool init(const unsigned int width, const unsigned int height, int type);
 };
+#endif // HAVE_SHMDATA
 
 /*************/
 // Struct to contain a complete flow, from capture to client
@@ -77,7 +82,9 @@ struct Flow
 {
     vector<shared_ptr<Source>> sources;
     shared_ptr<Detector> detector;
+#if HAVE_SHMDATA
     shared_ptr<ShmImage> shm;
+#endif
     shared_ptr<OscClient> client;
     unsigned int id;
     bool run;

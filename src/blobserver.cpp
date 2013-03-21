@@ -46,7 +46,7 @@
 #include "threadPool.h"
 
 #include "source_opencv.h"
-#ifdef HAVE_SHMDATA
+#if HAVE_SHMDATA
 #include "source_shmdata.h"
 #endif
 #include "detector_lightSpots.h"
@@ -320,7 +320,7 @@ void App::registerClasses()
     // Register sources
     mSourceFactory.register_class<Source_OpenCV>(Source_OpenCV::getClassName(),
         Source_OpenCV::getDocumentation());
-#ifdef HAVE_SHMDATA
+#if HAVE_SHMDATA
     mSourceFactory.register_class<Source_Shmdata>(Source_Shmdata::getClassName(),
         Source_Shmdata::getDocumentation());
 #endif // HAVE_SHMDATA
@@ -432,7 +432,10 @@ int App::loop()
 
                 cv::Mat output = flow.detector->getOutput();
                 lBuffers.push_back(output);
+
+#if HAVE_SHMDATA
                 flow.shm->setImage(output);
+#endif
 
                 lBufferNames.push_back(flow.detector->getName());
 
@@ -877,7 +880,10 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 
         char shmFile[128];
         sprintf(shmFile, "/tmp/blobserver_output_%i", flow.id);
+
+#if HAVE_SHMDATA
         flow.shm.reset(new ShmImage(shmFile));
+#endif
 
         vector<shared_ptr<Source>>::const_iterator source;
         for (source = sources.begin(); source != sources.end(); ++source)

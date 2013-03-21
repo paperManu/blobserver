@@ -44,14 +44,9 @@ if test "x${have_opencv}" = "xfalse" ; then
 fi
 
 # Shmdata
-PKG_CHECK_MODULES([SHMDATA], [shmdata-0.6 shmdata-any-0.6])
-if test "x${have_shmdata}" = "xfalse" ; then
-    AC_DEFINE([HAVE_SHMDATA], [0], [libshmdata not detected])
-    AC_MSG_WARN([Missing shmdata])
-else
-    AC_DEFINE([HAVE_SHMDATA], [1], [libshmdata detected])
-    AC_MSG_WARN([Shmdata detected])
-fi
+PKG_CHECK_MODULES([SHMDATA], [shmdata-0.6 shmdata-any-0.6],
+    AC_DEFINE([HAVE_SHMDATA], [1], [libshmdata detected]),
+    AC_DEFINE([HAVE_SHMDATA], [0], [libshmdata not detected]))
 
 # Liblo
 PKG_CHECK_MODULES([LIBLO], [liblo >= 0.26])

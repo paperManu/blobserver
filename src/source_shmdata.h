@@ -25,6 +25,8 @@
 #ifndef SOURCE_SHMDATA_H
 #define SOURCE_SHMDATA_H
 
+#include "config.h"
+#if HAVE_SHMDATA
 #include <mutex>
 #include <shmdata/any-data-reader.h>
 
@@ -62,5 +64,6 @@ class Source_Shmdata : public Source
         static void onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,
             const char* type_description, void* user_data);
 };
+#endif // HAVE_SHMDATA
 
 #endif // SOURCE_SHMDATA_H

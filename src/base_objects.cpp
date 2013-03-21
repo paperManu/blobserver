@@ -1,5 +1,6 @@
 #include "base_objects.h"
 
+#if HAVE_SHMDATA
 /*************/
 ShmImage::ShmImage(const char* filename)
     : _writer(NULL)
@@ -82,3 +83,4 @@ bool ShmImage::init(const unsigned int width, const unsigned int height, int typ
 
     return true;
 }
+#endif // HAVE_SHMDATA

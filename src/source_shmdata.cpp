@@ -1,5 +1,6 @@
 #include "source_shmdata.h"
 
+#if HAVE_SHMDATA
 #include <regex>
 
 string Source_Shmdata::mClassName = "Source_Shmdata";
@@ -282,3 +283,4 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
 
     shmdata_any_reader_free(shmbuf);
 }
+#endif // HAVE_SHMDATA
