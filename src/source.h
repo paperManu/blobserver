@@ -126,7 +126,7 @@ class Source
         /**
          * \brief Retrieves the last frame grabbed by the source, corrected with the various available corrections of specified so
          */
-        cv::Mat retrieveCorrectedFrame();
+        cv::Mat retrieveModifiedFrame();
 
         /**
          * \brief Sets a parameter
@@ -179,14 +179,17 @@ class Source
         unsigned int mChannels;
         unsigned int mFramerate;
 
-        float mExposureTime;
+        float mExposureTime, mExposureParam; // Both are not necessarily identical
         float mAperture;
         float mGain;
         float mISO;
+        float mGamma;
 
         unsigned int mSubsourceNbr;
         unsigned int mId;
         
+        bool mHdriActive;
+
         // Base methods for any type of source
         void setBaseParameter(atom::Message pParam);
         atom::Message getBaseParameter(atom::Message pParam);
@@ -214,7 +217,6 @@ class Source
 
         // HDRi builder
         HdriBuilder mHdriBuilder;
-        bool mHdriActive;
         float mHdriStartExposure, mHdriStepSize;
         int mHdriSteps;
         // Color correction

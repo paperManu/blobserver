@@ -79,7 +79,7 @@ cv::Mat Source_OpenCV::retrieveFrame()
     mCamera.retrieve(buffer);
     mBuffer = buffer;
 
-    return mBuffer.get();
+    return mBuffer.get().clone();
 }
 
 /*************/
@@ -169,6 +169,7 @@ void Source_OpenCV::setParameter(atom::Message pParam)
         mCamera.set(CV_CAP_PROP_AUTO_EXPOSURE, 0);
         mCamera.set(CV_CAP_PROP_EXPOSURE, paramValue);
         mExposureTime = (float)(mCamera.get(CV_CAP_PROP_EXPOSURE));
+        mExposureParam = paramValue;
     }
     else if (paramName == "gain")
     {
@@ -183,6 +184,20 @@ void Source_OpenCV::setParameter(atom::Message pParam)
 
         mCamera.set(CV_CAP_PROP_GAIN, paramValue);
         mGain = (float)(mCamera.get(CV_CAP_PROP_GAIN));
+    }
+    else if (paramName == "gamma")
+    {
+        try
+        {
+            paramValue = atom::toFloat(pParam[1]);
+        }
+        catch (atom::BadTypeTagError exception)
+        {
+            return;
+        }
+
+        mCamera.set(CV_CAP_PROP_GAMMA, paramValue*1024.f);
+        mGamma = (float)(mCamera.get(CV_CAP_PROP_GAMMA));
     }
     else if (paramName == "whiteBalanceRed")
     {
@@ -255,6 +270,7 @@ atom::Message Source_OpenCV::getParameter(atom::Message pParam)
     else if (paramName == "exposureTime")
     {
         int value = mCamera.get(CV_CAP_PROP_EXPOSURE);
+        mExposureTime = (float)value;
         msg.push_back(atom::IntValue::create(value));
     }
     else if (paramName == "subsourcenbr")

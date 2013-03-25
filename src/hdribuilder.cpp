@@ -52,7 +52,7 @@ bool HdriBuilder::addLDR(const Mat *pImage, float pEV)
         if(lResult)
             mLDRi.push_back(lLDRi);
 
-        return true;
+        return lResult;
     }
 }
 

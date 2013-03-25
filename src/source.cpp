@@ -18,9 +18,11 @@ Source::Source():
     mFramerate = 0;
 
     mExposureTime = 1.f;
+    mExposureParam = 1.f;
     mAperture = 1.f;
     mGain = 0.f;
     mISO = 100.f;
+    mGamma = 2.2f;
 
     mSubsourceNbr = 0;
     mId = 0;
@@ -55,7 +57,7 @@ Source::~Source()
 }
 
 /************/
-cv::Mat Source::retrieveCorrectedFrame()
+cv::Mat Source::retrieveModifiedFrame()
 {
     if (mUpdated)
     {
@@ -74,7 +76,7 @@ cv::Mat Source::retrieveCorrectedFrame()
 
         // Some modifiers will not output a valid image every frame
         if (buffer.rows != 0 && buffer.cols != 0)
-            mCorrectedBuffer = buffer;
+            mCorrectedBuffer = buffer.clone();
 
         mUpdated = false;
 
@@ -247,6 +249,11 @@ atom::Message Source::getBaseParameter(atom::Message pParam)
 /************/
 float Source::getEV()
 {
+    // Update the exposure time in case it changes automatically
+    atom::Message msg;
+    msg.push_back(atom::StringValue::create("exposureTime"));
+    setParameter(msg);
+
     return log2(mAperture*mAperture*(1/mExposureTime)*100/mISO)-mGain/6.f;
 }
 
@@ -369,6 +376,8 @@ cmsHTRANSFORM Source::loadICCTransform(std::string pFile)
 /*************/
 void Source::createHdri(cv::Mat& pImg)
 {
+    // TODO: make this work even if cameras dont send the right exposure value
+
     static int ldriCount = -1;
     // If we just started HDRI capture, we need to set the exposure to the start value
     atom::Message message;
@@ -377,6 +386,7 @@ void Source::createHdri(cv::Mat& pImg)
     {
         message.push_back(atom::FloatValue::create(mHdriStartExposure));
         setParameter(message);
+        ldriCount++;
         return;
     }
 
@@ -387,7 +397,7 @@ void Source::createHdri(cv::Mat& pImg)
     // Change the exposure time for the next frame
     if (ldriCount < mHdriSteps)
     {
-        message.push_back(atom::FloatValue::create(mExposureTime*pow(2.0, mHdriStepSize)));
+        message.push_back(atom::FloatValue::create(mExposureParam*pow(2.0, mHdriStepSize)));
         pImg.create(480, 640, CV_32FC3);
     }
     else

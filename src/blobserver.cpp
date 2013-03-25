@@ -367,7 +367,7 @@ int App::loop()
             // This way, sync between frames is better
             for_each (mSources.begin(), mSources.end(), [&] (shared_ptr<Source> source)
             {
-                cv::Mat frame = source->retrieveCorrectedFrame();
+                cv::Mat frame = source->retrieveModifiedFrame();
 
                 lBuffers.push_back(frame);
 
@@ -408,7 +408,7 @@ int App::loop()
                         for (int i = 0; i < flow->sources.size(); ++i)
                         {
                             lock_guard<mutex> lock(lMutex);
-                            frames.push_back(flow->sources[i]->retrieveCorrectedFrame());
+                            frames.push_back(flow->sources[i]->retrieveModifiedFrame());
                         }
                     }
 
