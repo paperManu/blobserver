@@ -21,10 +21,13 @@ blobserver_SOURCES = \
     threadPool.cpp
 
 noinst_HEADERS = \
+    abstract-factory.h \
+    abstract-factory_spec.h \
     base_objects.h \
     blob.h \
     blob_2D.h \
     configurator.h \
+    creator.h \
     detector.h \
     detector_meanOutliers.h \
     detector_lightSpots.h \
