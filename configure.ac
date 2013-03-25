@@ -3,17 +3,30 @@
 
 AC_PREREQ(2.68)
 AC_INIT([BLOBSERVER],
-        [0.2.2],
+        [0.4.0],
         [http://code.sat.qc.ca/redmine/projects/blobserver/issues],
         [blobserver],
         [http://code.sat.qc.ca/redmine/projects/blobserver])
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE()
+AC_CONFIG_HEADERS([src/config.h])
 
 # Check for C and C++ compilers
 AC_PROG_CXX
 AC_PROG_CC
+
+AC_MSG_CHECKING([to see if compiler understands -std=gnu++0x])
+#CXXFLAGS="$CFLAGS -std=gnu++0x"
+#CXXFLAGS="-g3 -O0 -std=gnu++0x"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ ], [ ])], [
+  CXXFLAGS="$CFLAGS -std=gnu++0x"
+#  CXXFLAGS="-g3 -O0 -std=gnu++0x"
+  AC_MSG_RESULT([yes])
+], [
+  AC_MSG_RESULT([no])
+  AC_MSG_ERROR([compiler does not understand -std=c++0x])
+])
 
 # Check for header files
 AC_HEADER_STDC
@@ -30,10 +43,33 @@ if test "x${have_opencv}" = "xfalse" ; then
     AC_MSG_ERROR([Missing opencv])
 fi
 
+# Shmdata
+PKG_CHECK_MODULES([SHMDATA], [shmdata-0.6 shmdata-any-0.6],
+    AC_DEFINE([HAVE_SHMDATA], [1], [libshmdata detected]),
+    AC_DEFINE([HAVE_SHMDATA], [0], [libshmdata not detected]))
+
 # Liblo
 PKG_CHECK_MODULES([LIBLO], [liblo >= 0.26])
 if test "x${have_liblo}" = "xfalse" ; then
     AC_MSG_ERROR([Missing liblo])
+fi
+
+# LCMS
+PKG_CHECK_MODULES([LCMS], [lcms2 >= 2.2])
+if test "x${have_lcms}" = "xfalse" ; then
+    AC_MSG_ERROR([Missing lcms])
+fi
+
+# LibAtom
+PKG_CHECK_MODULES([LIBATOM], atom-0.2)
+if test "x${have_atom}" = "xfalse" ; then
+    AC_MSG_ERROR([Missing atom])
+fi
+
+# LibXML2
+PKG_CHECK_MODULES([XML2], libxml-2.0)
+if test "x${have_xml2}" = "xfalse" ; then
+    AC_MSG_ERROR([Missing libxml2])
 fi
 
 # GNU help2man creates man pages from --help output; in many cases, this
@@ -46,6 +82,14 @@ if test $cross_compiling = no; then
 else
     HELP2MAN=:
 fi
+
+AC_CHECK_PROGS([DOXYGEN], [doxygen])
+if test -z "x$DOXYGEN" = "xtrue" ; then
+    AC_MSG_WARN([Doxygen not found - documentation will not be generated])
+fi
+
+AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
+AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([Doxyfile])])
 
 AC_CONFIG_FILES([
     Makefile

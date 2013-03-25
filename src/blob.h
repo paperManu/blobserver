@@ -3,24 +3,27 @@
  *
  * This file is part of blobserver.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * switcher is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with switcher.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
- * @file
+ * @blob.h
  * The blob base class.
  */
+
+#ifndef BLOB_H
+#define BLOB_H
 
 #include "opencv2/opencv.hpp"
 
@@ -42,18 +45,26 @@ class Blob
         ~Blob();
 
         int getId() {return mId;};
+        virtual void setParameter(std::string pParam, float pValue) {};
 
         virtual void init(properties pNewBlob) {};
         virtual properties predict() {};
         virtual void setNewMeasures(properties pNewBlob) {};
         virtual float getDistanceFromPrediction(properties pBlob) {};
         
+        void setLifetime(int time) {mTotalLifetime = mLifetime = time;}
+        void renewLifetime() {mLifetime = mTotalLifetime;}
+        void getOlder() {mLifetime--;}
+        int getLifetime() const {return mLifetime;}
+
         properties getBlob();
         bool isUpdated();
 
     protected:
         bool updated;
         
+        int mTotalLifetime;
+        int mLifetime;
         properties mProperties;
         properties mPrediction;
 
@@ -61,3 +72,5 @@ class Blob
 
         int mId;
 };
+
+#endif // BLOB_H

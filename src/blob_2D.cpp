@@ -1,7 +1,7 @@
-#include "blob_lightSpot.h"
+#include "blob_2D.h"
 
 /*************/
-LightSpot::LightSpot()
+Blob2D::Blob2D()
 {
     mProperties.position.x = 0.0;
     mProperties.position.y = 0.0;
@@ -15,13 +15,28 @@ LightSpot::LightSpot()
 
     mFilter.transitionMatrix = *(cv::Mat_<float>(5, 5) << 1,0,0,1,0, 0,1,0,0,1, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1);
     setIdentity(mFilter.measurementMatrix);
-    setIdentity(mFilter.processNoiseCov, cv::Scalar::all(1e-5));
-    setIdentity(mFilter.measurementNoiseCov, cv::Scalar::all(1e-5));
+    setIdentity(mFilter.processNoiseCov, cv::Scalar::all(1e-6));
+    setIdentity(mFilter.measurementNoiseCov, cv::Scalar::all(1e-4));
     setIdentity(mFilter.errorCovPost, cv::Scalar::all(1));
 }
 
 /*************/
-void LightSpot::init(properties pNewBlob)
+void Blob2D::setParameter(const char* pParam, float pValue)
+{
+    if (strcmp(pParam, "processNoiseCov") == 0)
+    {
+        if(pValue > 0.0)
+            setIdentity(mFilter.processNoiseCov, cv::Scalar::all(pValue));
+    }
+    else if (strcmp(pParam, "measurementNoiseCov") == 0)
+    {
+        if(pValue > 0.0)
+            setIdentity(mFilter.measurementNoiseCov, cv::Scalar::all(pValue));
+    }
+}
+
+/*************/
+void Blob2D::init(properties pNewBlob)
 {
     mFilter.statePre.at<float>(0) = pNewBlob.position.x;
     mFilter.statePre.at<float>(1) = pNewBlob.position.y;
@@ -33,7 +48,7 @@ void LightSpot::init(properties pNewBlob)
 }
 
 /*************/
-Blob::properties LightSpot::predict()
+Blob::properties Blob2D::predict()
 {
     cv::Mat lPrediction;
     properties lProperties;
@@ -52,7 +67,7 @@ Blob::properties LightSpot::predict()
 }
 
 /*************/
-void LightSpot::setNewMeasures(properties pNewBlob)
+void Blob2D::setNewMeasures(properties pNewBlob)
 {
     cv::Mat lMeasures = cv::Mat::zeros(3, 1, CV_32F);
     lMeasures.at<float>(0) = pNewBlob.position.x;
@@ -70,7 +85,7 @@ void LightSpot::setNewMeasures(properties pNewBlob)
 }
 
 /*************/
-float LightSpot::getDistanceFromPrediction(properties pBlob)
+float Blob2D::getDistanceFromPrediction(properties pBlob)
 {
     float distance = pow(pBlob.position.x - mPrediction.position.x, 2.0)
         + pow(pBlob.position.y - mPrediction.position.y, 2.0)

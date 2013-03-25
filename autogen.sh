@@ -21,4 +21,3 @@ fi
 
 mkdir m4
 autoreconf -fivI m4
-./configure

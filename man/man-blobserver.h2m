@@ -6,38 +6,173 @@ If the camera window is not hidden (with the --hide command line option):
 Press q to quit, w to swap between the camera capture and the various filtering available.
 
 [DESCRIPTION]
-Some of the detection methods are applying a morphological operation (erode / dilate) to get rid of noise. The size of this filtering is set through the kernel size with the --filter option. A value of 3 is the default and should be good for most usage, but a higher value might be useful when used with a camera set to a high sensibility or in bad lighting conditions.
+Blobserver is an OSC-based server aimed at detecting entities (objects / people / light / ...), in any compatible image flow. Its structure is so that it should be relatively easy to add new detectors as well as new light sources. As of yet, configuration and communication with Blobserver is done entirely through OSC messaging. Some kind of configuration file will be added soon to simplify the setup and usability, especially for permanent installations.
 
-As of today, two filters are available.
+Blobserver is built around the concept of flow. A flow is the association of a detector and as many sources as needed for it to work correctly. At each frame, all the flows are evaluated, and the various objects detected are sent through OSC to the corresponding clients.
 
-- outliers detection:
-    Detects pixels which are far from the mean luminance of the captured image. The --level option sets the threshold to use, as a factor of the standard deviation. Default value is set at 2. The output is the mean position of those outliers pixels, as well as their total number.
+[COMPATIBLE SOURCES]
+The following sources are compatible with Blobserver:
+- any source compatible with OpenCV
+- shmdata will be added very soon
 
-- light blobs detection:
-    Detects light blobs, after a filtering similar to the outliers detection except that it only keeps pixels lighter than the mean luminance value. Outputs the position, size and speed of every detected blobs, associated with an id: blobs are tracked through frames.
-
-[OSC INTERFACE]
-The OSC messages sent depend on the filter used. These messages are sent to client which suscribed to the server, as well as to the IP address specified by the --ip command line option.
-
-For general information regarding the protocol used, you can refer to the graph one can build with the following command line, assuming it is typed at the root of the sources:
-mscgen -T png -i protocol.msc -o protocol.png
-
-The following informations are given for each different filter:
-- outliers:
-Send messages to "/blobserver/outliers/", in the form of three floats : 
-    x position
-    y position
-    total number of outliers (pixels).
-
-- light:
-Send messages to "/blobserver/lightSpots/". One message is sent per tracked blob, with the following float values :
-    x position
-    y position
-    size (radius) of the light blob
-    x speed
-    y speed
-    id of the blob
+- OpenCV sources (Sources_OpenCV)
+    Note that OpenCV must have been compiled with the desired camera support.
     
+    Available parameters:
+    - width
+    - height
+    - framerate
+    - cameraNumber: camera index as per OpenCV numbering. Setting this to 0 will use the first camera found.
+
+[DETECTORS]
+
+- Lighspots (Detector_LightSpots)
+
+    Detects the brightest spots in an input image, i.e. light from a torchlight, and outputs the resulting blobs' size, position and ID.
+    
+    Number of source(s) needed: 1
+    
+    Available parameters: 
+    - setDetectionLevel (default 2): minimum level (as a multiple of the standard deviation) to consider a point as a light spot.
+    - setFilterSize (default 3): Size of the kernel for the morphological operations (to smooth the noise).
+    - setProcessNoiseCov (default 1e-5): Noise of the movement of the tracked object. Used for filtering detection.
+    - setMeasurementNoiseCov (default 1e-5): Noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
+    
+    OSC output:
+    - name: lightSpots
+    - values: X(int) Y(int) Size(int) dX(int) dY(int) Id(int)
+
+- Mean Outliers (Detector_MeanOutliers)
+
+    This detector is a generalization of the Lightspots detector, except that it does not only detect blobs brighter that the mean, but any blob which is far from the mean value of the current frame.
+    
+    Number of source(s) needed: 1
+    
+    Available parameters:
+    - setDetectionLevel (default 2): minimum level (as a multiple of the standard deviation) to consider a point as a light spot.
+    - setFilterSize (default 3): Size of the kernel for the morphological operations (to smooth the noise).
+    - setProcessNoiseCov (default 1e-6): Noise of the movement of the tracked object. Used for filtering detection.
+    - setMeasurementNoiseCov (default 1e-4): Noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
+    
+    OSC output:
+    - name: meanOutliers
+    - values: X(int) Y(int) Id(int) dX(int) dY(int)
+
+[CONFIGURATION]
+
+Blobserver is entirely configurable through OSC messages. Here are the available message.
+
+- /blobserver/connect client port detector source subsource source subsource ...
+
+    Sets up a new flow, and specifies the source(s) to use as its input.
+    
+    Parameters:
+    - client (string): ip address or network name for the client to which OSC messages will be sent.
+    - port (string): port where to send the messages
+    - detector (string): name of the detector we want to use
+    - source (string): name of one of the sources we want to use
+    - subsource (integer): index of the subsource we want to use (0 for default)
+    
+    If all went well, returns the following message, with "index" being the index of the newly created flow:
+    /blobserver/connect "Connected" index
+    
+    Else, returns an error message.
+
+- /blobserver/disconnect client index
+
+    Disconnects the detector specified by "index" from the client "client". If the client was the last one to use this flow, it is destroyed in the process.
+    
+    Parameter:
+    - client (string): ip address or network name for the client Blobserver sends messages to.
+    - index (integer): index of the flow to disconnect
+    
+    If all went well, returns the following message:
+    /blobserver/disconnect "Disconnected"
+
+- /blobserver/setParameter client index "Detector" parameter values
+
+    Sets the given values for the specified parameter of the detector with the given index.
+    
+    Parameter:
+    - client (string): ip address or network name for the client Blobserver sends messages to.
+    - index (integer): index of the flow
+    - parameter (string): parameter to modify
+    - values: values for the parameter (number and type depending of the parameter)
+    
+    Returns an error message if things went wrong.
+
+- /blobserver/setParameter client index "Source" srcIndex parameter values
+
+    Sets the given values for the specified parameter of the source, given as an index in the specified flow (phew)
+    
+    Parameters:
+    - client (string): ip address or network name for the client Blobserver sends messages to.
+    - index (integer): index of the flow
+    - srcIndex (integer): index of the source, as from the order sources where given in the /blobserver/connect message
+    - parameter (string): parameter to modifiy
+    - values: values for the source (number and type depending of the parameter)
+    
+    Returns an error message if things went wrong.
+
+- /blobserver/setParameter client index "Start" ( or "Stop")
+
+    Starts or stops the given flow.
+    
+    Parameter:
+    - client (string): ip address or network name for the client Blobserver sends messages to.
+    - index (integer): index of the flow
+    
+    Returns an error message if things went wrong.
+
+- /blobserver/getParameter client index "Detector" parameter
+
+    Returns the value(s) for the given parameter of the given detector:
+    
+    Parameters:
+    - client (string): ip address or network name for the client Blobserver sends messages to.
+    - index (integer): index of the flow
+    - parameter (string): name of the parameter
+
+- /blobserver/getParameter client index "Sources" srcIndex parameter
+
+    Return the value(s) for the given parameter of the given source from the given detector.
+    
+    Parameters:
+    - client (string): ip address or network name for the client Blobserver sends messages to.
+    - index (integer): index of the flow
+    - srcIndex (integer): index of the source in the flow
+    - parameter (string): name of the parameter
+
+- /blobserver/detectors client
+
+    Returns a list of the available detectors, in the form of the following message:
+    /blobserver/detectors "Detector_1" "Detector_2" ...
+
+    Parameters:
+    - client (string): ip address or network name for the client Blobserver sends messages to.
+
+- /blobserver/sources client
+
+    Returns a list of the available sources, in the form of the following message:
+    /blobserver/sources "Source_1" "Source_2" ...
+    
+    Parameter:
+    - client (string): ip address or network name for the client the Blobserver sends messages to.
+
+- /blobserver/sources client sourceName
+
+    Returns a list of the available subsources for the given source, in the form of the following message:
+    /blobserver/sources subIndex_1 subIndex_2 ...
+    
+    Parameters:
+    - client (string): ip address or network name for the client the Blobserver sends messages to.
+    - sourceName: name of the source as given by a call to "/blobserver/sources client"
+    
+[DETECTION MESSAGE]
+
+During each iteration of the main loop, detected objects are sent through OSC to all clients which subscribed to each flow. Messages can vary depending on the detector used, and you should report to the section dedicated to this detector for further information. Anyway, these messages have the following general form:
+/blobserver/[detector_name] [values]
+
 [EXAMPLES]
 blobserver --light --outliers
     Runs blobserver in interactive mode with light blobs and outliers detection. User can switch between camera and both detection with 'w'.
