@@ -280,7 +280,7 @@ int App::parseArgs(int argc, char** argv)
     GError *error = NULL;
     GOptionContext* context;
 
-    context = g_option_context_new("- blobserver, sends blobs through OSC");
+    context = g_option_context_new("- blobserver, detects objects and sends result through OSC");
     g_option_context_add_main_entries(context, gEntries, NULL);
     //g_option_context_add_group(context, gst_init_get_option_group());
 

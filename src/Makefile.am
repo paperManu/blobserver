@@ -3,7 +3,8 @@ AM_CPPFLAGS = \
 
 bin_PROGRAMS = \
     blobserver \
-    blobcontroller
+    blobcontroller \
+    blobtrainer
 
 # Blobserver
 blobserver_SOURCES = \
@@ -31,6 +32,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/blob_2D.h \
     $(top_srcdir)/include/configurator.h \
     $(top_srcdir)/include/creator.h \
+    $(top_srcdir)/include/descriptor_hog.h \
     $(top_srcdir)/include/detector.h \
     $(top_srcdir)/include/detector_meanOutliers.h \
     $(top_srcdir)/include/detector_lightSpots.h \
@@ -81,3 +83,15 @@ blobcontroller_LDADD = \
     $(LIBATOM_LIBS) \
     $(SHMDATA_LIBS) \
     $(XML2_LIBS)
+
+# Blobtrainer
+blobtrainer_SOURCES = \
+    blobtrainer.cpp
+
+blobtrainer_CXXFLAGS = \
+    $(GLIB_CFLAGS) \
+    $(OPENCV_CFLAGS)
+
+blobtrainer_LDADD = \
+    $(GLIB_LIBS) \
+    $(OPENCV_LIBS)
