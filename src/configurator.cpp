@@ -468,7 +468,7 @@ int Configurator::oscHandlerConnect(const char* path, const char* types, lo_arg*
 
     if (message.size() < 2)
     {
-        cout << "Connect result message wrongly formated." << endl;
+        cout << "Error detected in the connect result." << endl;
         return 1;
     }
     

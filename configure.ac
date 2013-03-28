@@ -10,7 +10,7 @@ AC_INIT([BLOBSERVER],
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE()
-AC_CONFIG_HEADERS([src/config.h])
+AC_CONFIG_HEADERS([include/config.h])
 
 # Check for C and C++ compilers
 AC_PROG_CXX

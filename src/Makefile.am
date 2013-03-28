@@ -1,3 +1,6 @@
+AM_CPPFLAGS = \
+    -I$(top_srcdir)/include
+
 bin_PROGRAMS = \
     blobserver \
     blobcontroller
@@ -21,23 +24,23 @@ blobserver_SOURCES = \
     threadPool.cpp
 
 noinst_HEADERS = \
-    abstract-factory.h \
-    abstract-factory_spec.h \
-    base_objects.h \
-    blob.h \
-    blob_2D.h \
-    configurator.h \
-    creator.h \
-    detector.h \
-    detector_meanOutliers.h \
-    detector_lightSpots.h \
-    detector_objOnAPlane.h \
-    detector_nop.h \
-	hdribuilder.h \
-    source.h \
-    source_opencv.h \
-    source_shmdata.h \
-    threadPool.h
+    $(top_srcdir)/include/abstract-factory.h \
+    $(top_srcdir)/include/abstract-factory_spec.h \
+    $(top_srcdir)/include/base_objects.h \
+    $(top_srcdir)/include/blob.h \
+    $(top_srcdir)/include/blob_2D.h \
+    $(top_srcdir)/include/configurator.h \
+    $(top_srcdir)/include/creator.h \
+    $(top_srcdir)/include/detector.h \
+    $(top_srcdir)/include/detector_meanOutliers.h \
+    $(top_srcdir)/include/detector_lightSpots.h \
+    $(top_srcdir)/include/detector_objOnAPlane.h \
+    $(top_srcdir)/include/detector_nop.h \
+	$(top_srcdir)/include/hdribuilder.h \
+    $(top_srcdir)/include/source.h \
+    $(top_srcdir)/include/source_opencv.h \
+    $(top_srcdir)/include/source_shmdata.h \
+    $(top_srcdir)/include/threadPool.h
 
 blobserver_CXXFLAGS = \
     $(GLIB_CFLAGS) \

@@ -290,7 +290,7 @@ void Source::correctVignetting(cv::Mat& pImg)
                     + mOpticalDesc.vignetting[2] * pow(sqradius, 4.f));
 
                 for (int c = 0; c < nbrChannels; ++c)
-                    mVignettingMat.at<float>(x*nbrChannels + mWidth*nbrChannels*y) = correction;
+                    mVignettingMat.at<cv::Vec3f>(y, x)[c] = correction;
             }
         }
 

@@ -23,10 +23,10 @@ man/Makefile.in
 man/protocol.png
 missing
 src/.deps/
-src/config.h
-src/config.h.in
+include/config.h
+include/config.h.in
 src/Makefile
 src/Makefile.in
 src/blobserver
 src/blobcontroller
-src/stamp-h1
+include/stamp-h1

@@ -441,8 +441,6 @@ void Detector_ObjOnAPlane::updateMaps(std::vector<cv::Mat> pCaptures)
         origin = space[0];
         
         // We have an ortho base, we can use the dot product
-
-
         cv::Vec2f max = 0.f;
         std::vector<cv::Vec2f>::iterator iterPoint;
         for (iterPoint = space.begin()+1; iterPoint != space.end(); ++iterPoint)
