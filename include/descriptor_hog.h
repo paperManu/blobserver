@@ -86,13 +86,13 @@ class Descriptor_Hog
         // Crop parameters
         bool _doCrop;
         cv::Rect_<int> _cropRect;
-        uint _margin;
+        int _margin;
 
         // R-HOG parameters (see [Dalal et al. 2005])
         cv::Size_<int> _descriptorSize;
         cv::Size_<int> _blockSize;
         cv::Size_<int> _cellSize;
-        uint _binsPerCell;
+        int _binsPerCell;
         bool _signed;
 
         float _epsilon; // A small value, used for normalization.
@@ -116,7 +116,7 @@ Descriptor_Hog::Descriptor_Hog():
 
     _margin = max(_cellSize.width, _cellSize.height) * max(_blockSize.width/2, _blockSize.height/2);
 
-    _epsilon = 0.01f;
+    _epsilon = 1e-4;
 }
 
 /*************/
@@ -131,7 +131,7 @@ void Descriptor_Hog::setImage(const cv::Mat& pImage)
 
     cv::Mat gradientsH(_image.rows, _image.cols, pImage.type());
     cv::Mat gradientsV(_image.rows, _image.cols, pImage.type());
-    uint cn = CV_MAT_CN(_image.type());
+    int cn = CV_MAT_CN(_image.type());
 
     // Get the horizontal and vertical gradients
     cv::Mat kernelH(1, 3, CV_32FC1);
@@ -151,9 +151,9 @@ void Descriptor_Hog::setImage(const cv::Mat& pImage)
 
     _gradients = cv::Mat(_image.rows, _image.cols, CV_8UC2);
     int rowLength = tmpImage.cols;
-    for (uint x = 0; x < _image.cols; ++x)
+    for (int x = 0; x < _image.cols; ++x)
     {
-        for (uint y = 0; y < _image.rows; ++y)
+        for (int y = 0; y < _image.rows; ++y)
         {
             float hValue = 0.f;
             float vValue = 0.f;
@@ -178,8 +178,8 @@ void Descriptor_Hog::setImage(const cv::Mat& pImage)
                 angle = acos(hValue);
             }
 
-            _gradients.at<cv::Vec2b>(y, x)[0] = (uint)(angle / CV_PI * 180.f);
-            _gradients.at<cv::Vec2b>(y, x)[1] = (uint)length;
+            _gradients.at<cv::Vec2b>(y, x)[0] = (char)(angle / CV_PI * 180.f);
+            _gradients.at<cv::Vec2b>(y, x)[1] = (char)length;
             // TODO: add signed oriented gradients
         }
     }
@@ -190,28 +190,28 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
 {
     vector<float> descriptor;
 
-    // Parameters for the kmeans alg used for bins creation
-    cv::TermCriteria criteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 5, 0.01); // TODO: Temporary defaults values
+    // Real position of the ROI, taking account for the margin
+    cv::Point_<int> pos = pPos - cv::Point_<int>(_margin, _margin);
 
     // Check if we have enough room to build a complete descriptor
     int roiSizeH = _descriptorSize.width * _cellSize.width + _margin * 2;
     int roiSizeV = _descriptorSize.height * _cellSize.height + _margin * 2;
-    if (pPos.x + roiSizeH >= _image.cols || pPos.y + roiSizeV >= _image.rows)
+    if (pos.x + roiSizeH >= _image.cols || pos.y + roiSizeV >= _image.rows)
         return descriptor;
-    // If position is to close to the border (no margin), we don't have enough room either
-    if (pPos.x < _margin || pPos.y < _margin)
+    // If position is too close to the border (no margin), we don't have enough room either
+    if (pos.x < 0 || pos.y < 0)
         return descriptor;
     
     // For each cell, we compute its descriptor
-    uint windowH = _descriptorSize.width + (_blockSize.width-1); // (_blockSize-1) is added to handle margin
-    uint windowV = _descriptorSize.height + (_blockSize.height-1); // (_blockSize-1) is added to handle margin
+    int windowH = _descriptorSize.width + (_blockSize.width-1); // (_blockSize-1) is added to handle margin
+    int windowV = _descriptorSize.height + (_blockSize.height-1); // (_blockSize-1) is added to handle margin
     vector< vector<float> > cellsDescriptor;
-    for (uint cellH = 0; cellH < windowH; ++cellH)
-        for (uint cellV = 0; cellV < windowV; ++cellV)
+    for (int cellH = 0; cellH < windowH; ++cellH)
+        for (int cellV = 0; cellV < windowV; ++cellV)
         {
             cv::Point_<int> topLeft;
-            topLeft.x = cellH * _cellSize.width + pPos.x;
-            topLeft.y = cellV * _cellSize.height + pPos.y;
+            topLeft.x = cellH * _cellSize.width + pos.x;
+            topLeft.y = cellV * _cellSize.height + pos.y;
             
             // Creation of the histogram
             // TODO: Add bilinear interpolation of bin centers and orientation

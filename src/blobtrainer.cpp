@@ -131,7 +131,7 @@ int main(int argc, char** argv)
         cout << "Analysing " << positiveFiles[i] << endl;
         cv::Mat image = cv::imread(positiveFiles[i]);
         descriptor.setImage(image);
-        vector<float> description = descriptor.getDescriptor(cv::Point_<int>(8, 8));
+        vector<float> description = descriptor.getDescriptor(cv::Point_<int>(16, 16));
 
         labels.push_back(1.f);
         for (int j = 0; j < description.size(); ++j)
@@ -163,8 +163,9 @@ int main(int argc, char** argv)
     // Set up the SVM train parameter
     CvSVMParams svmParams;
     svmParams.svm_type = CvSVM::C_SVC;
+    svmParams.C = 0.1;
     svmParams.kernel_type = CvSVM::LINEAR;
-    svmParams.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, 1e5, 1e-1);
+    svmParams.term_crit = cvTermCriteria(CV_TERMCRIT_EPS, 1e7, 1e-1);
 
     // Train the SVM
     CvSVM svm;
@@ -181,7 +182,7 @@ int main(int argc, char** argv)
     {
         cv::Mat image = cv::imread(positiveFiles[i]);
         descriptor.setImage(image);
-        vector<float> description = descriptor.getDescriptor(cv::Point_<int>(8, 8));
+        vector<float> description = descriptor.getDescriptor(cv::Point_<int>(16, 16));
         cv::Mat descriptionMat(1, (int)description.size(), CV_32FC1, &description[0]);
         float value = svm.predict(descriptionMat);
         cout << positiveFiles[i] << " -> " << value << endl;
