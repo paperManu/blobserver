@@ -36,6 +36,12 @@ using namespace std;
 class Descriptor_Hog
 {
     public:
+        enum Hog_Norm {
+            L1_NORM = 0,
+            L2_NORM
+        };
+
+    public:
         /**
          * Constructor
          */
@@ -69,13 +75,15 @@ class Descriptor_Hog
         /**
          * Specifies various parameters for the histogram of oriented gradients creation.
          * See [Dalal et al. 2005] for more information about each one of them.
-         * \param pDescriptorSize Size (in cells) of a descriptor (default: 8x16)
+         * \param pDescriptorSize Size (in pixels) of a descriptor (default: 64x128)
          * \param pBlockSize Number of cells per block, in both dimensions (default: 3x3)
          * \param pCellSize Number of pixels per cell, in both dimensions (default: 8x8)
          * \param pBinsPerCell Number of bin (corresponding to orientations) stored in each cell (default: 9)
          * \param pSigned Set to true if signed gradients are desired, false otherwise (default: false)
+         * \param pNorm Set the norm to use for block normalization (default: L2_NORM)
          */
-        void setHogParams(const cv::Size_<int> pDescriptorSize, const cv::Size_<int> pBlockSize, const cv::Size_<int> pCellSize, const unsigned int pBinsPerCell, const bool pSigned = false);
+        void setHogParams(const cv::Size_<int> pDescriptorSize, const cv::Size_<int> pBlockSize, const cv::Size_<int> pCellSize,
+            const unsigned int pBinsPerCell, const bool pSigned = false, const Hog_Norm pNorm = L2_NORM);
 
     private:
         // Input image
@@ -94,6 +102,7 @@ class Descriptor_Hog
         cv::Size_<int> _cellSize;
         int _binsPerCell;
         bool _signed;
+        Hog_Norm _normType;
 
         float _epsilon; // A small value, used for normalization.
 
@@ -113,10 +122,11 @@ Descriptor_Hog::Descriptor_Hog():
     _cellSize.height = 8;
     _binsPerCell = 9;
     _signed = false;
+    _normType = L1_NORM;
 
     _margin = max(_cellSize.width, _cellSize.height) * max(_blockSize.width/2, _blockSize.height/2);
 
-    _epsilon = 1e-4;
+    _epsilon = FLT_EPSILON;
 }
 
 /*************/
@@ -157,30 +167,41 @@ void Descriptor_Hog::setImage(const cv::Mat& pImage)
         {
             float hValue = 0.f;
             float vValue = 0.f;
+            float length = 0.f;
             // We get the maximum gradient over the image
-            // TODO: check if we should not separate completely all channels
             for (int i = 0; i < cn; ++i)
             {
-                if (abs(channelsH[i].at<float>(y, x)) > abs(hValue))
-                    hValue = channelsH[i].at<float>(y, x);
-                vValue = max(vValue, abs(channelsV[i].at<float>(y, x)));
-            }
-            float length = sqrtf(hValue*hValue + vValue*vValue);
+                float cnHValue = channelsH[i].at<float>(y, x);
+                float cnVValue = channelsV[i].at<float>(y, x);
+                float cnLength = sqrtf(cnHValue*cnHValue + cnVValue*cnVValue);
 
-            float angle;
-            if (length == 0)
-            {
-                angle = 0;
+                if (cnLength > length)
+                {
+                    hValue = cnHValue;
+                    vValue = cnVValue;
+                    length = cnLength;
+                }
             }
-            else
+
+            float angle = 0.f;
+            if (length > 0.f)
             {
                 hValue /= length;
                 angle = acos(hValue);
             }
 
-            _gradients.at<cv::Vec2b>(y, x)[0] = (char)(angle / CV_PI * 180.f);
+            if (_signed && vValue < 0.f)
+            {
+                angle = 2*CV_PI - angle;
+                angle = (int)(angle / CV_PI * 180) % 360;
+            }
+            else
+            {
+                angle = (int)(angle / CV_PI * 180) % 180;
+            }
+
+            _gradients.at<cv::Vec2b>(y, x)[0] = (char)angle;
             _gradients.at<cv::Vec2b>(y, x)[1] = (char)length;
-            // TODO: add signed oriented gradients
         }
     }
 }
@@ -192,6 +213,10 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
 
     // Real position of the ROI, taking account for the margin
     cv::Point_<int> pos = pPos - cv::Point_<int>(_margin, _margin);
+    // Angle covered per bin
+    float anglePerBin = 180.f / (float)_binsPerCell;
+    if (_signed)
+        anglePerBin *= 2.f;
 
     // Check if we have enough room to build a complete descriptor
     int roiSizeH = _descriptorSize.width * _cellSize.width + _margin * 2;
@@ -214,16 +239,25 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
             topLeft.y = cellV * _cellSize.height + pos.y;
             
             // Creation of the histogram
-            // TODO: Add bilinear interpolation of bin centers and orientation
             vector<float> cellDescriptor;
             cellDescriptor.assign(_binsPerCell, 0);
             cv::Mat hist = cv::Mat::zeros(1, _binsPerCell, CV_16UC1);
             for (int x = 0; x < _cellSize.width; ++x)
                 for (int y = 0; y < _cellSize.height; ++y)
                 {
-                    int range = _signed ? 360 : 180;
-                    int index = _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[0] / (range/_binsPerCell);
-                    cellDescriptor[index] += _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[1];
+                    int index = _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[0] / anglePerBin;
+                    float subPos = _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[0] - index*anglePerBin;
+                    int shift = (subPos < anglePerBin/2.f) ? -1 : 1;
+                    if (shift + index < 0)
+                        shift = _binsPerCell-1;
+                    else if (shift + index >= _binsPerCell)
+                        shift = 0;
+                    else
+                        shift += index;
+
+                    float ratio = abs(subPos - anglePerBin/2.f)/anglePerBin;
+                    cellDescriptor[index] += _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[1] * (1.f - ratio);
+                    cellDescriptor[shift] += _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[1] * ratio;
                 }
 
             cellsDescriptor.push_back(cellDescriptor);
@@ -275,7 +309,8 @@ void Descriptor_Hog::setRoi(cv::Rect_<int> pCropRect, int pMargin)
 }
 
 /*************/
-void Descriptor_Hog::setHogParams(const cv::Size_<int> pDescriptorSize, const cv::Size_<int> pBlockSize, const cv::Size_<int> pCellSize, const unsigned int pBinsPerCell, const bool pSigned)
+void Descriptor_Hog::setHogParams(const cv::Size_<int> pDescriptorSize, const cv::Size_<int> pBlockSize, const cv::Size_<int> pCellSize,
+    const unsigned int pBinsPerCell, const bool pSigned, const Hog_Norm pNorm)
 {
     if (pDescriptorSize == cv::Size_<int>(0, 0) ||
         pBlockSize == cv::Size_<int>(0, 0) ||
@@ -284,24 +319,37 @@ void Descriptor_Hog::setHogParams(const cv::Size_<int> pDescriptorSize, const cv
         return;
     }
 
-    _descriptorSize = pDescriptorSize;
     _blockSize.width = (pBlockSize.width / 2)*2 + 1; // We ensure that we have odd values
     _blockSize.height = (pBlockSize.height / 2)*2 + 1; // Same here
     _cellSize = pCellSize;
+    // We calculate the size of the descriptor (in cells), lower rounded
+    _descriptorSize.width = pDescriptorSize.width / _cellSize.width;
+    _descriptorSize.height = pDescriptorSize.height / _cellSize.height;
+
     _binsPerCell = pBinsPerCell;
     _signed = pSigned;
+    _normType = pNorm;
 }
 
 /*************/
 float Descriptor_Hog::getDescriptorNorm(vector<float> pDescriptor) const
 {
-    float norm = _epsilon;
+    float norm;
 
-    // This is a L1-sqrt norm
-    for (int i = 0; i < _binsPerCell; ++i)
-        norm += abs(pDescriptor[i]);
+    if (_normType == L1_NORM)
+    {
+        norm = _epsilon;
+        for (int i = 0; i < _binsPerCell; ++i)
+            norm += abs(pDescriptor[i]);
+    }
+    else if (_normType == L2_NORM)
+    {
+        norm = _epsilon;
+        for (int i = 0; i < _binsPerCell; ++i)
+            norm += pow(pDescriptor[i], 2.f);
 
-    norm = sqrtf(norm);
+        norm = sqrtf(norm);
+    }
 
     return norm;
 }

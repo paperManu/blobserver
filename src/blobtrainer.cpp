@@ -38,16 +38,44 @@
 using namespace std;
 
 static gboolean gVersion = FALSE;
+static gboolean gVerbose = FALSE;
+static gchar* gTestFile = NULL;
 static gchar* gExtension = NULL;
 static gchar* gPositiveDir = NULL;
 static gchar* gNegativeDir = NULL;
+static gchar* gOutput = NULL;
+static double gIterations = 1e6;
+static double gEpsilon = 100.0;
+static double gCPenalty = 0.1;
+static int gBins = 9;
+static gchar* gPosition = NULL;
+static gchar* gCellSize = NULL;
+static gchar* gBlockSize = NULL;
+static gchar* gRoiSize = NULL;
+
+int _svmCriteria;
+cv::Point_<int> _roiPosition;
+cv::Point_<int> _cellSize;
+cv::Point_<int> _blockSize;
+cv::Point_<int> _roiSize;
 
 static GOptionEntry gEntries[] =
 {
     {"version", 'v', 0, G_OPTION_ARG_NONE, &gVersion, "Shows the version of this software", NULL},
-    {"extension", 'e', 0, G_OPTION_ARG_STRING, &gExtension, "Specifies the extension for the files to load (default: png)", NULL},
+    {"verbose", 'V', 0, G_OPTION_ARG_NONE, &gVerbose, "More verbose output", NULL},
+    {"test", 't', 0, G_OPTION_ARG_STRING, &gTestFile, "Specifies a model file to test against the given images", NULL},
+    {"extension", 'f', 0, G_OPTION_ARG_STRING, &gExtension, "Specifies the extension for the files to load (default: png)", NULL},
     {"positive", 'p', 0, G_OPTION_ARG_STRING, &gPositiveDir, "Specifies the subdirectory where to load positive images (default: ./positive)", NULL},
     {"negative", 'n', 0, G_OPTION_ARG_STRING, &gNegativeDir, "Specifies the subdirectory where to load negative images (default: ./negative)", NULL},
+    {"output", 'o', 0, G_OPTION_ARG_STRING, &gOutput, "Specifies the output file for saving the SVM model (default: ./model.xml)", NULL},
+    {"iterations", 'i', 0, G_OPTION_ARG_DOUBLE, &gIterations, "Specifies the maximum number of iteration for the SVM training (default: 1e6)", NULL},
+    {"epsilon", 'E', 0, G_OPTION_ARG_DOUBLE, &gEpsilon, "Specifies the minimum tolerance between iteration to end training (default: 1e-1, although not used if not specified in cmd line)", NULL},
+    {"c-penalty", 'c', 0, G_OPTION_ARG_DOUBLE, &gCPenalty, "Specifies the penalty to give to an outlier while training (default: 0.1)", NULL},
+    {"bins", 'b', 0, G_OPTION_ARG_INT, &gBins, "Specifies number of bins for the HOG descriptor (default: 9)", NULL},
+    {"position", 0, 0, G_OPTION_ARG_STRING, &gPosition, "Specifies the position where to create the positives descriptors (default: '16x16')", NULL},
+    {"cell-size", 0, 0, G_OPTION_ARG_STRING, &gCellSize, "Specifies the size of the cells (in pixels) of descriptors (default: '8x8')", NULL},
+    {"block-size", 0, 0, G_OPTION_ARG_STRING, &gBlockSize, "Specifies the size of the blocks over which cells are normalized (default: '3x3')", NULL},
+    {"roi-size", 0, 0, G_OPTION_ARG_STRING, &gRoiSize, "Specifies the size (in pixels) of the ROI from which to create descriptors (default: '64x128')", NULL},
     {NULL}
 };
 
@@ -81,6 +109,30 @@ int parseArgs(int argc, char** argv)
     if (gNegativeDir == NULL)
         gNegativeDir = (gchar*)"negative";
 
+    if (gOutput == NULL)
+        gOutput = (gchar*)"model.xml";
+
+    if (gEpsilon != 100)
+        _svmCriteria = CV_TERMCRIT_EPS;
+    else
+        _svmCriteria = CV_TERMCRIT_ITER;
+
+    if (gPosition == NULL)
+        gPosition = (gchar*)"16x16";
+    sscanf(gPosition, "%ix%i", &(_roiPosition.x), &(_roiPosition.y));
+
+    if (gCellSize == NULL)
+        gCellSize = (gchar*)"8x8";
+    sscanf(gCellSize, "%ix%i", &(_cellSize.x), &(_cellSize.y));
+
+    if (gBlockSize == NULL)
+        gBlockSize = (gchar*)"3x3";
+    sscanf(gBlockSize, "%ix%i", &(_blockSize.x), &(_blockSize.y));
+
+    if (gRoiSize == NULL)
+        gRoiSize = (gchar*)"64x128";
+    sscanf(gRoiSize, "%ix%i", &(_roiSize.x), &(_roiSize.y));
+
     return 0;
 }
 
@@ -113,69 +165,102 @@ int main(int argc, char** argv)
     if (result)
         return result;
 
+    CvSVM svm;
+
+    // Set up the descriptor
+    Descriptor_Hog descriptor;
+    descriptor.setHogParams(_roiSize, _blockSize, _cellSize, gBins, false, Descriptor_Hog::L2_NORM);
+
     // Load both valid and invalid file list
     vector<string> positiveFiles = loadFileList(string(gPositiveDir));
     vector<string> negativeFiles = loadFileList(string(gNegativeDir));
 
-    // Set up the descriptor
-    Descriptor_Hog descriptor;
-    int binsPerCell = 9;
-    descriptor.setHogParams(cv::Size_<int>(8, 16), cv::Size_<int>(3, 3), cv::Size_<int>(8, 8), binsPerCell, false);
-
-    // Set up training data
-    int nbrImg = 0;
-    vector<float> labels;
-    vector<float> trainingData;
-    for (int i = 0; i < positiveFiles.size(); ++i)
+    // If no model file is specified for testing, we have to create one
+    if (gTestFile == NULL)
     {
-        cout << "Analysing " << positiveFiles[i] << endl;
-        cv::Mat image = cv::imread(positiveFiles[i]);
-        descriptor.setImage(image);
-        vector<float> description = descriptor.getDescriptor(cv::Point_<int>(16, 16));
+        cout << "Training parameters: " << endl;
+        if (_svmCriteria == CV_TERMCRIT_ITER)
+            cout << "   iterations = " << gIterations << endl;
+        if (_svmCriteria == CV_TERMCRIT_EPS)
+            cout << "   epsilon = " << gEpsilon << endl;
+        cout << "   C penalty = " << gCPenalty << endl;
+        cout << "   output file = " << gOutput << endl;
+        cout << "   ROI position = " << gPosition << endl;
+        cout << "   cell size = " << gCellSize << endl;
+        cout << "   block size = " << gBlockSize << endl;
+        cout << "   roi size = " << gRoiSize << endl;
+        cout << "   bins per cell = " << gBins << endl;
+        
+        // Set up training data
+        if (!gVerbose)
+            cout << "Loading training data... " << flush;
 
-        labels.push_back(1.f);
-        for (int j = 0; j < description.size(); ++j)
-            trainingData.push_back(description[j]);
-
-        nbrImg++;
-    }
-
-    for (int i = 0; i < negativeFiles.size(); ++i)
-    {
-        cout << "Analysing " << negativeFiles[i] << endl;
-        cv::Mat image = cv::imread(negativeFiles[i]);
-        descriptor.setImage(image);
-        for (int x = 0; x < 4; ++x)
+        int nbrImg = 0;
+        vector<float> labels;
+        vector<float> trainingData;
+        for (int i = 0; i < positiveFiles.size(); ++i)
         {
-            for (int y = 0; y < 4; ++y)
+            if (gVerbose)
+                cout << "Analysing " << positiveFiles[i] << endl;
+
+            cv::Mat image = cv::imread(positiveFiles[i]);
+            descriptor.setImage(image);
+            vector<float> description = descriptor.getDescriptor(_roiPosition);
+
+            labels.push_back(1.f);
+            for (int j = 0; j < description.size(); ++j)
+                trainingData.push_back(description[j]);
+
+            nbrImg++;
+        }
+        if (!gVerbose)
+            cout << "Positive data loaded... " << flush;
+
+        for (int i = 0; i < negativeFiles.size(); ++i)
+        {
+            if (gVerbose)
+                cout << "Analysing " << negativeFiles[i] << endl;
+
+            cv::Mat image = cv::imread(negativeFiles[i]);
+            descriptor.setImage(image);
+            for (int x = 0; x < 4; ++x)
             {
-                vector<float> description = descriptor.getDescriptor(cv::Point_<int>(8 + x*16, 8 + y*16));
+                for (int y = 0; y < 4; ++y)
+                {
+                    vector<float> description = descriptor.getDescriptor(cv::Point_<int>(8 + x*16, 8 + y*16));
 
-                labels.push_back(-1.f);
-                for (int j = 0; j < description.size(); ++j)
-                    trainingData.push_back(description[j]);
+                    labels.push_back(-1.f);
+                    for (int j = 0; j < description.size(); ++j)
+                        trainingData.push_back(description[j]);
 
-                nbrImg++;
+                    nbrImg++;
+                }
             }
         }
+        if (!gVerbose)
+            cout << "Negative data loaded" << endl;
+        
+        cout << "Training the SVM classifier..." << endl;
+        // Set up the SVM train parameter
+        CvSVMParams svmParams;
+        svmParams.svm_type = CvSVM::C_SVC;
+        svmParams.C = gCPenalty;
+        svmParams.kernel_type = CvSVM::LINEAR;
+        svmParams.term_crit = cvTermCriteria(_svmCriteria, gIterations, gEpsilon);
+
+        // Train the SVM
+        cv::Mat labelsMat((int)labels.size(), 1, CV_32FC1, &labels[0]);
+        cv::Mat trainingMat(nbrImg, (int)trainingData.size() / nbrImg, CV_32FC1, &trainingData[0]);
+        result = svm.train(trainingMat, labelsMat, cv::Mat(), cv::Mat(), svmParams);
+
+        svm.save((const char*)gOutput);
     }
-    
-    // Set up the SVM train parameter
-    CvSVMParams svmParams;
-    svmParams.svm_type = CvSVM::C_SVC;
-    svmParams.C = 0.1;
-    svmParams.kernel_type = CvSVM::LINEAR;
-    svmParams.term_crit = cvTermCriteria(CV_TERMCRIT_EPS, 1e7, 1e-1);
+    else
+    {
+        svm.load((const char*)gTestFile);
+    }
 
-    // Train the SVM
-    CvSVM svm;
-    cv::Mat labelsMat((int)labels.size(), 1, CV_32FC1, &labels[0]);
-    cv::Mat trainingMat(nbrImg, (int)trainingData.size() / nbrImg, CV_32FC1, &trainingData[0]);
-    result = svm.train(trainingMat, labelsMat, cv::Mat(), cv::Mat(), svmParams);
-
-    svm.save("model.xml");
-
-    cout << endl << "--- Testing positive files ---" << endl;
+    cout << "Testing positive files... " << flush;
     int positive = 0;
     int negative = 0;
     for (int i = 0; i < positiveFiles.size(); ++i)
@@ -185,13 +270,15 @@ int main(int argc, char** argv)
         vector<float> description = descriptor.getDescriptor(cv::Point_<int>(16, 16));
         cv::Mat descriptionMat(1, (int)description.size(), CV_32FC1, &description[0]);
         float value = svm.predict(descriptionMat);
-        cout << positiveFiles[i] << " -> " << value << endl;
+
+        if (gVerbose)
+            cout << positiveFiles[i] << " -> " << value << endl;
 
         if (value == 1)
             positive++;
     }
 
-    cout << endl << "--- Testing negative files ---" << endl;
+    cout << "Testing negative files" << endl;
     for (int i = 0; i < negativeFiles.size(); ++i)
     {
         cv::Mat image = cv::imread(negativeFiles[i]);
@@ -199,14 +286,16 @@ int main(int argc, char** argv)
         vector<float> description = descriptor.getDescriptor(cv::Point_<int>(8, 8));
         cv::Mat descriptionMat(1, (int)description.size(), CV_32FC1, &description[0]);
         float value = svm.predict(descriptionMat);
-        cout << negativeFiles[i] << " -> " << value << endl;
+
+        if (gVerbose)
+            cout << negativeFiles[i] << " -> " << value << endl;
 
         if (value == -1)
             negative++;
     }
 
-    cout << endl << "Positive: " << positive << " / " << positiveFiles.size() << endl;
-    cout << endl << "Negative: " << negative << " / " << negativeFiles.size() << endl;
+    cout << "Positive: " << positive << " / " << positiveFiles.size() << endl;
+    cout << "Negative: " << negative << " / " << negativeFiles.size() << endl;
 
     return 0;
 }
