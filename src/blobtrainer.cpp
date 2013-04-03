@@ -368,6 +368,7 @@ int main(int argc, char** argv)
         cout << gRoiSize << " ";
         cout << gBins << " ";
         cout << gSigma << " ";
+        cout << totalTime * 1000 / (positiveFiles.size() + totalNegatives);
         cout << (float)positive / (float)positiveFiles.size() << " " << (float)negative/(float)totalNegatives << endl;
     }
 

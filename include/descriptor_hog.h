@@ -68,9 +68,8 @@ class Descriptor_Hog
          * \param pCropV Vertical size of the crop
          * \param pTransH Horizontal translation of the crop
          * \param pTransV Horizontal translation of the crop
-         * \param pMargin Margin to consider inside the cropped selection
          */
-        void setRoi(cv::Rect_<int> pCropRect, int pMargin = 0);
+        void setRoi(cv::Rect_<int> pCropRect);
 
         /**
          * Specifies various parameters for the histogram of oriented gradients creation.
@@ -95,7 +94,6 @@ class Descriptor_Hog
         // Crop parameters
         bool _doCrop;
         cv::Rect_<int> _cropRect;
-        int _margin;
 
         // R-HOG parameters (see [Dalal et al. 2005])
         cv::Size_<int> _descriptorSize;
@@ -129,8 +127,6 @@ Descriptor_Hog::Descriptor_Hog():
     _signed = false;
     _normType = L1_NORM;
     _gaussSigma = 1.0f;
-
-    _margin = max(_cellSize.width, _cellSize.height) * max(_blockSize.width/2, _blockSize.height/2);
 
     _epsilon = FLT_EPSILON;
 }
@@ -217,32 +213,28 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
 {
     vector<float> descriptor;
 
-    // Real position of the ROI, taking account for the margin
-    cv::Point_<int> pos = pPos - cv::Point_<int>(_margin, _margin);
     // Angle covered per bin
     float anglePerBin = 180.f / (float)_binsPerCell;
     if (_signed)
         anglePerBin *= 2.f;
 
     // Check if we have enough room to build a complete descriptor
-    int roiSizeH = _descriptorSize.width * _cellSize.width + _margin * 2;
-    int roiSizeV = _descriptorSize.height * _cellSize.height + _margin * 2;
-    if (pos.x + roiSizeH > _image.cols || pos.y + roiSizeV > _image.rows)
+    int roiSizeH = _descriptorSize.width * _cellSize.width;
+    int roiSizeV = _descriptorSize.height * _cellSize.height;
+    if (pPos.x + roiSizeH > _image.cols || pPos.y + roiSizeV > _image.rows)
         return descriptor;
     // If position is too close to the border (no margin), we don't have enough room either
-    if (pos.x < 0 || pos.y < 0)
+    if (pPos.x < 0 || pPos.y < 0)
         return descriptor;
     
     // For each cell, we compute its descriptor
-    int windowH = _descriptorSize.width + (_blockSize.width-1); // (_blockSize-1) is added to handle margin
-    int windowV = _descriptorSize.height + (_blockSize.height-1); // (_blockSize-1) is added to handle margin
     vector< vector<float> > cellsDescriptor;
-    for (int cellH = 0; cellH < windowH; ++cellH)
-        for (int cellV = 0; cellV < windowV; ++cellV)
+    for (int cellH = 0; cellH < _descriptorSize.width; ++cellH)
+        for (int cellV = 0; cellV < _descriptorSize.height; ++cellV)
         {
             cv::Point_<int> topLeft;
-            topLeft.x = cellH * _cellSize.width + pos.x;
-            topLeft.y = cellV * _cellSize.height + pos.y;
+            topLeft.x = cellH * _cellSize.width + pPos.x;
+            topLeft.y = cellV * _cellSize.height + pPos.y;
             
             // Creation of the histogram
             vector<float> cellDescriptor;
@@ -275,8 +267,8 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
         }
 
     // We have all cells descriptors. Now we normalize them to create the global descriptor
-    for (int cellH = 0; cellH < _descriptorSize.width; ++cellH)
-        for (int cellV = 0; cellV < _descriptorSize.height; ++cellV)
+    for (int cellH = 0; cellH < _descriptorSize.width - (_blockSize.width - 1); ++cellH)
+        for (int cellV = 0; cellV < _descriptorSize.height - (_blockSize.height - 1); ++cellV)
         {
             int blockCenterH = cellH + _blockSize.width/2;
             int blockCenterV = cellV + _blockSize.height/2;
@@ -285,13 +277,14 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
             descriptorVector.assign(_binsPerCell, 0);
             // We calculate the norm of the descriptor over the whole block
             // So we go over all the cells for the current block
-            for (int i = -_blockSize.width/2; i < _blockSize.width/2; ++i)
-                for (int j = -_blockSize.height/2; j < _blockSize.height/2; ++j)
+            for (int i = 0; i < _blockSize.width; ++i)
+                for (int j = 0; j < _blockSize.height; ++j)
                 {
-                    int index = blockCenterH+i + (blockCenterH+j)*windowV;
+                    //int index = blockCenterH+i + (blockCenterH+j)*windowV;
+                    int index = cellH+i + (cellV+j) * _descriptorSize.width;
 
                     // We apply a gaussian curve over the blocks
-                    float distToCenterBlock = sqrtf(i*i + j*j);
+                    float distToCenterBlock = sqrtf(pow((float)i - (float)_blockSize.width/2.f + 0.5, 2.f) + pow((float)j - (float)_blockSize.height/2.f + 0.5, 2.f));
                     float gaussianFactor = getGaussian(distToCenterBlock, _gaussSigma);
 
                     for (int orientation = 0; orientation < _binsPerCell; ++orientation)
@@ -310,14 +303,12 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
 }
 
 /*************/
-void Descriptor_Hog::setRoi(cv::Rect_<int> pCropRect, int pMargin)
+void Descriptor_Hog::setRoi(cv::Rect_<int> pCropRect)
 {
     if (pCropRect.height && pCropRect.width)
     {
         _doCrop = true;
         _cropRect = pCropRect;
-        // We need enough margin to normalize descriptors at the border of the ROI
-        _margin = max(pMargin, max(_cellSize.width, _cellSize.height)) * max(_blockSize.width/2, _blockSize.height/2);
     }
 }
 
@@ -332,14 +323,11 @@ void Descriptor_Hog::setHogParams(const cv::Size_<int> pDescriptorSize, const cv
         return;
     }
 
-    _blockSize.width = (pBlockSize.width / 2)*2 + 1; // We ensure that we have odd values
-    _blockSize.height = (pBlockSize.height / 2)*2 + 1; // Same here
+    _blockSize = pBlockSize;
     _cellSize = pCellSize;
     // We calculate the size of the descriptor (in cells), lower rounded
     _descriptorSize.width = pDescriptorSize.width / _cellSize.width;
     _descriptorSize.height = pDescriptorSize.height / _cellSize.height;
-    // We update the margin to handle the new cell size
-    _margin = max(_margin, max(_cellSize.width, _cellSize.height) * max(_blockSize.width/2, _blockSize.height/2));
 
     _binsPerCell = pBinsPerCell;
     _signed = pSigned;
