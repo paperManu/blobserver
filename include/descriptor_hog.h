@@ -81,9 +81,10 @@ class Descriptor_Hog
          * \param pBinsPerCell Number of bin (corresponding to orientations) stored in each cell (default: 9)
          * \param pSigned Set to true if signed gradients are desired, false otherwise (default: false)
          * \param pNorm Set the norm to use for block normalization (default: L2_NORM)
+         * \param pSigma Set the sigma parameter for the Gauss curve applied over the blocks during normalization (default: 1.0)
          */
         void setHogParams(const cv::Size_<int> pDescriptorSize, const cv::Size_<int> pBlockSize, const cv::Size_<int> pCellSize,
-            const unsigned int pBinsPerCell, const bool pSigned = false, const Hog_Norm pNorm = L2_NORM);
+            const unsigned int pBinsPerCell, const bool pSigned = false, const Hog_Norm pNorm = L2_NORM, const float pSigma = 1.f);
 
     private:
         // Input image
@@ -103,11 +104,15 @@ class Descriptor_Hog
         int _binsPerCell;
         bool _signed;
         Hog_Norm _normType;
+        float _gaussSigma;
 
         float _epsilon; // A small value, used for normalization.
 
         // Method to compute the norm of a descriptor
         float getDescriptorNorm(vector<float> pDescriptor) const;
+
+        // Centered normal distribution
+        float getGaussian(const float x, const float sigma) const;
 };
 
 /*************/
@@ -123,6 +128,7 @@ Descriptor_Hog::Descriptor_Hog():
     _binsPerCell = 9;
     _signed = false;
     _normType = L1_NORM;
+    _gaussSigma = 1.0f;
 
     _margin = max(_cellSize.width, _cellSize.height) * max(_blockSize.width/2, _blockSize.height/2);
 
@@ -221,7 +227,7 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
     // Check if we have enough room to build a complete descriptor
     int roiSizeH = _descriptorSize.width * _cellSize.width + _margin * 2;
     int roiSizeV = _descriptorSize.height * _cellSize.height + _margin * 2;
-    if (pos.x + roiSizeH >= _image.cols || pos.y + roiSizeV >= _image.rows)
+    if (pos.x + roiSizeH > _image.cols || pos.y + roiSizeV > _image.rows)
         return descriptor;
     // If position is too close to the border (no margin), we don't have enough room either
     if (pos.x < 0 || pos.y < 0)
@@ -260,11 +266,15 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
                     cellDescriptor[shift] += _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[1] * ratio;
                 }
 
+            // We normalize the cell
+            float norm = getDescriptorNorm(cellDescriptor);
+            for (int i = 0; i < _binsPerCell; ++i)
+                cellDescriptor[i] /= norm;
+
             cellsDescriptor.push_back(cellDescriptor);
         }
 
     // We have all cells descriptors. Now we normalize them to create the global descriptor
-    // TODO: include a Gaussian spatial window over the block
     for (int cellH = 0; cellH < _descriptorSize.width; ++cellH)
         for (int cellV = 0; cellV < _descriptorSize.height; ++cellV)
         {
@@ -279,10 +289,13 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
                 for (int j = -_blockSize.height/2; j < _blockSize.height/2; ++j)
                 {
                     int index = blockCenterH+i + (blockCenterH+j)*windowV;
+
+                    // We apply a gaussian curve over the blocks
+                    float distToCenterBlock = sqrtf(i*i + j*j);
+                    float gaussianFactor = getGaussian(distToCenterBlock, _gaussSigma);
+
                     for (int orientation = 0; orientation < _binsPerCell; ++orientation)
-                    {
-                        descriptorVector[orientation] += cellsDescriptor[index][orientation];
-                    }
+                        descriptorVector[orientation] += cellsDescriptor[index][orientation] * gaussianFactor;
                 }
 
             // We need the norm for the current block descriptor
@@ -310,7 +323,7 @@ void Descriptor_Hog::setRoi(cv::Rect_<int> pCropRect, int pMargin)
 
 /*************/
 void Descriptor_Hog::setHogParams(const cv::Size_<int> pDescriptorSize, const cv::Size_<int> pBlockSize, const cv::Size_<int> pCellSize,
-    const unsigned int pBinsPerCell, const bool pSigned, const Hog_Norm pNorm)
+    const unsigned int pBinsPerCell, const bool pSigned, const Hog_Norm pNorm, const float pSigma)
 {
     if (pDescriptorSize == cv::Size_<int>(0, 0) ||
         pBlockSize == cv::Size_<int>(0, 0) ||
@@ -325,10 +338,14 @@ void Descriptor_Hog::setHogParams(const cv::Size_<int> pDescriptorSize, const cv
     // We calculate the size of the descriptor (in cells), lower rounded
     _descriptorSize.width = pDescriptorSize.width / _cellSize.width;
     _descriptorSize.height = pDescriptorSize.height / _cellSize.height;
+    // We update the margin to handle the new cell size
+    _margin = max(_margin, max(_cellSize.width, _cellSize.height) * max(_blockSize.width/2, _blockSize.height/2));
 
     _binsPerCell = pBinsPerCell;
     _signed = pSigned;
     _normType = pNorm;
+
+    _gaussSigma = max(1e-2f, pSigma);
 }
 
 /*************/
@@ -352,4 +369,12 @@ float Descriptor_Hog::getDescriptorNorm(vector<float> pDescriptor) const
     }
 
     return norm;
+}
+
+/*************/
+float Descriptor_Hog::getGaussian(const float x, const float sigma) const
+{
+    static float sqrt2pi = sqrtf(2*CV_PI);
+    float factor = pow(sigma * sqrt2pi, -1.f);
+    return factor * exp(-pow(x, 2.f) / (2*pow(sigma, 2.f)));
 }
