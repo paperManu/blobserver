@@ -13,9 +13,11 @@ blobserver_SOURCES = \
     blob.cpp \
     blob_2D.cpp \
     configurator.cpp \
+    descriptor_hog.cpp \
     detector.cpp \
-    detector_meanOutliers.cpp \
+    detector_hog.cpp \
     detector_lightSpots.cpp \
+    detector_meanOutliers.cpp \
     detector_objOnAPlane.cpp \
     detector_nop.cpp \
 	hdribuilder.cpp \
@@ -34,8 +36,9 @@ noinst_HEADERS = \
     $(top_srcdir)/include/creator.h \
     $(top_srcdir)/include/descriptor_hog.h \
     $(top_srcdir)/include/detector.h \
-    $(top_srcdir)/include/detector_meanOutliers.h \
+    $(top_srcdir)/include/detector_hog.h \
     $(top_srcdir)/include/detector_lightSpots.h \
+    $(top_srcdir)/include/detector_meanOutliers.h \
     $(top_srcdir)/include/detector_objOnAPlane.h \
     $(top_srcdir)/include/detector_nop.h \
 	$(top_srcdir)/include/hdribuilder.h \
@@ -86,7 +89,8 @@ blobcontroller_LDADD = \
 
 # Blobtrainer
 blobtrainer_SOURCES = \
-    blobtrainer.cpp
+    blobtrainer.cpp \
+    descriptor_hog.cpp
 
 blobtrainer_CXXFLAGS = \
     $(GLIB_CFLAGS) \

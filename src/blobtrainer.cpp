@@ -54,7 +54,7 @@ static gchar* gPosition = NULL;
 static gchar* gCellSize = NULL;
 static gchar* gBlockSize = NULL;
 static gchar* gRoiSize = NULL;
-static double gSigma = 1.0;
+static double gSigma = 0.0;
 
 int _svmCriteria;
 cv::Point_<int> _roiPosition;
@@ -80,7 +80,7 @@ static GOptionEntry gEntries[] =
     {"cell-size", 0, 0, G_OPTION_ARG_STRING, &gCellSize, "Specifies the size of the cells (in pixels) of descriptors (default: '8x8')", NULL},
     {"block-size", 0, 0, G_OPTION_ARG_STRING, &gBlockSize, "Specifies the size of the blocks over which cells are normalized (default: '3x3')", NULL},
     {"roi-size", 0, 0, G_OPTION_ARG_STRING, &gRoiSize, "Specifies the size (in pixels) of the ROI from which to create descriptors (default: '64x128')", NULL},
-    {"gauss", 0, 0, G_OPTION_ARG_DOUBLE, &gSigma, "Specifies the sigma parameter for the gaussian kernel applied over blocks (default: 1.0)", NULL},
+    {"sigma", 0, 0, G_OPTION_ARG_DOUBLE, &gSigma, "Specifies the sigma parameter for the gaussian kernel applied over blocks (default: 1.0)", NULL},
     {NULL}
 };
 
@@ -167,7 +167,7 @@ vector<string> loadFileList(string pDirectory)
 unsigned timeSince(unsigned long long timestamp)
 {
     auto now = chrono::high_resolution_clock::now();
-    unsigned long long currentTime = chrono::duration_cast<chrono::milliseconds>(now.time_since_epoch()).count();
+    unsigned long long currentTime = chrono::duration_cast<chrono::microseconds>(now.time_since_epoch()).count();
     return (long long)currentTime - (long long)timestamp;
 }
 
@@ -296,10 +296,11 @@ int main(int argc, char** argv)
     for (int i = 0; i < positiveFiles.size(); ++i)
     {
         cv::Mat image = cv::imread(positiveFiles[i]);
-        descriptor.setImage(image);
 
         chronoStart = std::chrono::high_resolution_clock::now();
-        chronoTime = chrono::duration_cast<chrono::milliseconds>(chronoStart.time_since_epoch()).count();
+        chronoTime = chrono::duration_cast<chrono::microseconds>(chronoStart.time_since_epoch()).count();
+
+        descriptor.setImage(image);
 
         vector<float> description = descriptor.getDescriptor(_roiPosition);
         cv::Mat descriptionMat(1, (int)description.size(), CV_32FC1, &description[0]);
@@ -322,10 +323,10 @@ int main(int argc, char** argv)
     for (int i = 0; i < negativeFiles.size(); ++i)
     {
         cv::Mat image = cv::imread(negativeFiles[i]);
+        chronoStart = std::chrono::high_resolution_clock::now();
+        chronoTime = chrono::duration_cast<chrono::microseconds>(chronoStart.time_since_epoch()).count();
         descriptor.setImage(image);
 
-        chronoStart = std::chrono::high_resolution_clock::now();
-        chronoTime = chrono::duration_cast<chrono::milliseconds>(chronoStart.time_since_epoch()).count();
 
         for (int x = 0; x < image.cols - _roiSize.x; x += image.cols/5)
         {
@@ -354,7 +355,7 @@ int main(int argc, char** argv)
     {
         cout << "Positive: " << positive << " / " << positiveFiles.size() << endl;
         cout << "Negative: " << negative << " / " << totalNegatives << endl;
-        cout << "Time per prediction (us): " << totalTime * 1000 / (positiveFiles.size() + totalNegatives) << endl;
+        cout << "Time per prediction (us): " << totalTime / (positiveFiles.size() + totalNegatives) << endl;
     }
     else
     {
@@ -368,7 +369,7 @@ int main(int argc, char** argv)
         cout << gRoiSize << " ";
         cout << gBins << " ";
         cout << gSigma << " ";
-        cout << totalTime * 1000 / (positiveFiles.size() + totalNegatives);
+        cout << totalTime / (positiveFiles.size() + totalNegatives) << " ";
         cout << (float)positive / (float)positiveFiles.size() << " " << (float)negative/(float)totalNegatives << endl;
     }
 

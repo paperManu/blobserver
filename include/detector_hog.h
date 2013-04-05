@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Emmanuel Durand
+ * Copyright (C) 2013 Emmanuel Durand
  *
  * This file is part of blobserver.
  *
@@ -18,22 +18,28 @@
  */
 
 /*
- * @detector_objOnAPlane.h
- * The Detector_ObjOnAPlane class.
+ * @detector_hog.h
+ * The Detector_Hog class.
  */
 
-#ifndef DETECTOR_OBJONAPLANE_H
-#define DETECTOR_OBJONAPLANE_H
+#ifndef DETECTOR_HOG_H
+#define DETECTOR_HOG_H
 
-#include <memory>
+#include <vector>
+
+#include "config.h"
 #include "detector.h"
+#include "descriptor_hog.h"
 #include "blob_2D.h"
 
-class Detector_ObjOnAPlane : public Detector
+
+ /*************/
+// Class Detector_Hog
+class Detector_Hog : public Detector
 {
     public:
-        Detector_ObjOnAPlane();
-        Detector_ObjOnAPlane(int pParam);
+        Detector_Hog();
+        Detector_Hog(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -46,20 +52,32 @@ class Detector_ObjOnAPlane : public Detector
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        int mMaxTrackedBlobs;
-        float mDetectionLevel;
-        int mFilterSize;
-        float mProcessNoiseCov, mMeasurementNoiseCov;
-        
         std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
-        int mMinArea;
 
-        std::vector<std::vector<cv::Vec2f>> mSpaces; // First space is the real plane
-        std::vector<cv::Mat> mMaps;
-        bool mMapsUpdated;
+        // Some filtering parameters
+        int mFilterSize;
 
-        void make(); // Called by the constructor
-        void updateMaps(std::vector<cv::Mat> pCaptures); // Updates the space conversion maps
+        // Descriptor to identify objects...
+        Descriptor_Hog mDescriptor;
+        // ... and its parameters
+        cv::Size_<int> mRoiSize;
+        cv::Size_<int> mBlockSize;
+        cv::Size_<int> mCellSize;
+        unsigned int mBins;
+        float mSigma;
+
+        // SVM...
+        CvSVM mSvm;
+
+        // Background subtractor, used to select window of interest
+        // to feed to the SVM
+        BackgroundSubtractorMOG2 mBgSubtractor;
+
+        // Various buffers
+        cv::Mat mBgSubtractorBuffer;
+
+        void make();
+        void updateDescriptorParams();
 };
 
- #endif // DETECTOR_OBJONAPLANE_H
+#endif // DETECTOR_HOG_H

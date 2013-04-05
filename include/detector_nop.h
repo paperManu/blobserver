@@ -22,6 +22,9 @@
  * The Detector_Nop class.
  */
 
+#ifndef DETECTOR_NOP_H
+#define DETECTOR_NOP_H
+
 #include "detector.h"
 
 using namespace std;
@@ -50,3 +53,4 @@ class Detector_Nop : public Detector
         void make();
 };
 
+#endif // DETECTOR_NOP_H

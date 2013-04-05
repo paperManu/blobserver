@@ -49,6 +49,7 @@
 #if HAVE_SHMDATA
 #include "source_shmdata.h"
 #endif
+#include "detector_hog.h"
 #include "detector_lightSpots.h"
 #include "detector_meanOutliers.h"
 #include "detector_nop.h"
@@ -308,12 +309,14 @@ int App::parseArgs(int argc, char** argv)
 void App::registerClasses()
 {
     // Register detectors
-    mDetectorFactory.register_class<Detector_Nop>(Detector_Nop::getClassName(),
-        Detector_Nop::getDocumentation());
+    mDetectorFactory.register_class<Detector_Hog>(Detector_Hog::getClassName(),
+        Detector_Hog::getDocumentation());
     mDetectorFactory.register_class<Detector_LightSpots>(Detector_LightSpots::getClassName(),
         Detector_LightSpots::getDocumentation());
     mDetectorFactory.register_class<Detector_MeanOutliers>(Detector_MeanOutliers::getClassName(),
         Detector_MeanOutliers::getDocumentation());
+    mDetectorFactory.register_class<Detector_Nop>(Detector_Nop::getClassName(),
+        Detector_Nop::getDocumentation());
     mDetectorFactory.register_class<Detector_ObjOnAPlane>(Detector_ObjOnAPlane::getClassName(),
         Detector_ObjOnAPlane::getDocumentation());
 

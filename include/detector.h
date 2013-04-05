@@ -160,6 +160,7 @@ class Detector
 
 };
 
+/*************/
 // Useful functions
 // trackBlobs is used to keep track of blobs through frames
 /*************/
