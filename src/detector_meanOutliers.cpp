@@ -34,7 +34,7 @@ void Detector_MeanOutliers::make()
 }
 
 /*************/
-atom::Message Detector_MeanOutliers::detect(std::vector<cv::Mat> pCaptures)
+atom::Message Detector_MeanOutliers::detect(const std::vector<cv::Mat> pCaptures)
 {
     cv::Mat lMean, lStdDev;
     cv::Mat lOutlier, lEroded, lFiltered;

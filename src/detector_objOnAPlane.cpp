@@ -8,12 +8,12 @@ using namespace std;
 class Parallel_Remap : public cv::ParallelLoopBody
 {
     public:
-        Parallel_Remap(vector<cv::Mat>* imgs, vector<cv::Mat>* maps, vector<cv::Mat>* output, bool verbose, cv::Size size):
+        Parallel_Remap(const vector<cv::Mat>* imgs, vector<cv::Mat>* maps, vector<cv::Mat>* output, bool verbose, cv::Size size):
             _imgs(imgs), _maps(maps), _outputs(output), _verbose(verbose), _size(size) {}
 
         void operator()(const cv::Range& r) const
         {
-            cv::Mat* img = &(*_imgs)[r.start];
+            const cv::Mat* img = &(*_imgs)[r.start];
             cv::Mat* map = &(*_maps)[r.start + 1];
             cv::Mat* output = &(*_outputs)[r.start];
             for (int idx = r.start; idx < r.end; ++idx, ++img, ++map, ++output)
@@ -27,7 +27,7 @@ class Parallel_Remap : public cv::ParallelLoopBody
         }
 
     private:
-        vector<cv::Mat>* _imgs;
+        const vector<cv::Mat>* _imgs;
         vector<cv::Mat>* _maps;
         vector<cv::Mat>* _outputs;
         bool _verbose;
@@ -105,7 +105,7 @@ void Detector_ObjOnAPlane::make()
 }
 
 /*****************/
-atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
+atom::Message Detector_ObjOnAPlane::detect(const std::vector<cv::Mat> pCaptures)
 {
     // If the spaces definition changed
     if (mMapsUpdated == false)

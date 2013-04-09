@@ -2,6 +2,23 @@
     <Flow>
         <Detector>
             <Type>Detector_Hog</Type>
+            <Param>
+                <Name>verbose</Name>
+                <Value>0</Value>
+            </Param>
+
+            <Param>
+                <Name>modelFilename</Name>
+                <Value>model.xml</Value>
+            </Param>
+            <Param>
+                <Name>maxTimePerFrame</Name>
+                <Value>1e5</Value>
+            </Param>
+            <Param>
+                <Name>maxThreads</Name>
+                <Value>8</Value>
+            </Param>
         </Detector>
         <Source>
             <Type>Source_OpenCV</Type>

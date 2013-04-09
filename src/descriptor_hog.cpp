@@ -133,7 +133,7 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
                 {
                     int index = _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[0] / anglePerBin;
                     float subPos = _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[0] - index*anglePerBin;
-                    int shift = (subPos < anglePerBin/2.f) ? -1 : 1;
+                    int shift = (subPos < anglePerBin*0.5f) ? -1 : 1;
                     if (shift + index < 0)
                         shift = _binsPerCell-1;
                     else if (shift + index >= _binsPerCell)
@@ -141,7 +141,7 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
                     else
                         shift += index;
 
-                    float ratio = abs(subPos - anglePerBin/2.f)/anglePerBin;
+                    float ratio = abs(subPos - anglePerBin*0.5f)/anglePerBin;
                     cellDescriptor[index] += _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[1] * (1.f - ratio);
                     cellDescriptor[shift] += _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[1] * ratio;
                 }
@@ -158,8 +158,8 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
     for (int cellH = 0; cellH < _descriptorSize.width - (_blockSize.width - 1); ++cellH)
         for (int cellV = 0; cellV < _descriptorSize.height - (_blockSize.height - 1); ++cellV)
         {
-            int blockCenterH = cellH + _blockSize.width/2;
-            int blockCenterV = cellV + _blockSize.height/2;
+            int blockCenterH = cellH + (_blockSize.width << 2);
+            int blockCenterV = cellV + (_blockSize.height << 2);
 
             vector<float> descriptorVector;
             descriptorVector.assign(_binsPerCell * (_blockSize.width*_blockSize.height), 0);
@@ -175,7 +175,7 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
                     float gaussianFactor = 1.f;
                     if (_gaussSigma != 0.f)
                     {
-                        float distToCenterBlock = sqrtf(pow((float)i - (float)_blockSize.width/2.f + 0.5, 2.f) + pow((float)j - (float)_blockSize.height/2.f + 0.5, 2.f));
+                        float distToCenterBlock = sqrtf(pow((float)i - (float)_blockSize.width*0.5f + 0.5, 2.f) + pow((float)j - (float)_blockSize.height*0.5f + 0.5, 2.f));
                         gaussianFactor = getGaussian(distToCenterBlock, _gaussSigma);
                     }
 

@@ -44,7 +44,7 @@ class Detector_Hog : public Detector
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(std::vector<cv::Mat> pCaptures);
+        atom::Message detect(const std::vector<cv::Mat> pCaptures);
         void setParameter(atom::Message pMessage);
 
     private:
@@ -68,14 +68,20 @@ class Detector_Hog : public Detector
 
         // SVM...
         CvSVM mSvm;
+        bool mIsModelLoaded;
+        std::vector<cv::Point> mSvmValidPositions;
+        unsigned long long mMaxTimePerFrame; // Maximum time allowed per frame, in usec
+        int mMaxThreads; // Maximum number of concurrent threads
 
         // Background subtractor, used to select window of interest
         // to feed to the SVM
         BackgroundSubtractorMOG2 mBgSubtractor;
 
-        // Various buffers
+        // Various variables
         cv::Mat mBgSubtractorBuffer;
+        cv::RNG mRng;
 
+        // Methods
         void make();
         void updateDescriptorParams();
 };

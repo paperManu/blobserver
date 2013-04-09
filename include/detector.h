@@ -92,7 +92,7 @@ class Detector
          * The two first values in the message are the number of blob, and the size of each blob in the message
          * \param pCaptures A vector containing all captures. Their number should match mSourceNbr.
          */
-        virtual atom::Message detect(vector<cv::Mat> pCaptures) {}
+        virtual atom::Message detect(const vector<cv::Mat> pCaptures) {}
         
         /**
          * \brief Returns the message from the last call to detect()
