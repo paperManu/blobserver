@@ -266,6 +266,12 @@ int App::init(int argc, char** argv)
         configurator.loadXML((char*)gConfigFile);
     }
 
+    // We need a nap before launching cameras
+    timespec nap;
+    nap.tv_nsec = 0;
+    nap.tv_sec = 1;
+    nanosleep(&nap, NULL);
+
     // Create the thread which will grab from all sources
     // This must be run AFTER loading the configuration, as some params
     // can't be changed after the first grab for some sources

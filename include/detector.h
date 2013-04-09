@@ -204,7 +204,7 @@ void trackBlobs(vector<Blob::properties> &pProperties, vector<T> &pBlobs, int pL
     
     // Then we compare all these prediction with real measures and
     // associate them together
-    vector<BlobPair<T> > lPairs;
+    vector< BlobPair<T> > lPairs;
     if(pBlobs.size() != 0)
     {
         vector<BlobPair<T> > lSearchPairs;
@@ -290,6 +290,12 @@ void trackBlobs(vector<Blob::properties> &pProperties, vector<T> &pBlobs, int pL
             pBlobs.push_back(newBlob);
         }
     }
+}
+
+/*************/
+template<class T>
+void mergeBlobs(vector<T> &pBlobs)
+{
 }
 
 #endif // DETECTOR_H

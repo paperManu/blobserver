@@ -19,6 +19,10 @@
                 <Name>maxThreads</Name>
                 <Value>8</Value>
             </Param>
+            <Param>
+                <Name>mergeDistance</Name>
+                <Value>64</Value>
+            </Param>
         </Detector>
         <Source>
             <Type>Source_OpenCV</Type>
@@ -44,8 +48,12 @@
                 <Value>500</Value>
             </Param>
             <Param>
-                <Name>whiteBalanceRed</Name>
+                <Name>gain</Name>
                 <Value>512</Value>
+            </Param>
+            <Param>
+                <Name>whiteBalanceRed</Name>
+                <Value>800</Value>
             </Param>
             <Param>
                 <Name>whiteBalanceBlue</Name>

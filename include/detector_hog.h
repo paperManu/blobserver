@@ -80,6 +80,7 @@ class Detector_Hog : public Detector
         // Various variables
         cv::Mat mBgSubtractorBuffer;
         cv::RNG mRng;
+        float mBlobMergeDistance; // Distance to considerer two blobs as one
 
         // Methods
         void make();

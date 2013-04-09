@@ -15,9 +15,9 @@ using namespace chrono;
 class Parallel_Detect : public cv::ParallelLoopBody
 {
     public:
-        Parallel_Detect(const vector<cv::Point>* points, vector<Blob::properties>* properties, const int size,
+        Parallel_Detect(const vector<cv::Point>* points, vector<cv::Point>* samples, const int size,
             const Descriptor_Hog* descriptor, const CvSVM* svm):
-            _points(points), _properties(properties), _size(size), _descriptor(descriptor), _svm(svm)
+            _points(points), _samples(samples), _size(size), _descriptor(descriptor), _svm(svm)
         {
             mMutex.reset(new mutex());
         }
@@ -36,22 +36,15 @@ class Parallel_Detect : public cv::ParallelLoopBody
 
                 if (_svm->predict(descriptionMat) == 1.f)
                 {
-                    Blob::properties properties;
-                    properties.position.x = point.x;
-                    properties.position.y = point.y;
-                    properties.size = _size;
-                    properties.speed.x = 0.f;
-                    properties.speed.y = 0.f;
-
                     lock_guard<mutex> lock(*mMutex.get());
-                    _properties->push_back(properties);
+                    _samples->push_back(point);
                 }
             }
         }
 
     private:
         const vector<cv::Point>* _points;
-        vector<Blob::properties>* _properties;
+        vector<cv::Point>* _samples;
         const int _size;
         const Descriptor_Hog* _descriptor;
         const CvSVM* _svm;
@@ -98,6 +91,8 @@ void Detector_Hog::make()
     mIsModelLoaded = false;
     mMaxTimePerFrame = 1e5;
     mMaxThreads = 4;
+
+    mBlobMergeDistance = 64.f;
 }
 
 /*************/
@@ -153,7 +148,7 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
     int totalSamples = validPositions;
 
     // We go randomly through this list
-    vector<Blob::properties> lProperties;
+    vector<cv::Point> samples;
     vector<float> description;
     cv::Mat descriptionMat;
 
@@ -178,13 +173,49 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
             points.push_back(point);
         }
 
-        cv::parallel_for_(cv::Range(0, nbrPoints), Parallel_Detect(&points, &lProperties, mRoiSize.width, &mDescriptor, &mSvm));
+        cv::parallel_for_(cv::Range(0, nbrPoints), Parallel_Detect(&points, &samples, mRoiSize.width, &mDescriptor, &mSvm));
 
         timePresent = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch()).count();
     }
 
+    // A single object can be detected by multiple windows.
+    // We need to merge them
+    for (int i = 0; i < samples.size(); ++i)
+    {
+        float meanFactor = 1.f;
+        for (int j = i + 1; j < samples.size();)
+        {
+            float distance = sqrtf(pow(samples[i].x - samples[j].x, 2.f) + pow(samples[i].y - samples[j].y, 2.f));
+            if (distance < mBlobMergeDistance)
+            {
+                meanFactor++;
+                samples[i].x = (int)((float)samples[i].x * (meanFactor - 1.f)/meanFactor + (float)samples[j].x * 1.f / meanFactor);
+                samples[i].y = (int)((float)samples[i].y * (meanFactor - 1.f)/meanFactor + (float)samples[j].y * 1.f / meanFactor);
+
+                vector<cv::Point>::iterator it = samples.begin() + j;
+                samples.erase(it);
+            }
+            else
+                j++;
+        }
+    }
+
+    // We create the properties which will be converted to blobs
+    vector<Blob::properties> properties;
+    for (int i = 0; i < samples.size(); ++i)
+    {
+        Blob::properties propertie;
+        propertie.position.x = samples[i].x;
+        propertie.position.y = samples[i].y;
+        propertie.size = mRoiSize.width;
+        propertie.speed.x = 0.f;
+        propertie.speed.y = 0.f;
+
+        properties.push_back(propertie);
+    }
+
     // We want to track them
-    trackBlobs<Blob2D>(lProperties, mBlobs, 100);
+    trackBlobs<Blob2D>(properties, mBlobs, 30);
 
     cv::Mat resultMat = cv::Mat::zeros(pCaptures[0].rows, pCaptures[0].cols, CV_8UC3);
     for_each (mBlobs.begin(), mBlobs.end(), [&] (Blob2D blob)
@@ -306,6 +337,23 @@ void Detector_Hog::setParameter(atom::Message pMessage)
         }
 
         mMaxThreads = max(1, nbr);
+    }
+    else if (cmd == "mergeDistance")
+    {
+        if (pMessage.size() < 2)
+            return;
+
+        float distance;
+        try
+        {
+            distance = atom::toFloat(pMessage[1]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+
+        mBlobMergeDistance = max(16.f, distance);
     }
     else
         setBaseParameter(pMessage);
