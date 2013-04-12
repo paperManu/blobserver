@@ -45,7 +45,7 @@
             </Param>
             <Param>
                 <Name>exposureTime</Name>
-                <Value>500</Value>
+                <Value>1024</Value>
             </Param>
             <Param>
                 <Name>gain</Name>
@@ -53,11 +53,15 @@
             </Param>
             <Param>
                 <Name>whiteBalanceRed</Name>
-                <Value>800</Value>
+                <Value>512</Value>
             </Param>
             <Param>
                 <Name>whiteBalanceBlue</Name>
                 <Value>512</Value>
+            </Param>
+            <Param>
+                <Name>gamma</Name>
+                <Value>2.2</Value>
             </Param>
         </Source>
         <Client>

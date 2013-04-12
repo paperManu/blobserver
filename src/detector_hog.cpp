@@ -355,6 +355,87 @@ void Detector_Hog::setParameter(atom::Message pMessage)
 
         mBlobMergeDistance = max(16.f, distance);
     }
+    else if (cmd == "roiSize")
+    {
+        if (pMessage.size() < 2)
+            return;
+
+        string roiStr;
+        try
+        {
+            roiStr = atom::toString(pMessage[1]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+
+        cv::Size_<int> roiSize;
+        sscanf(roiStr.c_str(), "size_%ix%i", &(roiSize.width), &(roiSize.height));
+        if (roiSize.width != 0 && roiSize.height != 0)
+            mRoiSize = roiSize;
+        updateDescriptorParams();
+    }
+    else if (cmd == "blockSize")
+    {
+        if (pMessage.size() < 2)
+            return;
+
+        string blockStr;
+        try
+        {
+            blockStr = atom::toString(pMessage[1]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+
+        cv::Size_<int> blockSize;
+        sscanf(blockStr.c_str(), "size_%ix%i", &(blockSize.width), &(blockSize.height));
+        if (blockSize.width != 0 && blockSize.height != 0)
+            mBlockSize = blockSize;
+        updateDescriptorParams();
+    }
+    else if (cmd == "cellSize")
+    {
+        if (pMessage.size() < 2)
+            return;
+
+        string cellStr;
+        try
+        {
+            cellStr = atom::toString(pMessage[1]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+
+        cv::Size_<int> cellSize;
+        sscanf(cellStr.c_str(), "size_%ix%i", &(cellSize.width), &(cellSize.height));
+        if (cellSize.width != 0 && cellSize.height != 0)
+            mCellSize = cellSize;
+        updateDescriptorParams();
+    }
+    else if (cmd == "bins")
+    {
+        if (pMessage.size() < 2)
+            return;
+
+        float bins;
+        try
+        {
+            bins = atom::toFloat(pMessage[1]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+
+        mBins = max(2.f, bins);
+        updateDescriptorParams();
+    }
     else
         setBaseParameter(pMessage);
 }
