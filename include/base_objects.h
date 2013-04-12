@@ -71,6 +71,7 @@ class ShmImage
         std::string _filename;
         int _type;
         unsigned int _width, _height, _bpp;
+        unsigned long long _startTime;
 
         bool init(const unsigned int width, const unsigned int height, int type);
 };
