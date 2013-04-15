@@ -201,6 +201,10 @@ class Source
         // Noise reduction parameter
         bool mFilterNoise;
 
+        // Basic geometric correction parameters
+        float mScale;
+        float mRotation;
+
         // Distorsion parameters
         bool mCorrectDistortion; //!< Flag set if distortion correction is activated
         bool mCorrectVignetting; //!< Flag set if vignetting correction is activated
@@ -229,6 +233,10 @@ class Source
 
         // Noise correction
         void filterNoise(cv::Mat& pImg);
+
+        // Basic geometric corrections
+        void scale(cv::Mat& pImg);
+        void rotate(cv::Mat& pImg);
 
         // Methods to correct the optical distortion
         void correctVignetting(cv::Mat& pImg);

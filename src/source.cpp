@@ -29,6 +29,9 @@ Source::Source():
 
     mFilterNoise = false;
 
+    mScale = 1.f;
+    mRotation = 1.f;
+
     mCorrectDistortion = false;
     mCorrectVignetting = false;
 
@@ -62,7 +65,9 @@ cv::Mat Source::retrieveModifiedFrame()
     if (mUpdated)
     {
         cv::Mat buffer = retrieveFrame();
-
+        
+        // Noise filtering and vignetting correction, as well as ICC transform and lense
+        // distortion correction have to be before any geometric transformation
         if (mFilterNoise)
             filterNoise(buffer);
         if (mCorrectVignetting)
@@ -71,6 +76,10 @@ cv::Mat Source::retrieveModifiedFrame()
             cmsDoTransform(mICCTransform, buffer.data, buffer.data, buffer.total());
         if (mCorrectDistortion)
             correctDistortion(buffer);
+        if (mScale != 1.f)
+            scale(buffer);
+        if (mRotation != 0.f)
+            rotate(buffer);
         if (mHdriActive)
             createHdri(buffer);
 
@@ -144,6 +153,40 @@ void Source::setBaseParameter(atom::Message pParam)
             else
                 mFilterNoise = false;
         }
+    }
+    else if (paramName == "scale")
+    {
+        if (pParam.size() < 2)
+            return;
+
+        float scale;
+        try
+        {
+            scale = atom::toFloat(pParam[1]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+
+        mScale = max(0.1f, scale);
+    }
+    else if (paramName == "rotation")
+    {
+        if (pParam.size() < 2)
+            return;
+
+        float rotation;
+        try
+        {
+            rotation = atom::toFloat(pParam[1]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+
+        mRotation = rotation;
     }
     else if (paramName == "distortion")
     {
@@ -262,6 +305,24 @@ void Source::filterNoise(cv::Mat& pImg)
 {
     // We apply a simple median filter of size 1px to reduce noise
     cv::medianBlur(pImg, pImg, 3);
+}
+
+/************/
+void Source::scale(cv::Mat& pImg)
+{
+    cv::Mat output;
+    cv::resize(pImg, output, cv::Size(), mScale, mScale);
+    pImg = output;
+}
+
+/************/
+void Source::rotate(cv::Mat& pImg)
+{
+    cv::Point2f center = cv::Point2f((float)pImg.cols / 2.f, (float)pImg.rows / 2.f);
+    cv::Mat rotMat = cv::getRotationMatrix2D(center, mRotation, 1.0);
+    cv::Mat rotatedMat;
+    cv::warpAffine(pImg, rotatedMat, rotMat, cv::Size(pImg.cols, pImg.rows));
+    pImg = rotatedMat;
 }
 
 /************/

@@ -81,6 +81,7 @@ void Detector_Hog::make()
 
     mFilterSize = 3;
     mScale = 1.f;
+    mRotation = 0.f;
 
     mRoiSize = cv::Point_<int>(64, 128);
     mBlockSize = cv::Point_<int>(2, 2);
@@ -104,12 +105,8 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
     if (pCaptures.size() == 0 || !mIsModelLoaded)
         return mLastMessage;
 
-    // If set so, we scale the input image
-    cv::Mat input;
-    if (mScale != 1.f)
-        cv::resize(pCaptures[0], input, cv::Size(), mScale, mScale);
-    else
-        input = pCaptures[0].clone();
+    // For simplicity...
+    cv::Mat input = pCaptures[0];
 
     // We get windows of interest, using BG subtraction
     // and previous blobs positions
@@ -237,9 +234,7 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
     cv::multiply(input, resultMat, resultMat);
 
     if (mVerbose)
-    {
         cout << "Detector_Hog - Evaluated ratio = " << 1.f - (float)validPositions / (float)totalSamples << endl;
-    }
 
     // Constructing the message
     mLastMessage.clear();
@@ -363,23 +358,6 @@ void Detector_Hog::setParameter(atom::Message pMessage)
         }
 
         mBlobMergeDistance = max(16.f, distance);
-    }
-    else if (cmd == "scale")
-    {
-        if (pMessage.size() < 2)
-            return;
-
-        float scale;
-        try
-        {
-            scale = atom::toFloat(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-
-        mScale = max(0.1f, scale);
     }
     else if (cmd == "filterSize")
     {
