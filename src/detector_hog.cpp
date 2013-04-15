@@ -80,8 +80,7 @@ void Detector_Hog::make()
     mOscPath = "/blobserver/hog";
 
     mFilterSize = 3;
-    mScale = 1.f;
-    mRotation = 0.f;
+    mFilterDilateCoeff = 3;
 
     mRoiSize = cv::Point_<int>(64, 128);
     mBlockSize = cv::Point_<int>(2, 2);
@@ -114,8 +113,20 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
     // Erode and dilate to suppress noise
     cv::Mat lEroded;
     cv::erode(mBgSubtractorBuffer, lEroded, cv::Mat(), cv::Point(-1, -1), mFilterSize);
-    cv::dilate(lEroded, mBgSubtractorBuffer, cv::Mat(), cv::Point(-1, -1), mFilterSize);
+    cv::dilate(lEroded, mBgSubtractorBuffer, cv::Mat(), cv::Point(-1, -1), mFilterSize * mFilterDilateCoeff);
     cv::threshold(mBgSubtractorBuffer, mBgSubtractorBuffer, 250, 255, cv::THRESH_BINARY);
+
+    // The result is translated so that the window will be correctly place for the given pixel
+    {
+        cv::Mat transMat = cv::Mat::zeros(2, 3, CV_32F);
+        transMat.at<float>(0, 0) = 1.f;
+        transMat.at<float>(1, 1) = 1.f;
+        transMat.at<float>(0, 2) = -(float)mRoiSize.width * 0.33f;
+        transMat.at<float>(1, 2) = -(float)mRoiSize.height * 0.33f;
+        cv::Mat translatedMat;
+        cv::warpAffine(mBgSubtractorBuffer, translatedMat, transMat, cv::Size(mBgSubtractorBuffer.cols, mBgSubtractorBuffer.rows), cv::INTER_LINEAR);
+        mBgSubtractorBuffer = translatedMat;
+    }
 
     // We draw rectangles to handle previously detected blobs
     for_each (mBlobs.begin(), mBlobs.end(), [&] (Blob2D blob)

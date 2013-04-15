@@ -56,7 +56,7 @@ class Detector_Hog : public Detector
 
         // Some filtering parameters
         int mFilterSize;
-        float mScale, mRotation;
+        int mFilterDilateCoeff;
 
         // Descriptor to identify objects...
         Descriptor_Hog mDescriptor;

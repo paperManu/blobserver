@@ -67,7 +67,7 @@ cv::Mat Source::retrieveModifiedFrame()
         cv::Mat buffer = retrieveFrame();
         
         // Noise filtering and vignetting correction, as well as ICC transform and lense
-        // distortion correction have to be before any geometric transformation
+        // distortion correction have to be done before any geometric transformation
         if (mFilterNoise)
             filterNoise(buffer);
         if (mCorrectVignetting)
@@ -311,7 +311,7 @@ void Source::filterNoise(cv::Mat& pImg)
 void Source::scale(cv::Mat& pImg)
 {
     cv::Mat output;
-    cv::resize(pImg, output, cv::Size(), mScale, mScale);
+    cv::resize(pImg, output, cv::Size(), mScale, mScale, cv::INTER_LINEAR);
     pImg = output;
 }
 
@@ -321,7 +321,7 @@ void Source::rotate(cv::Mat& pImg)
     cv::Point2f center = cv::Point2f((float)pImg.cols / 2.f, (float)pImg.rows / 2.f);
     cv::Mat rotMat = cv::getRotationMatrix2D(center, mRotation, 1.0);
     cv::Mat rotatedMat;
-    cv::warpAffine(pImg, rotatedMat, rotMat, cv::Size(pImg.cols, pImg.rows));
+    cv::warpAffine(pImg, rotatedMat, rotMat, cv::Size(pImg.cols, pImg.rows), cv::INTER_LINEAR);
     pImg = rotatedMat;
 }
 
