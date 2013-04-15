@@ -80,6 +80,7 @@ void Detector_Hog::make()
     mOscPath = "/blobserver/hog";
 
     mFilterSize = 3;
+    mScale = 1.f;
 
     mRoiSize = cv::Point_<int>(64, 128);
     mBlockSize = cv::Point_<int>(2, 2);
@@ -103,9 +104,16 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
     if (pCaptures.size() == 0 || !mIsModelLoaded)
         return mLastMessage;
 
-    // We first get windows of interest, using BG subtraction
+    // If set so, we scale the input image
+    cv::Mat input;
+    if (mScale != 1.f)
+        cv::resize(pCaptures[0], input, cv::Size(), mScale, mScale);
+    else
+        input = pCaptures[0].clone();
+
+    // We get windows of interest, using BG subtraction
     // and previous blobs positions
-    mBgSubtractor(pCaptures[0], mBgSubtractorBuffer);
+    mBgSubtractor(input, mBgSubtractorBuffer);
     // Erode and dilate to suppress noise
     cv::Mat lEroded;
     cv::erode(mBgSubtractorBuffer, lEroded, cv::Mat(), cv::Point(-1, -1), mFilterSize);
@@ -128,7 +136,7 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
     cv::resize(mBgSubtractorBuffer, resizedBuffer, outputSize, 0, 0, cv::INTER_NEAREST);
 
     // We feed the image to the descriptor
-    mDescriptor.setImage(pCaptures[0]);
+    mDescriptor.setImage(input);
 
     // We fill the vector of all positions to test
     if (mSvmValidPositions.capacity() != outputSize.width * outputSize.height)
@@ -217,7 +225,7 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
     // We want to track them
     trackBlobs<Blob2D>(properties, mBlobs, 30);
 
-    cv::Mat resultMat = cv::Mat::zeros(pCaptures[0].rows, pCaptures[0].cols, CV_8UC3);
+    cv::Mat resultMat = cv::Mat::zeros(input.rows, input.cols, CV_8UC3);
     for_each (mBlobs.begin(), mBlobs.end(), [&] (Blob2D blob)
     {
         Blob::properties props = blob.getBlob();
@@ -225,7 +233,8 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
         cv::rectangle(resultMat, rect, cv::Scalar(1, 1, 1), CV_FILLED);
     } );
 
-    cv::multiply(pCaptures[0], resultMat, resultMat);
+    // The result is shown
+    cv::multiply(input, resultMat, resultMat);
 
     if (mVerbose)
     {
@@ -354,6 +363,40 @@ void Detector_Hog::setParameter(atom::Message pMessage)
         }
 
         mBlobMergeDistance = max(16.f, distance);
+    }
+    else if (cmd == "scale")
+    {
+        if (pMessage.size() < 2)
+            return;
+
+        float scale;
+        try
+        {
+            scale = atom::toFloat(pMessage[1]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+
+        mScale = max(0.1f, scale);
+    }
+    else if (cmd == "filterSize")
+    {
+        if (pMessage.size() < 2)
+            return;
+
+        int filterSize;
+        try
+        {
+            filterSize = atom::toFloat(pMessage[1]);
+        }
+        catch (atom::BadTypeTagError error)
+        {
+            return;
+        }
+
+        mFilterSize = max(1, filterSize);
     }
     else if (cmd == "roiSize")
     {
