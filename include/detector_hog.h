@@ -58,6 +58,10 @@ class Detector_Hog : public Detector
         int mFilterSize;
         int mFilterDilateCoeff;
 
+        // Tracking and movement filtering parameters
+        int mBlobLifetime;
+        float mProcessNoiseCov, mMeasurementNoiseCov;
+
         // Descriptor to identify objects...
         Descriptor_Hog mDescriptor;
         // ... and its parameters

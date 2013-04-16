@@ -1,5 +1,7 @@
 #include "detector.h"
 
+using namespace std;
+
 std::string Detector::mClassName = "Detector";
 std::string Detector::mDocumentation = "N/A";
 unsigned int Detector::mSourceNbr = 1;
@@ -58,7 +60,7 @@ atom::Message Detector::getParameter(atom::Message pParam)
 }
 
 /*****************/
-void Detector::setBaseParameter(atom::Message pParam)
+void Detector::setBaseParameter(const atom::Message pParam)
 {
     atom::Message message;
 

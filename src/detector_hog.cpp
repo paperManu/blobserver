@@ -82,6 +82,10 @@ void Detector_Hog::make()
     mFilterSize = 3;
     mFilterDilateCoeff = 3;
 
+    mBlobLifetime = 30;
+    mProcessNoiseCov = 1e-6;
+    mMeasurementNoiseCov = 1e-4;
+
     mRoiSize = cv::Point_<int>(64, 128);
     mBlockSize = cv::Point_<int>(2, 2);
     mCellSize = cv::Point_<int>(16, 16);
@@ -231,7 +235,14 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
     }
 
     // We want to track them
-    trackBlobs<Blob2D>(properties, mBlobs, 30);
+    trackBlobs<Blob2D>(properties, mBlobs, mBlobLifetime);
+
+    // We make sure that the filtering parameters are set
+    for (int i = 0; i < mBlobs.size(); ++i)
+    {
+        mBlobs[i].setParameter("processNoiseCov", mProcessNoiseCov);
+        mBlobs[i].setParameter("measurementNoiseCov", mMeasurementNoiseCov);
+    }
 
     cv::Mat resultMat = cv::Mat::zeros(input.rows, input.cols, CV_8UC3);
     for_each (mBlobs.begin(), mBlobs.end(), [&] (Blob2D blob)
@@ -302,18 +313,9 @@ void Detector_Hog::setParameter(atom::Message pMessage)
 
     if (cmd == "modelFilename")
     {
-        if (pMessage.size() < 2)
-            return;
-
         string filename;
-        try
-        {
-            filename = atom::toString(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
+        if (!readParam(pMessage, filename))
             return;
-        }
 
         cout << "Attemping to load SVM model from file " << filename << endl;
         mSvm.load(filename.c_str());
@@ -321,86 +323,33 @@ void Detector_Hog::setParameter(atom::Message pMessage)
     }
     else if (cmd == "maxTimePerFrame")
     {
-        if (pMessage.size() < 2)
-            return;
-
-        int duration;
-        try
-        {
-            duration = atom::toInt(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-
-        mMaxTimePerFrame = max(33000, duration);
+        float duration;
+        if (readParam(pMessage, duration))
+            mMaxTimePerFrame = max(33000, (int)duration);
     }
     else if (cmd == "maxThreads")
     {
-        if (pMessage.size() < 2)
-            return;
-
-        int nbr;
-        try
-        {
-            nbr = atom::toInt(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-
-        mMaxThreads = max(1, nbr);
+        float nbr;
+        if (readParam(pMessage, nbr))
+            mMaxThreads = max(1, (int)nbr);
     }
     else if (cmd == "mergeDistance")
     {
-        if (pMessage.size() < 2)
-            return;
-
         float distance;
-        try
-        {
-            distance = atom::toFloat(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-
-        mBlobMergeDistance = max(16.f, distance);
+        if (readParam(pMessage, distance))
+            mBlobMergeDistance = max(16.f, distance);
     }
     else if (cmd == "filterSize")
     {
-        if (pMessage.size() < 2)
-            return;
-
-        int filterSize;
-        try
-        {
-            filterSize = atom::toFloat(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-
-        mFilterSize = max(1, filterSize);
+        float filterSize;
+        if (readParam(pMessage, filterSize))
+            mFilterSize = max(1, (int)filterSize);
     }
     else if (cmd == "roiSize")
     {
-        if (pMessage.size() < 2)
-            return;
-
         string roiStr;
-        try
-        {
-            roiStr = atom::toString(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
+        if (!readParam(pMessage, roiStr))
             return;
-        }
 
         cv::Size_<int> roiSize;
         sscanf(roiStr.c_str(), "size_%ix%i", &(roiSize.width), &(roiSize.height));
@@ -410,18 +359,9 @@ void Detector_Hog::setParameter(atom::Message pMessage)
     }
     else if (cmd == "blockSize")
     {
-        if (pMessage.size() < 2)
-            return;
-
         string blockStr;
-        try
-        {
-            blockStr = atom::toString(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
+        if (!readParam(pMessage, blockStr))
             return;
-        }
 
         cv::Size_<int> blockSize;
         sscanf(blockStr.c_str(), "size_%ix%i", &(blockSize.width), &(blockSize.height));
@@ -431,18 +371,9 @@ void Detector_Hog::setParameter(atom::Message pMessage)
     }
     else if (cmd == "cellSize")
     {
-        if (pMessage.size() < 2)
-            return;
-
         string cellStr;
-        try
-        {
-            cellStr = atom::toString(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
+        if (!readParam<string>(pMessage, cellStr))
             return;
-        }
 
         cv::Size_<int> cellSize;
         sscanf(cellStr.c_str(), "size_%ix%i", &(cellSize.width), &(cellSize.height));
@@ -452,21 +383,30 @@ void Detector_Hog::setParameter(atom::Message pMessage)
     }
     else if (cmd == "bins")
     {
-        if (pMessage.size() < 2)
-            return;
-
         float bins;
-        try
-        {
-            bins = atom::toFloat(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
+        if (!readParam<float>(pMessage, bins))
             return;
-        }
 
         mBins = max(2.f, bins);
         updateDescriptorParams();
+    }
+    else if (cmd == "lifetime")
+    {
+        float lifetime;
+        if (readParam(pMessage, lifetime))
+            mBlobLifetime = lifetime;
+    }
+    else if (cmd == "processNoiseCov")
+    {
+        float cov;
+        if (readParam(pMessage, cov))
+            mProcessNoiseCov = abs(cov);
+    }
+    else if (cmd == "measurementNoiseCov")
+    {
+        float cov;
+        if (readParam(pMessage, cov))
+            mMeasurementNoiseCov = abs(cov);
     }
     else
         setBaseParameter(pMessage);

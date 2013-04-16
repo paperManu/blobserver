@@ -33,6 +33,8 @@ void Blob2D::setParameter(const char* pParam, float pValue)
         if(pValue > 0.0)
             setIdentity(mFilter.measurementNoiseCov, cv::Scalar::all(pValue));
     }
+    else
+        std::cout << __FILE__ << " - " << __FUNCTION__ << " - Wrong parameters." << std::endl;
 }
 
 /*************/

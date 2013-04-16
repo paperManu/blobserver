@@ -83,7 +83,7 @@ void Descriptor_Hog::setImage(const cv::Mat& pImage)
 
             if (_signed && vValue < 0.f)
             {
-                angle = 2*CV_PI - angle;
+                angle = 2.0*CV_PI - angle;
                 angle = (int)(angle / CV_PI * 180) % 360;
             }
             else
