@@ -31,8 +31,8 @@
 #include "opencv2/opencv.hpp"
 
 #include "blob.h"
+#include "helpers.h"
 #include "source.h"
-
 
 /*************/
 // Class for parallel masking
@@ -149,7 +149,7 @@ class Detector
 
         // Methods
         cv::Mat getMask(cv::Mat pCapture, int pInterpolation = CV_INTER_NN);
-        void setBaseParameter(const atom::Message pParam);
+        void setBaseParameter(const atom::Message pMessage);
 
     private:
         static std::string mClassName; //!< Class name, to be set in child class
@@ -290,38 +290,6 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
             pBlobs.push_back(newBlob);
         }
     }
-}
-
-// Function to read a value from a message
-template<class T>
-bool readParam(const atom::Message pParam, T& pValue)
-{
-    if (pParam.size() < 2)
-        return false;
-
-    auto tag = pParam[1].get()->getTypeTag();
-    if (tag == atom::FloatValue::TYPE_TAG)
-    {
-        float value;
-        value = atom::FloatValue::convert(pParam[1])->getFloat();
-        reinterpret_cast<float&>(pValue) = value;
-    }
-    else if (tag == atom::IntValue::TYPE_TAG)
-    {
-        int value;
-        value = atom::IntValue::convert(pParam[1])->getInt();
-        reinterpret_cast<int&>(pValue) = value;
-    }
-    else if (tag == atom::StringValue::TYPE_TAG)
-    {
-        std::string value;
-        value = atom::StringValue::convert(pParam[1])->getString();
-        reinterpret_cast<std::string&>(pValue) = value;
-    }
-    else
-        return false;
-
-    return true;
 }
 
 #endif // DETECTOR_H

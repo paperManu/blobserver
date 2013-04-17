@@ -33,6 +33,7 @@
 #include <lcms2.h>
 #include <atom/message.h>
 
+#include "helpers.h"
 #include "hdribuilder.h"
 
 using namespace std;

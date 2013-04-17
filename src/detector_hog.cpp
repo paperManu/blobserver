@@ -299,8 +299,6 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
 /*************/
 void Detector_Hog::setParameter(atom::Message pMessage)
 {
-    atom::Message::const_iterator iter = pMessage.begin();
-
     std::string cmd;
     try
     {

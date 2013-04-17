@@ -100,9 +100,6 @@ cv::Mat Source::retrieveModifiedFrame()
 /************/
 void Source::setBaseParameter(atom::Message pParam)
 {
-    if (pParam.size() < 2)
-        return;
-    
     std::string paramName;
     try
     {
@@ -156,37 +153,13 @@ void Source::setBaseParameter(atom::Message pParam)
     }
     else if (paramName == "scale")
     {
-        if (pParam.size() < 2)
-            return;
-
         float scale;
-        try
-        {
-            scale = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-
-        mScale = max(0.1f, scale);
+        if (readParam(pParam, scale))
+            mScale = max(0.1f, scale);
     }
     else if (paramName == "rotation")
     {
-        if (pParam.size() < 2)
-            return;
-
-        float rotation;
-        try
-        {
-            rotation = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-
-        mRotation = rotation;
+        readParam(pParam, mRotation);
     }
     else if (paramName == "distortion")
     {
@@ -231,14 +204,8 @@ void Source::setBaseParameter(atom::Message pParam)
     else if (paramName == "iccInputProfile")
     {
         std::string filename;
-        try
-        {
-            filename = atom::toString(pParam[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
+        if (!readParam(pParam, filename))
             return;
-        }
 
         if (mICCTransform != NULL)
             cmsDeleteTransform(mICCTransform);

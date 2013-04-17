@@ -42,6 +42,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/detector_objOnAPlane.h \
     $(top_srcdir)/include/detector_nop.h \
 	$(top_srcdir)/include/hdribuilder.h \
+	$(top_srcdir)/include/helpers.h \
     $(top_srcdir)/include/source.h \
     $(top_srcdir)/include/source_opencv.h \
     $(top_srcdir)/include/source_shmdata.h \

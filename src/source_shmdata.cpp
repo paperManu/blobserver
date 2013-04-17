@@ -65,9 +65,6 @@ cv::Mat Source_Shmdata::retrieveFrame()
 /*************/
 void Source_Shmdata::setParameter(atom::Message pParam)
 {
-    if (pParam.size() < 2)
-        return;
-
     string paramName;
     float paramValue;
 
@@ -83,14 +80,8 @@ void Source_Shmdata::setParameter(atom::Message pParam)
     if (paramName == "location")
     {
         string location;
-        try
-        {
-            location = atom::toString(pParam[1]);
-        }
-        catch (...)
-        {
+        if (!readParam(pParam, location))
             return;
-        }
 
         if (mReader != NULL)
             shmdata_any_reader_close(mReader);
@@ -102,16 +93,8 @@ void Source_Shmdata::setParameter(atom::Message pParam)
     }
     else if (paramName == "cameraNumber")
     {
-        try
-        {
-            paramValue = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError exception)
-        {
-            return;
-        }
-
-        mSubsourceNbr = (unsigned int)paramValue;
+        if (readParam(pParam, paramValue))
+            mSubsourceNbr = (unsigned int)paramValue;
     }
     else
         setBaseParameter(pParam);

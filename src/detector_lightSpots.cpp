@@ -156,33 +156,36 @@ void Detector_LightSpots::setParameter(atom::Message pMessage)
 {
     atom::Message::const_iterator iter = pMessage.begin();
 
-    if ((*iter).get()->getTypeTag() == atom::StringValue::TYPE_TAG)
+    std::string cmd;
+    try
     {
-        std::string cmd = atom::StringValue::convert(*iter)->getString();
-
-        ++iter;
-        if (iter == pMessage.end())
-            return;
-
-        if (cmd == "detectionLevel" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
-        {
-            float param = atom::FloatValue::convert(*iter)->getFloat();
-            mDetectionLevel = std::max(0.f, param);
-        }
-        else if (cmd == "filterSize" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
-        {
-            float param = atom::FloatValue::convert(*iter)->getFloat();
-            mFilterSize= std::max(0.f, param);
-        }
-        else if (cmd == "processNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
-        {
-            mProcessNoiseCov = atom::FloatValue::convert(*iter)->getFloat();
-        }
-        else if (cmd == "measurementNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
-        {
-            mMeasurementNoiseCov = atom::FloatValue::convert(*iter)->getFloat();
-        }
+        cmd = toString(pMessage[0]);
+    }
+    catch (atom::BadTypeTagError error)
+    {
+        return;
     }
 
-    setBaseParameter(pMessage);
+    if (cmd == "detectionLevel")
+    {
+        float level;
+        if (readParam(pMessage, level))
+            mDetectionLevel = max(0.f, level);
+    }
+    else if (cmd == "filterSize")
+    {
+        float size;
+        if (readParam(pMessage, size))
+            mFilterSize = max(0.f, size);
+    }
+    else if (cmd == "processNoiseCov")
+    {
+        readParam(pMessage, mProcessNoiseCov);
+    }
+    else if (cmd == "measurementNoiseCov")
+    {
+        readParam(pMessage, mMeasurementNoiseCov);
+    }
+    else
+        setBaseParameter(pMessage);
 }
