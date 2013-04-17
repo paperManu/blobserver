@@ -28,6 +28,25 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ ], [ ])], [
   AC_MSG_ERROR([compiler does not understand -std=c++0x])
 ])
 
+case "$host" in *-darwin* | *-macos10*)
+  LIBTOOL="glibtool"
+  CXXFLAGS+=" -D__Darwin"
+  LDFLAGS+=" -undefined dynamic_lookup -Wl,-headerpad_max_install_names"
+  if test -d /opt/local ; then
+    CXXFLAGS+=" -I/usr/local/include -I/opt/local/include"
+    #LDFLAGS+=" -L/usr/local/lib -L/opt/local/lib"
+  elif test -d /sw ; then
+    CXXFLAGS+=" -I/sw/include"
+    #LDFLAGS+=" -L/sw/lib"
+  fi
+  # OSX does not include /usr/local/lib/pkgconfig path, so we need to
+  # add it. 
+  PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+  export PKG_CONFIG_PATH
+  LDFLAGS+=" -fPIC -L/usr/local/lib -L/usr/local/lib64"
+  ;;
+esac
+
 # Check for header files
 AC_HEADER_STDC
 
