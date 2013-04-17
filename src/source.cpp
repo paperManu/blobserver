@@ -66,6 +66,8 @@ cv::Mat Source::retrieveModifiedFrame()
     {
         cv::Mat buffer = retrieveFrame();
         
+        if (mMask.total() != 0)
+            applyMask(buffer);
         // Noise filtering and vignetting correction, as well as ICC transform and lense
         // distortion correction have to be done before any geometric transformation
         if (mFilterNoise)
@@ -110,7 +112,15 @@ void Source::setBaseParameter(atom::Message pParam)
         return;
     }
 
-    if (paramName == "vignetting")
+    if (paramName == "mask")
+    {
+        string filename;
+        if (!readParam(pParam, filename))
+            return;
+
+        mMask = cv::imread(filename, CV_LOAD_IMAGE_GRAYSCALE);
+    }
+    else if (paramName == "vignetting")
     {
         if (pParam.size() == 4)
         {
@@ -265,6 +275,27 @@ float Source::getEV()
     setParameter(msg);
 
     return log2(mAperture*mAperture*(1/mExposureTime)*100/mISO)-mGain/6.f;
+}
+
+/************/
+void Source::applyMask(cv::Mat& pImg)
+{
+    // If not done yet, the mask is converted to float and resized accordingly to pImg
+    if (pImg.rows != mMask.rows || pImg.cols != mMask.cols)
+    {
+        cv::Mat buffer;
+        cv::resize(mMask, buffer, cv::Size(pImg.cols, pImg.rows), 0, 0, cv::INTER_NEAREST);
+        mMask = buffer;
+    }
+    if (mMask.depth() != pImg.type())
+    {
+        cv::Mat buffer = cv::Mat::zeros(mMask.rows, mMask.cols, pImg.type());
+        mMask.convertTo(buffer, pImg.type());
+        mMask = buffer;
+        mMask /= 255;
+    }
+
+    cv::multiply(mMask, pImg, pImg);
 }
 
 /************/

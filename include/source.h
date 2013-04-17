@@ -198,6 +198,9 @@ class Source
     private:
         static std::string mClassName; //!< Class name, to be set in child class
         static std::string mDocumentation; //!< Class documentation, to be set in child class
+
+        // Mask
+        cv::Mat mMask;
         
         // Noise reduction parameter
         bool mFilterNoise;
@@ -231,6 +234,9 @@ class Source
         // Methods
         /************/
         float getEV();
+
+        // Mask
+        void applyMask(cv::Mat& pImg);
 
         // Noise correction
         void filterNoise(cv::Mat& pImg);
