@@ -41,7 +41,7 @@ case "$host" in *-darwin* | *-macos10*)
   fi
   # OSX does not include /usr/local/lib/pkgconfig path, so we need to
   # add it. 
-  PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+  PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/Library/Frameworks/GStreamer.framework/Libraries/pkgconfig:$PKG_CONFIG_PATH
   export PKG_CONFIG_PATH
   LDFLAGS+=" -fPIC -L/usr/local/lib -L/usr/local/lib64"
   ;;

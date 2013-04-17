@@ -36,7 +36,7 @@
 #include "config.h"
 #include "base_objects.h"
 
-#define LOAD_MAX_WAIT_TIME_MS 500
+#define LOAD_MAX_WAIT_TIME_MS 5000
 
 using namespace std;
 
