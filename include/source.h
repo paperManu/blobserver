@@ -227,8 +227,14 @@ class Source
         HdriBuilder mHdriBuilder;
         float mHdriStartExposure, mHdriStepSize;
         int mHdriSteps;
+
         // Color correction
         cmsHTRANSFORM mICCTransform;
+
+        // File saving
+        bool mSaveToFile;
+        std::string mBaseFilename;
+        int mSavePeriod;
 
         /************/
         // Methods
@@ -254,6 +260,9 @@ class Source
 
         // Method to create a HDRI from LDRIs
         void createHdri(cv::Mat& pImg);
+
+        // Method to save the result to an image
+        void saveToFile(cv::Mat& pImg);
 };
 
 #endif // SOURCE_H

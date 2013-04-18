@@ -1,5 +1,6 @@
 #include "configurator.h"
 
+#include <cstring>
 #include <sstream>
 #include <atom/osc.h>
 
@@ -385,20 +386,28 @@ bool Configurator::getParamValuesFrom(const xmlDocPtr doc, const xmlNodePtr cur,
                     {
                         xmlChar* key = xmlNodeListGetString(doc, lCur->xmlChildrenNode, 1);
                         stringstream str(string((char*)key));
+                        char* token = strtok((char*)key, " ");
 
-                        bool isInteger = false;
+                        int index = 0;
                         while (str)
                         {
                             float tmpValue;
+                            string tmpString;
                             str >> tmpValue;
-                            if (!str && isInteger == false)
+                            if (str)
                             {
-                                values.push_back(atom::StringValue::create((char*)key));
-                            }
-                            else if (str)
-                            {
-                                isInteger = true;
                                 values.push_back(atom::FloatValue::create(tmpValue));
+                                index ++;
+                            }
+                            else
+                            {
+                                for (int i = 0; i < index; ++i)
+                                    token = strtok(NULL, " ");
+
+                                if (token == NULL)
+                                    continue;
+
+                                values.push_back(atom::StringValue::create(token));
                             }
                         }
                     }

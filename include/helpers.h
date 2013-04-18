@@ -30,28 +30,28 @@
 /*************/
 // Function to read a value from a message
 template<class T>
-bool readParam(const atom::Message pParam, T& pValue)
+bool readParam(const atom::Message pParam, T& pValue, int pIndex = 1)
 {
-    if (pParam.size() < 2)
+    if (pParam.size() < pIndex+1)
         return false;
 
-    auto tag = pParam[1].get()->getTypeTag();
+    auto tag = pParam[pIndex].get()->getTypeTag();
     if (tag == atom::FloatValue::TYPE_TAG)
     {
         float value;
-        value = atom::FloatValue::convert(pParam[1])->getFloat();
+        value = atom::FloatValue::convert(pParam[pIndex])->getFloat();
         reinterpret_cast<float&>(pValue) = value;
     }
     else if (tag == atom::IntValue::TYPE_TAG)
     {
         int value;
-        value = atom::IntValue::convert(pParam[1])->getInt();
+        value = atom::IntValue::convert(pParam[pIndex])->getInt();
         reinterpret_cast<int&>(pValue) = value;
     }
     else if (tag == atom::StringValue::TYPE_TAG)
     {
         std::string value;
-        value = atom::StringValue::convert(pParam[1])->getString();
+        value = atom::StringValue::convert(pParam[pIndex])->getString();
         reinterpret_cast<std::string&>(pValue) = value;
     }
     else

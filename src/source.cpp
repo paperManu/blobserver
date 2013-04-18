@@ -89,6 +89,9 @@ cv::Mat Source::retrieveModifiedFrame()
         if (buffer.rows != 0 && buffer.cols != 0)
             mCorrectedBuffer = buffer.clone();
 
+        if (mSaveToFile)
+            saveToFile(buffer);
+
         mUpdated = false;
 
         return mCorrectedBuffer;
@@ -238,6 +241,29 @@ void Source::setBaseParameter(atom::Message pParam)
         }
 
         mHdriActive = true;
+    }
+    else if (paramName == "save")
+    {
+        float active, period;
+        string filename;
+
+        if (!readParam(pParam, active, 1))
+            return;
+        if (!readParam(pParam, period, 2))
+            return;
+        if (!readParam(pParam, filename, 3))
+            return;
+
+        if (active == 1.f)
+        {
+            mSaveToFile = true;
+            mSavePeriod = (int)period;
+            mBaseFilename = filename;
+        }
+        else
+        {
+            mSaveToFile = false;
+        }
     }
 }
 
@@ -468,6 +494,32 @@ void Source::createHdri(cv::Mat& pImg)
         ldriCount = 0;
     }
     setParameter(message);
+}
+
+/*************/
+void Source::saveToFile(cv::Mat& pImg)
+{
+    static int phase = 0;
+    static int index = 0;
+
+    if (phase == 0)
+    {
+        char buffer[16];
+        sprintf(buffer, "%i", index);
+        string filename = mBaseFilename + string(buffer);
+        if (pImg.depth() == CV_8U || pImg.depth() == CV_16U)
+        {
+            filename += string(".png");
+            cv::imwrite(filename, pImg);
+        }
+
+        index++;
+        phase++;
+    }
+    else
+    {
+        phase = (phase + 1) % mSavePeriod;
+    }
 }
 
 /*************/

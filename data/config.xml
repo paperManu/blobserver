@@ -1,7 +1,7 @@
 <Blobserver>
     <Flow>
         <Detector>
-            <Type>Detector_MeanOutliers</Type>
+            <Type>Detector_Nop</Type>
         </Detector>
         <Source>
             <Type>Source_OpenCV</Type>
@@ -12,15 +12,15 @@
             </Param>
             <Param>
                 <Name>iso</Name>
-                <Value>800</Value>
+                <Value>400</Value>
             </Param>
             <Param>
                 <Name>width</Name>
-                <Value>1280</Value>
+                <Value>640</Value>
             </Param>
             <Param>
                 <Name>height</Name>
-                <Value>960</Value>
+                <Value>480</Value>
             </Param>
             <Param>
                 <Name>exposureTime</Name>
@@ -33,6 +33,10 @@
             <Param>
                 <Name>whiteBalanceBlue</Name>
                 <Value>512</Value>
+            </Param>
+            <Param>
+                <Name>save</Name>
+                <Value>0 5 /home/manu/tmp/test_</Value>
             </Param>
         </Source>
         <Client>
