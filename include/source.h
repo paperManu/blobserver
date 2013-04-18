@@ -120,7 +120,7 @@ class Source
         /**
          * \brief Retrieves the last frame grabbed by the source with grabFrame()
          */
-        virtual cv::Mat retrieveFrame() const {return mBuffer.get();}
+        virtual cv::Mat retrieveFrame() {return mBuffer.get();}
 
         /**
          * \brief Retrieves the last frame grabbed by the source, corrected with the various available corrections of specified so
