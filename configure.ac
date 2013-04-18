@@ -64,8 +64,8 @@ fi
 
 # Shmdata
 PKG_CHECK_MODULES([SHMDATA], [shmdata-0.6 shmdata-any-0.6],
-    AC_DEFINE([HAVE_SHMDATA], [1], [libshmdata detected]),
-    AC_DEFINE([HAVE_SHMDATA], [0], [libshmdata not detected]))
+    AC_DEFINE([HAVE_SHMDATA], [1], [Defined to 1 if libshmdata is detected]),
+    AC_DEFINE([HAVE_SHMDATA], [0], [Defined to 1 if libshmdata is detected]))
 
 # Liblo
 PKG_CHECK_MODULES([LIBLO], [liblo >= 0.26])
