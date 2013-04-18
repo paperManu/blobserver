@@ -35,8 +35,6 @@
 #include "source.h"
 #include "detector.h"
 
-using namespace std;
-
 /*************/
 // lo_address in an object
 class OscClient
@@ -45,7 +43,7 @@ class OscClient
         OscClient(lo_address pAddress) {mAddress = pAddress;}
         ~OscClient() {lo_address_free(mAddress);}
 
-        lo_address get() {return mAddress;}
+        lo_address get() const {return mAddress;}
         void replace(lo_address newAddress)
         {
             lo_address_free(mAddress);
@@ -81,12 +79,12 @@ class ShmImage
 // Struct to contain a complete flow, from capture to client
 struct Flow
 {
-    vector<shared_ptr<Source>> sources;
-    shared_ptr<Detector> detector;
+    std::vector<std::shared_ptr<Source>> sources;
+    std::shared_ptr<Detector> detector;
 #if HAVE_SHMDATA
-    shared_ptr<ShmImage> shm;
+    std::shared_ptr<ShmImage> shm;
 #endif
-    shared_ptr<OscClient> client;
+    std::shared_ptr<OscClient> client;
     unsigned int id;
     bool run;
 };

@@ -44,6 +44,7 @@ bool Source_OpenCV::connect()
     mWidth = (unsigned int)(mCamera.get(CV_CAP_PROP_FRAME_WIDTH));
     mHeight = (unsigned int)(mCamera.get(CV_CAP_PROP_FRAME_HEIGHT));
     mFramerate = (unsigned int)(mCamera.get(CV_CAP_PROP_FPS));
+    mExposureTime = (float)(mCamera.get(CV_CAP_PROP_EXPOSURE));
     
     int channels;
     channels = (int)(mCamera.get(CV_CAP_PROP_FORMAT));
@@ -153,7 +154,7 @@ void Source_OpenCV::setParameter(atom::Message pParam)
 }
 
 /*************/
-atom::Message Source_OpenCV::getParameter(atom::Message pParam)
+atom::Message Source_OpenCV::getParameter(atom::Message pParam) const
 {
     atom::Message msg;
 
@@ -178,11 +179,7 @@ atom::Message Source_OpenCV::getParameter(atom::Message pParam)
     else if (paramName == "framerate")
         msg.push_back(atom::IntValue::create(mFramerate));
     else if (paramName == "exposureTime")
-    {
-        int value = mCamera.get(CV_CAP_PROP_EXPOSURE);
-        mExposureTime = (float)value;
-        msg.push_back(atom::IntValue::create(value));
-    }
+        msg.push_back(atom::FloatValue::create(mExposureTime));
     else if (paramName == "subsourcenbr")
         msg.push_back(atom::IntValue::create(mSubsourceNbr));
     else
@@ -192,7 +189,7 @@ atom::Message Source_OpenCV::getParameter(atom::Message pParam)
 }
 
 /*************/
-atom::Message Source_OpenCV::getSubsources()
+atom::Message Source_OpenCV::getSubsources() const
 {
     atom::Message message;
 

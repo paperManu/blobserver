@@ -37,7 +37,7 @@ class Source_OpenCV : public Source
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message getSubsources(); 
+        atom::Message getSubsources() const; 
 
         bool connect();
         bool disconnect();
@@ -45,7 +45,7 @@ class Source_OpenCV : public Source
         cv::Mat retrieveFrame();
 
         void setParameter(atom::Message pParam);
-        atom::Message getParameter(atom::Message pParam);
+        atom::Message getParameter(atom::Message pParam) const;
 
     private:
         static std::string mClassName;

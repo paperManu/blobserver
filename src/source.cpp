@@ -1,5 +1,7 @@
 #include "source.h"
 
+using namespace std;
+
 std::string Source::mClassName = "Source";
 std::string Source::mDocumentation = "N/A";
 
@@ -268,7 +270,7 @@ void Source::setBaseParameter(atom::Message pParam)
 }
 
 /************/
-atom::Message Source::getBaseParameter(atom::Message pParam)
+atom::Message Source::getBaseParameter(atom::Message pParam) const
 {
     atom::Message msg;
 
@@ -543,7 +545,7 @@ MatBuffer& MatBuffer::operator=(cv::Mat& mat)
 }
 
 /*************/
-cv::Mat MatBuffer::get()
+cv::Mat MatBuffer::get() const
 {
     unsigned int loc = _head;
     return _mats[loc];

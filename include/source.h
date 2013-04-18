@@ -36,8 +36,6 @@
 #include "helpers.h"
 #include "hdribuilder.h"
 
-using namespace std;
-
 /*************/
 //! A simple buffer of cv::Mat
 class MatBuffer
@@ -59,11 +57,11 @@ class MatBuffer
          * \brief Gets the current head of the buffer
          * \return Returns the cv::Mat which is the latest value of the buffer
          */
-        cv::Mat get();
+        cv::Mat get() const;
 
     private:
-        vector<cv::Mat> _mats; //!< All the cv::Mat currently held by the buffer
-        atomic_uint _head; //!< Index of the head of the buffer
+        std::vector<cv::Mat> _mats; //!< All the cv::Mat currently held by the buffer
+        std::atomic_uint _head; //!< Index of the head of the buffer
 };
 
 /*************/
@@ -101,7 +99,7 @@ class Source
          * \brief Allows to get all the availables subsources for a given source
          * \return Returns a message containing all subsources name
          */
-        virtual atom::Message getSubsources() {return atom::Message();}
+        virtual atom::Message getSubsources() const {return atom::Message();}
 
         // Base methods
         /**
@@ -122,7 +120,7 @@ class Source
         /**
          * \brief Retrieves the last frame grabbed by the source with grabFrame()
          */
-        virtual cv::Mat retrieveFrame() {return mBuffer.get();}
+        virtual cv::Mat retrieveFrame() const {return mBuffer.get();}
 
         /**
          * \brief Retrieves the last frame grabbed by the source, corrected with the various available corrections of specified so
@@ -140,39 +138,39 @@ class Source
          * \param pParam A message containing the name of the parameter
          * \return Returns a message containing the name of the parameter and its current value
          */
-        virtual atom::Message getParameter(atom::Message pParam) {}
+        virtual atom::Message getParameter(atom::Message pParam) const {}
 
         /**
          * \brief Gets the name of the source
          */
-        std::string getName() {return mName;}
+        std::string getName() const {return mName;}
         /**
          * \brief Gets the width of the source
          */
-        unsigned int getWidth() {return mWidth;}
+        unsigned int getWidth() const {return mWidth;}
         /**
          * \brief Gets the height of the source
          */
-        unsigned int getHeight() {return mHeight;}
+        unsigned int getHeight() const {return mHeight;}
         /**
          * \brief Gets the channel number of the source
          */
-        unsigned int getChannels() {return mChannels;}
+        unsigned int getChannels() const {return mChannels;}
         /**
          * \brief Gets the framerate of the source
          */
-        unsigned int getFramerate() {return mFramerate;}
+        unsigned int getFramerate() const {return mFramerate;}
         /**
          * \brief Gets the subsource number
          */
-        unsigned int getSubsourceNbr() {return mSubsourceNbr;}
+        unsigned int getSubsourceNbr() const {return mSubsourceNbr;}
 
 
     protected:
         MatBuffer mBuffer; //!< Image buffer
         cv::Mat mCorrectedBuffer; //!< Corrected image buffer
         bool mUpdated; //!< Flag set to true if a new grab is available
-        mutable mutex mMutex; //!< Mutex to prevent concurrent read/write of mBuffer
+        mutable std::mutex mMutex; //!< Mutex to prevent concurrent read/write of mBuffer
 
         // Base caracteristics of the source
         std::string mName;
@@ -193,7 +191,7 @@ class Source
 
         // Base methods for any type of source
         void setBaseParameter(atom::Message pParam);
-        atom::Message getBaseParameter(atom::Message pParam);
+        atom::Message getBaseParameter(atom::Message pParam) const;
 
     private:
         static std::string mClassName; //!< Class name, to be set in child class

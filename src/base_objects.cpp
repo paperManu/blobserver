@@ -1,5 +1,7 @@
 #include "base_objects.h"
 
+using namespace std;
+
 #if HAVE_SHMDATA
 /*************/
 ShmImage::ShmImage(const char* filename):

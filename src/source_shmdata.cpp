@@ -1,5 +1,7 @@
 #include "source_shmdata.h"
 
+using namespace std;
+
 #if HAVE_SHMDATA
 #include <regex>
 
@@ -101,7 +103,7 @@ void Source_Shmdata::setParameter(atom::Message pParam)
 }
 
 /*************/
-atom::Message Source_Shmdata::getParameter(atom::Message pParam)
+atom::Message Source_Shmdata::getParameter(atom::Message pParam) const
 {
     atom::Message msg;
 
@@ -134,7 +136,7 @@ atom::Message Source_Shmdata::getParameter(atom::Message pParam)
 }
 
 /*************/
-atom::Message Source_Shmdata::getSubsources()
+atom::Message Source_Shmdata::getSubsources() const
 {
     atom::Message message;
 

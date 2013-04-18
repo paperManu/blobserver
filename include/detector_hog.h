@@ -32,7 +32,6 @@
 #include "descriptor_hog.h"
 #include "blob_2D.h"
 
-
  /*************/
 // Class Detector_Hog
 class Detector_Hog : public Detector
@@ -80,7 +79,7 @@ class Detector_Hog : public Detector
 
         // Background subtractor, used to select window of interest
         // to feed to the SVM
-        BackgroundSubtractorMOG2 mBgSubtractor;
+        cv::BackgroundSubtractorMOG2 mBgSubtractor;
 
         // Various variables
         cv::Mat mBgSubtractorBuffer;

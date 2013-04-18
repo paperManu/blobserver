@@ -96,7 +96,7 @@ class Detector
         /**
          * \brief Returns the message from the last call to detect()
          */
-        atom::Message getLastMessage() {return mLastMessage;}
+        atom::Message getLastMessage() const {return mLastMessage;}
 
         /**
          * \brief Sets the mask to use on detection
@@ -114,7 +114,7 @@ class Detector
          * \param pParam A message containing the name of the parameter
          * \return Returns a message containing the name of the parameter and its current value
          */
-        atom::Message getParameter(atom::Message pParam);
+        atom::Message getParameter(atom::Message pParam) const;
         
         /**
          * \brief Gives a ptr to the detector, for it to control the source (if needed)
@@ -125,17 +125,17 @@ class Detector
         /**
          * \brief Gets the name to use in the osc path when sending the message related to this detector
          */
-        std::string getName() {return mName;}
+        std::string getName() const {return mName;}
 
         /**
          * \brief Gets the full OSC path to use for sending message from this detector
          */
-        std::string getOscPath() {return mOscPath;}
+        std::string getOscPath() const {return mOscPath;}
 
         /**
          * \brief Gets the resulting image from the detector.
          */
-        cv::Mat getOutput() {return mOutputBuffer.clone();}
+        cv::Mat getOutput() const {return mOutputBuffer.clone();}
 
     protected:
         cv::Mat mOutputBuffer; //!< The output buffer, resulting from the detection
@@ -145,7 +145,7 @@ class Detector
         std::string mOscPath; //!< OSC path for the detector, to be set in child class
         std::string mName; // !< Name of the detector, to be set in child class
 
-        std::vector<weak_ptr<Source>> mSources;
+        std::vector<std::weak_ptr<Source>> mSources;
 
         // Methods
         cv::Mat getMask(cv::Mat pCapture, int pInterpolation = CV_INTER_NN);

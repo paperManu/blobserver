@@ -1,5 +1,8 @@
 #include "hdribuilder.h"
 
+using namespace std;
+using namespace cv;
+
 /*************/
 HdriBuilder::HdriBuilder()
 {
@@ -57,7 +60,7 @@ bool HdriBuilder::addLDR(const Mat *pImage, float pEV)
 }
 
 /*************/
-Mat HdriBuilder::getHDRI()
+Mat HdriBuilder::getHDRI() const
 {
     return mHDRi;
 }
@@ -150,7 +153,7 @@ bool HdriBuilder::computeHDRI()
 }
 
 /*************/
-float HdriBuilder::getGaussian(unsigned char pValue)
+float HdriBuilder::getGaussian(unsigned char pValue) const
 {
     float lSigma = 40;
     float lMu = 127;

@@ -33,7 +33,7 @@ void Detector::setMask(cv::Mat pMask)
 }
 
 /*****************/
-atom::Message Detector::getParameter(atom::Message pParam)
+atom::Message Detector::getParameter(atom::Message pParam) const
 {
     atom::Message message;
 

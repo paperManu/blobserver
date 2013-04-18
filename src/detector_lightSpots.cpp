@@ -1,6 +1,6 @@
 #include "detector_lightSpots.h"
 
-//using namespace atom;
+using namespace std;
 
 std::string Detector_LightSpots::mClassName = "Detector_LightSpots";
 std::string Detector_LightSpots::mDocumentation = "N/A";

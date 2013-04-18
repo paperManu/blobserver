@@ -32,8 +32,6 @@
 
 #include "source.h"
 
-using namespace std;
-
 class Source_Shmdata : public Source
 {
     public:
@@ -41,10 +39,10 @@ class Source_Shmdata : public Source
         Source_Shmdata(int pParam);
         ~Source_Shmdata();
 
-        static string getClassName() {return mClassName;}
-        static string getDocumentation() {return mDocumentation;}
+        static std::string getClassName() {return mClassName;}
+        static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message getSubsources(); 
+        atom::Message getSubsources() const; 
 
         bool connect();
         bool disconnect();
@@ -52,11 +50,11 @@ class Source_Shmdata : public Source
         cv::Mat retrieveFrame();
 
         void setParameter(atom::Message pParam);
-        atom::Message getParameter(atom::Message pParam);
+        atom::Message getParameter(atom::Message pParam) const;
 
     private:
-        static string mClassName;
-        static string mDocumentation;
+        static std::string mClassName;
+        static std::string mDocumentation;
 
         shmdata_any_reader_t* mReader;
 
