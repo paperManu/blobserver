@@ -32,7 +32,7 @@ Source::Source():
     mFilterNoise = false;
 
     mScale = 1.f;
-    mRotation = 1.f;
+    mRotation = 0.f;
 
     mCorrectDistortion = false;
     mCorrectVignetting = false;

@@ -91,6 +91,7 @@ void Source_Shmdata::setParameter(atom::Message pParam)
         mReader = shmdata_any_reader_init();
         shmdata_any_reader_run_gmainloop(mReader, SHMDATA_FALSE);
         shmdata_any_reader_set_on_data_handler(mReader, Source_Shmdata::onData, this);
+        //shmdata_any_reader_set_debug(mReader, SHMDATA_TRUE);
         shmdata_any_reader_start(mReader, location.c_str());
     }
     else if (paramName == "cameraNumber")
