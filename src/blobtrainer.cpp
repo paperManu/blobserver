@@ -55,6 +55,7 @@ static gchar* gCellSize = NULL;
 static gchar* gBlockSize = NULL;
 static gchar* gRoiSize = NULL;
 static double gSigma = 0.0;
+static double gMargin = 0.0;
 
 int _svmCriteria;
 cv::Point_<int> _roiPosition;
@@ -81,6 +82,7 @@ static GOptionEntry gEntries[] =
     {"block-size", 0, 0, G_OPTION_ARG_STRING, &gBlockSize, "Specifies the size of the blocks over which cells are normalized (default: '3x3')", NULL},
     {"roi-size", 0, 0, G_OPTION_ARG_STRING, &gRoiSize, "Specifies the size (in pixels) of the ROI from which to create descriptors (default: '64x128')", NULL},
     {"sigma", 0, 0, G_OPTION_ARG_DOUBLE, &gSigma, "Specifies the sigma parameter for the gaussian kernel applied over blocks (default: 1.0)", NULL},
+    {"margin", 0, 0, G_OPTION_ARG_DOUBLE, &gMargin, "Specifies the distance to the margin for positive images to be detected as such (default: 0.0)", NULL},
     {NULL}
 };
 
@@ -309,7 +311,7 @@ int main(int argc, char** argv)
         if (gVerbose)
             cout << positiveFiles[i] << " -> " << value << endl;
 
-        if (value < 0.f)
+        if (value < -gMargin)
             positive++;
 
         totalTime += timeSince(chronoTime);
