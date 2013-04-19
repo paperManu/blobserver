@@ -72,6 +72,7 @@ class Detector_Hog : public Detector
 
         // SVM...
         CvSVM mSvm;
+        float mSvmMargin;
         bool mIsModelLoaded;
         std::vector<cv::Point> mSvmValidPositions;
         unsigned long long mMaxTimePerFrame; // Maximum time allowed per frame, in usec

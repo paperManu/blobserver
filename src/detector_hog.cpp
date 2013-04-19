@@ -15,9 +15,9 @@ using namespace chrono;
 class Parallel_Detect : public cv::ParallelLoopBody
 {
     public:
-        Parallel_Detect(const vector<cv::Point>* points, vector<cv::Point>* samples, const int size,
+        Parallel_Detect(const vector<cv::Point>* points, vector<cv::Point>* samples, const float margin,
             const Descriptor_Hog* descriptor, const CvSVM* svm):
-            _points(points), _samples(samples), _size(size), _descriptor(descriptor), _svm(svm)
+            _points(points), _samples(samples), _margin(margin), _descriptor(descriptor), _svm(svm)
         {
             mMutex.reset(new mutex());
         }
@@ -34,10 +34,23 @@ class Parallel_Detect : public cv::ParallelLoopBody
                     continue;
                 descriptionMat = cv::Mat(1, description.size(), CV_32FC1, &description[0]);
 
-                if (_svm->predict(descriptionMat) == 1.f)
+                if (_margin > 0.f)
                 {
-                    lock_guard<mutex> lock(*mMutex.get());
-                    _samples->push_back(point);
+                    float distance = _svm->predict(descriptionMat, true);
+                    if (distance < -_margin)
+                    {
+                        lock_guard<mutex> lock(*mMutex.get());
+                        _samples->push_back(point);
+                    }
+                }
+                else
+                {
+                    float distance = _svm->predict(descriptionMat, false);
+                    if (distance == 1.f)
+                    {
+                        lock_guard<mutex> lock(*mMutex.get());
+                        _samples->push_back(point);
+                    }
                 }
             }
         }
@@ -45,9 +58,9 @@ class Parallel_Detect : public cv::ParallelLoopBody
     private:
         const vector<cv::Point>* _points;
         vector<cv::Point>* _samples;
-        const int _size;
         const Descriptor_Hog* _descriptor;
         const CvSVM* _svm;
+        const float _margin;
 
         shared_ptr<mutex> mMutex;
 };
@@ -93,6 +106,7 @@ void Detector_Hog::make()
     mSigma = 0.f;
     updateDescriptorParams();
 
+    mSvmMargin = 0.f;
     mIsModelLoaded = false;
     mMaxTimePerFrame = 1e5;
     mMaxThreads = 4;
@@ -193,7 +207,7 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
             points.push_back(point);
         }
 
-        cv::parallel_for_(cv::Range(0, nbrPoints), Parallel_Detect(&points, &samples, mRoiSize.width, &mDescriptor, &mSvm));
+        cv::parallel_for_(cv::Range(0, nbrPoints), Parallel_Detect(&points, &samples, mSvmMargin, &mDescriptor, &mSvm));
 
         timePresent = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch()).count();
     }
@@ -387,6 +401,14 @@ void Detector_Hog::setParameter(atom::Message pMessage)
 
         mBins = max(2.f, bins);
         updateDescriptorParams();
+    }
+    else if (cmd == "margin")
+    {
+        float margin;
+        if (!readParam<float>(pMessage, margin))
+            return;
+
+        mSvmMargin = max(0.f, margin);
     }
     else if (cmd == "lifetime")
     {

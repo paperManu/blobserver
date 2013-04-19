@@ -304,12 +304,12 @@ int main(int argc, char** argv)
 
         vector<float> description = descriptor.getDescriptor(_roiPosition);
         cv::Mat descriptionMat(1, (int)description.size(), CV_32FC1, &description[0]);
-        float value = svm.predict(descriptionMat);
+        float value = svm.predict(descriptionMat, true);
 
         if (gVerbose)
             cout << positiveFiles[i] << " -> " << value << endl;
 
-        if (value == 1)
+        if (value < 0.f)
             positive++;
 
         totalTime += timeSince(chronoTime);
@@ -337,13 +337,13 @@ int main(int argc, char** argv)
                 if (description.size() == 0)
                     continue;
 
-                float value = svm.predict(descriptionMat);
+                float value = svm.predict(descriptionMat, true);
 
                 if (gVerbose)
                     cout << negativeFiles[i] << " -> " << value << endl;
 
                 totalNegatives++;
-                if (value == -1)
+                if (value > 0.f)
                     negative++;
             }
         }
