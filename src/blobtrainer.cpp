@@ -345,7 +345,7 @@ int main(int argc, char** argv)
                     cout << negativeFiles[i] << " -> " << value << endl;
 
                 totalNegatives++;
-                if (value > 0.f)
+                if (value > -gMargin)
                     negative++;
             }
         }

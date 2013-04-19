@@ -3,6 +3,71 @@
 using namespace std;
 
 /*************/
+// Class for computation of gradients
+class Parallel_Gradients : public cv::ParallelLoopBody
+{
+    public:
+        Parallel_Gradients(cv::Mat* gradientsH, cv::Mat* gradientsV, cv::Mat* gradients, const int channels, const bool isSigned):
+            _gradientsH(gradientsH), _gradientsV(gradientsV), _gradients(gradients), _cn(channels), _signed(isSigned) {}
+
+        void operator()(const cv::Range& r) const
+        {
+            for (int y = r.start; y != r.end; ++y)
+            {
+                for (int x = 0; x < _gradients->cols; ++x)
+                {
+                    float hValue = 0.f;
+                    float vValue = 0.f;
+                    float length = 0.f;
+
+                    for (int i = 0; i < _cn; ++i)
+                    {
+                        float cnHValue = _gradientsH[i].at<short>(y, x);
+                        float cnVValue = _gradientsV[i].at<short>(y, x);
+                        float cnLength = sqrtf(cnHValue*cnHValue + cnVValue*cnVValue);
+
+                        if (cnLength > length)
+                        {
+                            hValue = cnHValue;
+                            vValue = cnVValue;
+                            length = cnLength;
+                        }
+                    }
+
+                    float angle = 0.f;
+                    if (length > 0.f)
+                    {
+                        hValue /= length;
+                        angle = acos(hValue);
+                    }
+
+                    if (_signed && vValue < 0.f)
+                    {
+                        angle = 2.0*CV_PI - angle;
+                        angle = (int)(angle / CV_PI * 180) % 360;
+                    }
+                    else
+                    {
+                        angle = (int)(angle / CV_PI * 180) % 180;
+                    }
+
+                    _gradients->at<cv::Vec2b>(y, x)[0] = (char)angle;
+                    _gradients->at<cv::Vec2b>(y, x)[1] = (char)length;
+                }
+            }
+        }
+
+    private:
+        cv::Mat* _gradientsH;
+        cv::Mat* _gradientsV;
+        cv::Mat* _gradients;
+        const int _cn;
+        const bool _signed;
+};
+
+/*************/
+// Definition of class Descriptor_Hog
+/*************/
 Descriptor_Hog::Descriptor_Hog():
     _doCrop(false)
 {
@@ -51,50 +116,7 @@ void Descriptor_Hog::setImage(const cv::Mat& pImage)
     if (_gradients.cols != _image.cols || _gradients.rows != _image.rows)
         _gradients = cv::Mat(_image.rows, _image.cols, CV_8UC2);
 
-    int rowLength = tmpImage.cols;
-    for (int x = 0; x < _image.cols; ++x)
-    {
-        for (int y = 0; y < _image.rows; ++y)
-        {
-            float hValue = 0.f;
-            float vValue = 0.f;
-            float length = 0.f;
-            // We get the maximum gradient over the image
-            for (int i = 0; i < cn; ++i)
-            {
-                float cnHValue = channelsH[i].at<short>(y, x);
-                float cnVValue = channelsV[i].at<short>(y, x);
-                float cnLength = sqrtf(cnHValue*cnHValue + cnVValue*cnVValue);
-
-                if (cnLength > length)
-                {
-                    hValue = cnHValue;
-                    vValue = cnVValue;
-                    length = cnLength;
-                }
-            }
-
-            float angle = 0.f;
-            if (length > 0.f)
-            {
-                hValue /= length;
-                angle = acos(hValue);
-            }
-
-            if (_signed && vValue < 0.f)
-            {
-                angle = 2.0*CV_PI - angle;
-                angle = (int)(angle / CV_PI * 180) % 360;
-            }
-            else
-            {
-                angle = (int)(angle / CV_PI * 180) % 180;
-            }
-
-            _gradients.at<cv::Vec2b>(y, x)[0] = (char)angle;
-            _gradients.at<cv::Vec2b>(y, x)[1] = (char)length;
-        }
-    }
+    cv::parallel_for_(cv::Range(0, _gradients.rows), Parallel_Gradients(channelsH, channelsV, &_gradients, cn, _signed));
 }
 
 /*************/
