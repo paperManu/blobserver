@@ -103,7 +103,7 @@ else
 fi
 
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
-if test -z "x$DOXYGEN" = "xtrue" ; then
+if test "x$DOXYGEN" = "xtrue" ; then
     AC_MSG_WARN([Doxygen not found - documentation will not be generated])
 fi
 

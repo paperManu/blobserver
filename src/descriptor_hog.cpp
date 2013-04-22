@@ -3,7 +3,7 @@
 using namespace std;
 
 /*************/
-// Class for computation of gradients
+// Class for parallel computation of gradients
 class Parallel_Gradients : public cv::ParallelLoopBody
 {
     public:
