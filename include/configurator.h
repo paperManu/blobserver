@@ -38,8 +38,6 @@
 
 #define LOAD_MAX_WAIT_TIME_MS 5000
 
-using namespace std;
-
 class Configurator
 {
     public:
@@ -54,17 +52,17 @@ class Configurator
 
         lo_server_thread mOscServer;
 
-        atomic_int mLastIndexReceived;
+        std::atomic_int mLastIndexReceived;
         bool mVerbose;
 
         /*** Methods ***/
         bool loadFlow(const xmlDocPtr doc, xmlNodePtr cur);
 
-        string getStringValueFrom(const xmlDocPtr doc, const xmlNodePtr cur, const xmlChar* attr);
+        std::string getStringValueFrom(const xmlDocPtr doc, const xmlNodePtr cur, const xmlChar* attr);
         int getIntValueFrom(const xmlDocPtr doc, const xmlNodePtr cur, const xmlChar* attr);
-        bool getParamValuesFrom(const xmlDocPtr doc, xmlNodePtr cur, string& paramName, atom::Message& values);
+        bool getParamValuesFrom(const xmlDocPtr doc, xmlNodePtr cur, std::string& paramName, atom::Message& values);
 
-        void checkString(string& str, const string defaultStr);
+        void checkString(std::string& str, const std::string defaultStr);
         void checkInt(int& value, const int defaultValue);
 
         static void oscError(int num, const char* msg, const char* path);

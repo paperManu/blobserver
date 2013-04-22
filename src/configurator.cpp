@@ -4,6 +4,8 @@
 #include <sstream>
 #include <atom/osc.h>
 
+using namespace std;
+
 /*************/
 Configurator::Configurator():
     mReady(false),

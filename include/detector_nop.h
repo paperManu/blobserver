@@ -27,8 +27,6 @@
 
 #include "detector.h"
 
-using namespace std;
-
  /*************/
 // Class Detector_Nop
 class Detector_Nop : public Detector
@@ -40,12 +38,12 @@ class Detector_Nop : public Detector
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(vector<cv::Mat> pCaptures);
+        atom::Message detect(std::vector<cv::Mat> pCaptures);
         void setParameter(atom::Message pMessage);
 
     private:
-        static string mClassName;
-        static string mDocumentation;
+        static std::string mClassName;
+        static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
         unsigned int mFrameNumber;
