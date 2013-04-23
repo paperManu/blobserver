@@ -259,9 +259,11 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
                 isIn = true;
         }
 
+        pBlobs[i].getOlder();
+
         if (!isIn)
         {
-            pBlobs[i].getOlder();
+            pBlobs[i].reduceLifetime();
             if (pBlobs[i].getLifetime() < 0)
             {
                 pBlobs.erase(pBlobs.begin() + i);

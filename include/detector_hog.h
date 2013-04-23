@@ -86,6 +86,8 @@ class Detector_Hog : public Detector
         cv::Mat mBgSubtractorBuffer;
         cv::RNG mRng;
         float mBlobMergeDistance; // Distance to considerer two blobs as one
+        bool mSaveSamples; // If true, save samples older than mSaveSamplesAge
+        unsigned long mSaveSamplesAge;
 
         // Methods
         void make();

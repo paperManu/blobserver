@@ -112,6 +112,8 @@ void Detector_Hog::make()
     mMaxThreads = 4;
 
     mBlobMergeDistance = 64.f;
+    mSaveSamples = false;
+    mSaveSamplesAge = 120;
 }
 
 /*************/
@@ -264,6 +266,14 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
         Blob::properties props = blob.getBlob();
         cv::Rect rect(props.position.x, props.position.y, mRoiSize.width, mRoiSize.height);
         cv::rectangle(resultMat, rect, cv::Scalar(1, 1, 1), CV_FILLED);
+
+        if (mSaveSamples && blob.getAge() == mSaveSamplesAge)
+        {
+            cv::Mat cropSample(input, rect);
+            char buffer[64];
+            sprintf(buffer, "sample_%i.png", blob.getId());
+            cv::imwrite(buffer, cropSample);
+        }
     } );
 
     // The result is shown
@@ -427,6 +437,23 @@ void Detector_Hog::setParameter(atom::Message pMessage)
         float cov;
         if (readParam(pMessage, cov))
             mMeasurementNoiseCov = abs(cov);
+    }
+    else if (cmd == "saveSamples")
+    {
+        float save;
+        if (!readParam(pMessage, save))
+            return;
+
+        if (save == 1.f)
+            mSaveSamples = true;
+        else
+            mSaveSamples = false;
+    }
+    else if (cmd == "saveSamplesAge")
+    {
+        float age;
+        if (readParam(pMessage, age))
+            mSaveSamplesAge = (unsigned long)age;
     }
     else
         setBaseParameter(pMessage);
