@@ -57,7 +57,7 @@ if test "x${have_glib}" = "xfalse" ; then
 fi
 
 # OpenCV
-PKG_CHECK_MODULES([OPENCV], [opencv >= 2.3])
+PKG_CHECK_MODULES([OPENCV], [opencv >= 2.4])
 if test "x${have_opencv}" = "xfalse" ; then
     AC_MSG_ERROR([Missing opencv])
 fi
