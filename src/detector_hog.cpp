@@ -268,7 +268,7 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
         cv::rectangle(resultMat, rect, cv::Scalar(1, 1, 1), CV_FILLED);
 
         if (mSaveSamples && blob.getAge() == mSaveSamplesAge
-            && rect.x >= 0 && rect.y >= 0 && input.cols - rect.width < rect.x && input.rows - rect.height < rect.y)
+            && rect.x >= 0 && rect.y >= 0 && input.cols - rect.width > rect.x && input.rows - rect.height > rect.y)
         {
             cv::Mat cropSample(input, rect);
             char buffer[64];

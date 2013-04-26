@@ -63,7 +63,7 @@ if test "x${have_opencv}" = "xfalse" ; then
 fi
 
 # Shmdata
-PKG_CHECK_MODULES([SHMDATA], [shmdata-0.6 shmdata-any-0.6],
+PKG_CHECK_MODULES([SHMDATA], [shmdata-0.8 shmdata-any-0.8],
     AC_DEFINE([HAVE_SHMDATA], [1], [Defined to 1 if libshmdata is detected]),
     AC_DEFINE([HAVE_SHMDATA], [0], [Defined to 1 if libshmdata is detected]))
 
