@@ -123,7 +123,7 @@ class Source
         virtual cv::Mat retrieveFrame() {return mBuffer.get();}
 
         /**
-         * \brief Retrieves the last frame grabbed by the source, corrected with the various available corrections of specified so
+         * \brief Retrieves the last frame grabbed by the source, corrected with the various available corrections if specified so
          */
         cv::Mat retrieveModifiedFrame();
 

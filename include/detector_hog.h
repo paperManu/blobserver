@@ -77,6 +77,9 @@ class Detector_Hog : public Detector
         std::vector<cv::Point> mSvmValidPositions;
         unsigned long long mMaxTimePerFrame; // Maximum time allowed per frame, in usec
         int mMaxThreads; // Maximum number of concurrent threads
+        // PCA ...
+        cv::PCA mPca;
+        bool mIsPcaLoaded;
 
         // Background subtractor, used to select window of interest
         // to feed to the SVM

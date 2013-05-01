@@ -16,8 +16,8 @@ class Parallel_Detect : public cv::ParallelLoopBody
 {
     public:
         Parallel_Detect(const vector<cv::Point>* points, vector<cv::Point>* samples, const float margin,
-            const Descriptor_Hog* descriptor, const CvSVM* svm):
-            _points(points), _samples(samples), _margin(margin), _descriptor(descriptor), _svm(svm)
+            const Descriptor_Hog* descriptor, const CvSVM* svm, const cv::PCA* pca):
+            _points(points), _samples(samples), _margin(margin), _descriptor(descriptor), _svm(svm), _pca(pca)
         {
             mMutex.reset(new mutex());
         }
@@ -33,6 +33,12 @@ class Parallel_Detect : public cv::ParallelLoopBody
                 if (description.size() == 0)
                     continue;
                 descriptionMat = cv::Mat(1, description.size(), CV_32FC1, &description[0]);
+
+                if (_pca != NULL)
+                    //descriptionMat = (*_pca) * descriptionMat.t();
+                    descriptionMat = _pca->project(descriptionMat);
+                
+                descriptionMat = descriptionMat.t();
 
                 if (_margin > 0.f)
                 {
@@ -60,6 +66,7 @@ class Parallel_Detect : public cv::ParallelLoopBody
         vector<cv::Point>* _samples;
         const Descriptor_Hog* _descriptor;
         const CvSVM* _svm;
+        const cv::PCA* _pca;
         const float _margin;
 
         shared_ptr<mutex> mMutex;
@@ -105,6 +112,8 @@ void Detector_Hog::make()
     mBins = 9;
     mSigma = 0.f;
     updateDescriptorParams();
+
+    mIsPcaLoaded = false;
 
     mSvmMargin = 0.f;
     mIsModelLoaded = false;
@@ -209,7 +218,10 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
             points.push_back(point);
         }
 
-        cv::parallel_for_(cv::Range(0, nbrPoints), Parallel_Detect(&points, &samples, mSvmMargin, &mDescriptor, &mSvm));
+        if (mIsPcaLoaded)
+            cv::parallel_for_(cv::Range(0, nbrPoints), Parallel_Detect(&points, &samples, mSvmMargin, &mDescriptor, &mSvm, &mPca));
+        else
+            cv::parallel_for_(cv::Range(0, nbrPoints), Parallel_Detect(&points, &samples, mSvmMargin, &mDescriptor, &mSvm, NULL));
 
         timePresent = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch()).count();
     }
@@ -343,6 +355,21 @@ void Detector_Hog::setParameter(atom::Message pMessage)
         cout << "Attemping to load SVM model from file " << filename << endl;
         mSvm.load(filename.c_str());
         mIsModelLoaded = true;
+    }
+    else if (cmd == "pcaFilename")
+    {
+        string filename;
+        if (!readParam(pMessage, filename))
+            return;
+
+        cout << "Attemping to load PCA transform from file " << filename << endl;
+        cv::FileStorage file(filename, cv::FileStorage::READ);
+        cv::Mat eigen, mean;
+        file["eigenVectors"] >> eigen;
+        file["mean"] >> mean;
+        mPca.eigenvectors = eigen;
+        mPca.mean = mean;
+        mIsPcaLoaded = true;
     }
     else if (cmd == "maxTimePerFrame")
     {

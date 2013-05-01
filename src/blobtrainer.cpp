@@ -57,6 +57,8 @@ static gchar* gRoiSize = NULL;
 static double gSigma = 0.0;
 static double gMargin = 0.0;
 
+static double gPca = 1.0;
+
 int _svmCriteria;
 cv::Point_<int> _roiPosition;
 cv::Point_<int> _cellSize;
@@ -83,6 +85,7 @@ static GOptionEntry gEntries[] =
     {"roi-size", 0, 0, G_OPTION_ARG_STRING, &gRoiSize, "Specifies the size (in pixels) of the ROI from which to create descriptors (default: '64x128')", NULL},
     {"sigma", 0, 0, G_OPTION_ARG_DOUBLE, &gSigma, "Specifies the sigma parameter for the gaussian kernel applied over blocks (default: 1.0)", NULL},
     {"margin", 0, 0, G_OPTION_ARG_DOUBLE, &gMargin, "Specifies the distance to the margin for positive images to be detected as such (default: 0.0)", NULL},
+    {"pca", 0, 0, G_OPTION_ARG_DOUBLE, &gPca, "Enables PCA and specifies the ratio of components to keep (default: 1.0)", NULL},
     {NULL}
 };
 
@@ -186,6 +189,9 @@ int main(int argc, char** argv)
     Descriptor_Hog descriptor;
     descriptor.setHogParams(_roiSize, _blockSize, _cellSize, gBins, false, Descriptor_Hog::L2_NORM, gSigma);
 
+    // The PCA object
+    cv::PCA pca;
+
     // Load both valid and invalid file list
     vector<string> positiveFiles = loadFileList(string(gPositiveDir));
     vector<string> negativeFiles = loadFileList(string(gNegativeDir));
@@ -208,6 +214,7 @@ int main(int argc, char** argv)
             cout << "   roi size = " << gRoiSize << endl;
             cout << "   bins per cell = " << gBins << endl;
             cout << "   sigma = " << gSigma << endl;
+            cout << "   pca = " << gPca << endl;
         }
         
         // Set up training data
@@ -262,6 +269,44 @@ int main(int argc, char** argv)
         }
         if (!gVerbose && !gTable)
             cout << "Negative data loaded" << endl;
+
+        // Applying the PCA and reformating input data
+        if (gPca < 1.0)
+        {
+            cout << "Applying PCA before SVM train... ";
+            cout.flush();
+
+            int vectorSize = trainingData.size() / nbrImg;
+            cv::Mat trainingPCA = cv::Mat::zeros(nbrImg, vectorSize, CV_32F);
+            for (int i = 0; i < nbrImg; ++i)
+            {
+                for (int j = 0; j < vectorSize; ++j)
+                {
+                    trainingPCA.at<float>(i, j) = trainingData[i*vectorSize + j];
+                }
+            }
+            int keptComponents = (int)((float)vectorSize * gPca);
+            pca(trainingPCA, cv::noArray(), CV_PCA_DATA_AS_ROW, keptComponents);
+
+            // Reproject all vectors
+            cv::Mat projected;
+            pca.project(trainingPCA, projected);
+
+            // Store the result as the training data
+            trainingData.clear();
+            for (int i = 0; i < projected.rows; ++i)
+                for (int j = 0; j < projected.cols; ++j)
+                {
+                    trainingData.push_back(projected.at<float>(i, j));
+                }
+
+            cout << "Kept " << keptComponents << " components" << endl;
+
+            // Save the resulting space
+            cv::FileStorage file("pca.xml", cv::FileStorage::WRITE);
+            file << "eigenVectors" << pca.eigenvectors;
+            file << "mean" << pca.mean;
+        }
         
         if (!gTable)
             cout << "Training the SVM classifier..." << endl;
@@ -306,6 +351,11 @@ int main(int argc, char** argv)
 
         vector<float> description = descriptor.getDescriptor(_roiPosition);
         cv::Mat descriptionMat(1, (int)description.size(), CV_32FC1, &description[0]);
+
+        // If we used PCA for training
+        if (gPca < 1.0)
+            descriptionMat = pca.project(descriptionMat);
+
         float value = svm.predict(descriptionMat, true);
 
         if (gVerbose)
@@ -329,7 +379,6 @@ int main(int argc, char** argv)
         chronoTime = chrono::duration_cast<chrono::microseconds>(chronoStart.time_since_epoch()).count();
         descriptor.setImage(image);
 
-
         for (int x = 0; x < image.cols - _roiSize.x; x += image.cols/5)
         {
             for (int y = 0; y < image.rows - _roiSize.y; y += image.rows/5)
@@ -338,6 +387,10 @@ int main(int argc, char** argv)
                 cv::Mat descriptionMat(1, (int)description.size(), CV_32FC1, &description[0]);
                 if (description.size() == 0)
                     continue;
+
+                // If we used PCA for training
+                if (gPca < 1.0)
+                    descriptionMat = pca.project(descriptionMat);
 
                 float value = svm.predict(descriptionMat, true);
 
@@ -371,6 +424,7 @@ int main(int argc, char** argv)
         cout << gRoiSize << " ";
         cout << gBins << " ";
         cout << gSigma << " ";
+        cout << gPca << " ";
         cout << totalTime / (positiveFiles.size() + totalNegatives) << " ";
         cout << (float)positive / (float)positiveFiles.size() << " " << (float)negative/(float)totalNegatives << endl;
     }
