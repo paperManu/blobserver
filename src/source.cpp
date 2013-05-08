@@ -45,6 +45,10 @@ Source::Source():
 
     mICCTransform = NULL;
 
+    mAutoExposureRoi = cv::Rect(0, 0, 0, 0);
+    mAutoExposureTarget = 118.f; // Middle gray value, as perceived in sRGB
+    mAutoExposureThreshold = 32.f;
+
     mHdriActive = false;
 }
 
@@ -68,6 +72,8 @@ cv::Mat Source::retrieveModifiedFrame()
     {
         cv::Mat buffer = retrieveFrame();
         
+        if (mAutoExposureRoi.width != 0 && mAutoExposureRoi.height != 0)
+            applyAutoExposure(buffer);
         if (mMask.total() != 0)
             applyMask(buffer);
         // Noise filtering and vignetting correction, as well as ICC transform and lense
@@ -225,6 +231,17 @@ void Source::setBaseParameter(atom::Message pParam)
         if (mICCTransform != NULL)
             cmsDeleteTransform(mICCTransform);
         mICCTransform = loadICCTransform(filename);
+    }
+    else if (paramName == "autoExposure")
+    {
+        float v[6];
+        for (int i = 0; i < 6; ++i)
+            if (!readParam(pParam, v[i], i+1))
+                return;
+
+        mAutoExposureRoi = cv::Rect(v[0], v[1], v[2], v[3]);
+        mAutoExposureTarget = v[4];
+        mAutoExposureThreshold = v[5];
     }
     else if (paramName == "hdri")
     {
@@ -458,6 +475,57 @@ cmsHTRANSFORM Source::loadICCTransform(std::string pFile)
 
     std::cout << "ICC profile " << pFile << " correctly loaded" << std::endl;
     return transform;
+}
+
+/*************/
+void Source::applyAutoExposure(cv::Mat& pImg)
+{
+    if (pImg.channels() != 3)
+        return;
+
+    // TODO: Allow to chose the colorspace for luminance computation
+    // Compute the luminance in the ROI
+    cv::Rect roi = mAutoExposureRoi;
+    roi.x = min(roi.x, pImg.cols - 1);
+    roi.y = min(roi.y, pImg.rows - 1);
+    roi.width = min(roi.width, pImg.cols - 1 - roi.x);
+    roi.height = min(roi.height, pImg.rows - 1 - roi.y);
+
+    float luminance = 0.f;
+    int pixelNumber = 0;
+    for (int x = roi.x; x < roi.x + roi.width && x < pImg.cols; ++x)
+        for (int y = roi.y; y < roi.y + roi.height && x < pImg.rows; ++y)
+        {
+            float r, g, b;
+            r = pow(pImg.at<cv::Vec3b>(y, x)[0], 0.45f); // Conversion from sRGB to linear RGB
+            g = pow(pImg.at<cv::Vec3b>(y, x)[1], 0.45f);
+            b = pow(pImg.at<cv::Vec3b>(y, x)[2], 0.45f);
+
+            luminance += 0.2126f * r + 0.7152f * g + 0.0722f * b;
+            pixelNumber += 1;
+        }
+
+    if (pixelNumber == 0)
+        return;
+
+    luminance /= (float)pixelNumber;
+
+    // If we don't need to update exposure ...
+    if (abs(luminance - mAutoExposureTarget) < mAutoExposureThreshold)
+        return;
+
+    atom::Message message;
+    message.push_back(atom::StringValue::create("exposureTime"));
+    message = getParameter(message);
+    float exposure;
+    if (!readParam(message, exposure))
+        return;
+
+    exposure *= 1.05f; // We set the exposure 5% higher. No need to go too fast...
+    message.clear();
+    message.push_back(atom::StringValue::create("exposureTime"));
+    message.push_back(atom::FloatValue::create(exposure));
+    setParameter(message);
 }
 
 /*************/

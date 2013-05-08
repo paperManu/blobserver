@@ -229,6 +229,10 @@ class Source
         // Color correction
         cmsHTRANSFORM mICCTransform;
 
+        // Auto exposure
+        cv::Rect mAutoExposureRoi;
+        float mAutoExposureTarget, mAutoExposureThreshold;
+
         // File saving
         bool mSaveToFile;
         std::string mBaseFilename;
@@ -255,6 +259,9 @@ class Source
 
         // Method related to colorimetry. Default output profile is sRGB
         cmsHTRANSFORM loadICCTransform(std::string pFile);
+
+        // Method to apply a ROI auto exposure (to override in-camera exposure)
+        void applyAutoExposure(cv::Mat& pImg);
 
         // Method to create a HDRI from LDRIs
         void createHdri(cv::Mat& pImg);

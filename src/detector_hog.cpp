@@ -35,7 +35,6 @@ class Parallel_Detect : public cv::ParallelLoopBody
                 descriptionMat = cv::Mat(1, description.size(), CV_32FC1, &description[0]);
 
                 if (_pca != NULL)
-                    //descriptionMat = (*_pca) * descriptionMat.t();
                     descriptionMat = _pca->project(descriptionMat);
                 
                 descriptionMat = descriptionMat.t();
