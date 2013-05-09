@@ -27,6 +27,14 @@
                 <Value>500</Value>
             </Param>
             <Param>
+                <Name>gain</Name>
+                <Value>0</Value>
+            </Param>
+            <Param>
+                <Name>autoExposure</Name>
+                <Value>310 230 20 20 118 32 0.1</Value>
+            </Param>
+            <Param>
                 <Name>whiteBalanceRed</Name>
                 <Value>512</Value>
             </Param>

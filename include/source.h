@@ -231,7 +231,7 @@ class Source
 
         // Auto exposure
         cv::Rect mAutoExposureRoi;
-        float mAutoExposureTarget, mAutoExposureThreshold;
+        float mAutoExposureTarget, mAutoExposureThreshold, mAutoExposureStep;
 
         // File saving
         bool mSaveToFile;

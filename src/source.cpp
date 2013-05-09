@@ -47,7 +47,8 @@ Source::Source():
 
     mAutoExposureRoi = cv::Rect(0, 0, 0, 0);
     mAutoExposureTarget = 118.f; // Middle gray value, as perceived in sRGB
-    mAutoExposureThreshold = 32.f;
+    mAutoExposureThreshold = 16.f;
+    mAutoExposureStep = 0.05f;
 
     mHdriActive = false;
 }
@@ -234,14 +235,19 @@ void Source::setBaseParameter(atom::Message pParam)
     }
     else if (paramName == "autoExposure")
     {
-        float v[6];
-        for (int i = 0; i < 6; ++i)
+        float v[7];
+        for (int i = 0; i < 4; ++i)
             if (!readParam(pParam, v[i], i+1))
                 return;
 
         mAutoExposureRoi = cv::Rect(v[0], v[1], v[2], v[3]);
-        mAutoExposureTarget = v[4];
-        mAutoExposureThreshold = v[5];
+
+        if (readParam(pParam, v[4], 5))
+            mAutoExposureTarget = v[4];
+        if (readParam(pParam, v[5], 6))
+            mAutoExposureThreshold = v[5];
+        if (readParam(pParam, v[6], 7))
+            mAutoExposureStep = v[6];
     }
     else if (paramName == "hdri")
     {
@@ -491,38 +497,39 @@ void Source::applyAutoExposure(cv::Mat& pImg)
     roi.width = min(roi.width, pImg.cols - 1 - roi.x);
     roi.height = min(roi.height, pImg.rows - 1 - roi.y);
 
+    cv::Mat buffer;
+    pImg.convertTo(buffer, CV_32FC3);
+    buffer /= 255.f;
+    cv::pow(buffer, 1/mGamma, buffer); // Conversion from sRGB to RGB
+
     float luminance = 0.f;
-    int pixelNumber = 0;
-    for (int x = roi.x; x < roi.x + roi.width && x < pImg.cols; ++x)
-        for (int y = roi.y; y < roi.y + roi.height && x < pImg.rows; ++y)
+    float pixelNumber = 0.f;
+    for (int x = roi.x; x < roi.x + roi.width && x < buffer.cols; ++x)
+        for (int y = roi.y; y < roi.y + roi.height && x < buffer.rows; ++y)
         {
             float r, g, b;
-            r = pow(pImg.at<cv::Vec3b>(y, x)[0], 0.45f); // Conversion from sRGB to linear RGB
-            g = pow(pImg.at<cv::Vec3b>(y, x)[1], 0.45f);
-            b = pow(pImg.at<cv::Vec3b>(y, x)[2], 0.45f);
+            r = buffer.at<cv::Vec3f>(y, x)[0];
+            g = buffer.at<cv::Vec3f>(y, x)[1];
+            b = buffer.at<cv::Vec3f>(y, x)[2];
 
             luminance += 0.2126f * r + 0.7152f * g + 0.0722f * b;
-            pixelNumber += 1;
+            pixelNumber += 1.f;
         }
 
     if (pixelNumber == 0)
         return;
 
-    luminance /= (float)pixelNumber;
-
+    luminance = pow(luminance / pixelNumber, mGamma) * 255.f;
     // If we don't need to update exposure ...
     if (abs(luminance - mAutoExposureTarget) < mAutoExposureThreshold)
         return;
 
-    atom::Message message;
-    message.push_back(atom::StringValue::create("exposureTime"));
-    message = getParameter(message);
-    float exposure;
-    if (!readParam(message, exposure))
+    // We set the exposure 5% higher. No need to go too fast...
+    float exposure = mExposureTime * (1.f + mAutoExposureStep * (mAutoExposureTarget - luminance) / abs(luminance - mAutoExposureTarget)); 
+    if (exposure == 0.f) // We don't want to be stuck at the lowest value
         return;
 
-    exposure *= 1.05f; // We set the exposure 5% higher. No need to go too fast...
-    message.clear();
+    atom::Message message;
     message.push_back(atom::StringValue::create("exposureTime"));
     message.push_back(atom::FloatValue::create(exposure));
     setParameter(message);
