@@ -297,7 +297,7 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
     // Constructing the message
     mLastMessage.clear();
     mLastMessage.push_back(atom::IntValue::create((int)mBlobs.size()));
-    mLastMessage.push_back(atom::IntValue::create(6));
+    mLastMessage.push_back(atom::IntValue::create(5));
 
     for(int i = 0; i < mBlobs.size(); ++i)
     {
@@ -305,7 +305,6 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
         Blob::properties properties = mBlobs[i].getBlob();
         lX = (int)(properties.position.x);
         lY = (int)(properties.position.y);
-        lSize = (int)(properties.size);
         ldX = (int)(properties.speed.x);
         ldY = (int)(properties.speed.y);
         lId = (int)mBlobs[i].getId();
@@ -321,7 +320,6 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
         // Add this blob to the message
         mLastMessage.push_back(atom::IntValue::create(lX));
         mLastMessage.push_back(atom::IntValue::create(lY));
-        mLastMessage.push_back(atom::IntValue::create(lSize));
         mLastMessage.push_back(atom::IntValue::create(ldX));
         mLastMessage.push_back(atom::IntValue::create(ldY));
         mLastMessage.push_back(atom::IntValue::create(lId));

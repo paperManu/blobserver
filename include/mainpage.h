@@ -132,6 +132,10 @@
  * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
  * - saveSamples (int, default 0): if set to 1, saves detected samples older than saveSamplesAge
  * - saveSamplesAge (int, default 120): see saveSamples
+ *
+ * OSC output:
+ * - name: hog
+ * - values: X(int) Y(int) dX(int) dY(int) Id(int)
  * 
  **************
  * \section howto_xml_sec How to use Blobserver - Configuration through a XML file
