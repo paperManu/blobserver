@@ -258,9 +258,9 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
         // If present, we dont keep the alpha channel
         if (buffer.channels() > 3)
         {
-            cv::Mat channels[buffer.channels()];
-            cv::split(buffer, channels);
-            cv::merge(channels, 3, buffer);
+            cv::Mat temp;
+            cv::cvtColor(buffer, temp, CV_RGBA2RGB);
+            buffer = temp;
         }
 
         if (abs(red) > blue && channels >= 3 && !isGray && !isYUV)
