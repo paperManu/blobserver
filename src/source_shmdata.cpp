@@ -255,7 +255,15 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
 
         memcpy((char*)(buffer.data), (const char*)data, width*height*bpp/8);
 
-        if (red > blue && channels >= 3 && !isGray && !isYUV)
+        // If present, we dont keep the alpha channel
+        if (buffer.channels() > 3)
+        {
+            cv::Mat channels[buffer.channels()];
+            cv::split(buffer, channels);
+            cv::merge(channels, 3, buffer);
+        }
+
+        if (abs(red) > blue && channels >= 3 && !isGray && !isYUV)
             cvtColor(buffer, buffer, CV_BGR2RGB);
         else if (isYUV)
             cvtColor(buffer, buffer, CV_YUV2BGR_UYVY);
