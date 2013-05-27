@@ -2,10 +2,8 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = src man
 
 if HAVE_DOXYGEN
-directory = $(top_srcdir)/doc/
-
-dist_man_MANS = $(directory)/man
-$(directory)/man: doxyfile.stamp
+dist_man_MANS = $(top_builddir)/man
+$(top_srcdir)/man: doxyfile.stamp
 
 doxyfile.stamp:
 	$(DOXYGEN) Doxyfile
@@ -15,5 +13,5 @@ CLEANFILES = doxyfile.stamp
 
 doc: doxyfile.stamp
 clean-local:
-	rm -rf $(top_srcdir)/doc/man/*
+	rm -rf $(top_builddir)/man/html
 endif
