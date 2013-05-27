@@ -20,5 +20,4 @@ touch ChangeLog
 fi
 
 mkdir -p m4
-mkdir -p doc
 autoreconf -fivI m4

@@ -1,8 +1,21 @@
 Blobserver release notes
 ========================
 
-Blobserver 0.4.1 (2013-xx-xx)
+Blobserver 0.4.3 (2013-xx-xx)
 -----------------------------
+
+Blobserver 0.4.2 (2013-05-27)
+-----------------------------
+New Features:
+* Added software autoexposure
+* Added histogram of oriented gradients detector
+* Added blobtrainer, currently used to train HoG models
+* Added compatiblity with OSX
+
+Bug fixed:
+* Correct timestamps for shmdata outputs
+* Source_Shmdata does not keep alpha channel anymore
+* Various cleanup
 
 Blobserver 0.4.0 (2013-03-25)
 -----------------------------
