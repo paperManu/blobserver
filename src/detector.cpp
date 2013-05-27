@@ -1,5 +1,7 @@
 #include "detector.h"
 
+using namespace std;
+
 std::string Detector::mClassName = "Detector";
 std::string Detector::mDocumentation = "N/A";
 unsigned int Detector::mSourceNbr = 1;
@@ -31,7 +33,7 @@ void Detector::setMask(cv::Mat pMask)
 }
 
 /*****************/
-atom::Message Detector::getParameter(atom::Message pParam)
+atom::Message Detector::getParameter(atom::Message pParam) const
 {
     atom::Message message;
 
@@ -58,35 +60,23 @@ atom::Message Detector::getParameter(atom::Message pParam)
 }
 
 /*****************/
-void Detector::setBaseParameter(atom::Message pParam)
+void Detector::setBaseParameter(const atom::Message pMessage)
 {
-    atom::Message message;
-
-    if (pParam.size() < 2)
-        return;
-    
-    std::string paramName;
+    std::string cmd;
     try
     {
-        paramName = atom::toString(pParam[0]);
+        cmd = toString(pMessage[0]);
     }
     catch (atom::BadTypeTagError error)
     {
         return;
     }
 
-    if (paramName == "verbose")
+    if (cmd == "verbose")
     {
         int value;
-        try
-        {
-            value = atom::toInt(pParam[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-        mVerbose = value;
+        if (readParam(pMessage, value))
+            mVerbose = value;
     }
 }
 

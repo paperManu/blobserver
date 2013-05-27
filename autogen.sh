@@ -19,5 +19,5 @@ if test ! -e ChangeLog ; then
 touch ChangeLog
 fi
 
-mkdir m4
+mkdir -p m4
 autoreconf -fivI m4

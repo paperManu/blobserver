@@ -3,11 +3,11 @@ Blobserver
 
 About
 -----
-Blob detection server
+Blobserver is, before anything else, an engine designed to facilitate the implementation of realtime detection algorithms. It provides a main loop which updates all activated detectors and sources (cameras basically), and outputs OSC messages related to what was detected. A few detectors are already implemented.
 
 License
 -------
-This program is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License and GNU General Public License as published by the Free Software Foundation; either version 3 of the Licenses, or (at your option) any later version.
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 
 Authors
 -------
@@ -28,7 +28,21 @@ Here is how to build and install it on Debian GNU/Linux or Ubuntu Precise::
 
   sudo apt-get install help2man gettext automake bison build-essential flex libtool 
   sudo apt-get install libglib2.0-dev liblo0-dev
-  sudo apt-get install libopencv-dev liblcms2-dev libxml2-dev
+  sudo apt-get install liblcms2-dev libxml2-dev libtbb-dev
+  sudo apt-get install libshmdata-0.6
+
+We need the latest version of OpenCV, which is not yet packaged for Ubuntu. So:
+  cd ..
+  git clone git://code.opencv.org/opencv.git
+  cd opencv
+  mkdir build
+  cd build
+  cmake -DCMAKE_BUILD_TYPE=Release ..
+  make
+  sudo make install
+
+Then we can compile blobserver:
+  cd ../../blobserver
   ./autogen.sh
   ./configure
   make

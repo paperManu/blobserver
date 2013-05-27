@@ -1,5 +1,7 @@
 #include "source.h"
 
+using namespace std;
+
 std::string Source::mClassName = "Source";
 std::string Source::mDocumentation = "N/A";
 
@@ -29,6 +31,9 @@ Source::Source():
 
     mFilterNoise = false;
 
+    mScale = 1.f;
+    mRotation = 0.f;
+
     mCorrectDistortion = false;
     mCorrectVignetting = false;
 
@@ -39,6 +44,11 @@ Source::Source():
     mRecomputeDistortionMat = false;
 
     mICCTransform = NULL;
+
+    mAutoExposureRoi = cv::Rect(0, 0, 0, 0);
+    mAutoExposureTarget = 118.f; // Middle gray value, as perceived in sRGB
+    mAutoExposureThreshold = 16.f;
+    mAutoExposureStep = 0.05f;
 
     mHdriActive = false;
 }
@@ -62,7 +72,13 @@ cv::Mat Source::retrieveModifiedFrame()
     if (mUpdated)
     {
         cv::Mat buffer = retrieveFrame();
-
+        
+        if (mAutoExposureRoi.width != 0 && mAutoExposureRoi.height != 0)
+            applyAutoExposure(buffer);
+        if (mMask.total() != 0)
+            applyMask(buffer);
+        // Noise filtering and vignetting correction, as well as ICC transform and lense
+        // distortion correction have to be done before any geometric transformation
         if (mFilterNoise)
             filterNoise(buffer);
         if (mCorrectVignetting)
@@ -71,12 +87,19 @@ cv::Mat Source::retrieveModifiedFrame()
             cmsDoTransform(mICCTransform, buffer.data, buffer.data, buffer.total());
         if (mCorrectDistortion)
             correctDistortion(buffer);
+        if (mScale != 1.f)
+            scale(buffer);
+        if (mRotation != 0.f)
+            rotate(buffer);
         if (mHdriActive)
             createHdri(buffer);
 
         // Some modifiers will not output a valid image every frame
         if (buffer.rows != 0 && buffer.cols != 0)
             mCorrectedBuffer = buffer.clone();
+
+        if (mSaveToFile)
+            saveToFile(buffer);
 
         mUpdated = false;
 
@@ -91,9 +114,6 @@ cv::Mat Source::retrieveModifiedFrame()
 /************/
 void Source::setBaseParameter(atom::Message pParam)
 {
-    if (pParam.size() < 2)
-        return;
-    
     std::string paramName;
     try
     {
@@ -104,7 +124,15 @@ void Source::setBaseParameter(atom::Message pParam)
         return;
     }
 
-    if (paramName == "vignetting")
+    if (paramName == "mask")
+    {
+        string filename;
+        if (!readParam(pParam, filename))
+            return;
+
+        mMask = cv::imread(filename, CV_LOAD_IMAGE_GRAYSCALE);
+    }
+    else if (paramName == "vignetting")
     {
         if (pParam.size() == 4)
         {
@@ -144,6 +172,16 @@ void Source::setBaseParameter(atom::Message pParam)
             else
                 mFilterNoise = false;
         }
+    }
+    else if (paramName == "scale")
+    {
+        float scale;
+        if (readParam(pParam, scale))
+            mScale = max(0.1f, scale);
+    }
+    else if (paramName == "rotation")
+    {
+        readParam(pParam, mRotation);
     }
     else if (paramName == "distortion")
     {
@@ -188,18 +226,28 @@ void Source::setBaseParameter(atom::Message pParam)
     else if (paramName == "iccInputProfile")
     {
         std::string filename;
-        try
-        {
-            filename = atom::toString(pParam[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
+        if (!readParam(pParam, filename))
             return;
-        }
 
         if (mICCTransform != NULL)
             cmsDeleteTransform(mICCTransform);
         mICCTransform = loadICCTransform(filename);
+    }
+    else if (paramName == "autoExposure")
+    {
+        float v[7];
+        for (int i = 0; i < 4; ++i)
+            if (!readParam(pParam, v[i], i+1))
+                return;
+
+        mAutoExposureRoi = cv::Rect(v[0], v[1], v[2], v[3]);
+
+        if (readParam(pParam, v[4], 5))
+            mAutoExposureTarget = v[4];
+        if (readParam(pParam, v[5], 6))
+            mAutoExposureThreshold = v[5];
+        if (readParam(pParam, v[6], 7))
+            mAutoExposureStep = v[6];
     }
     else if (paramName == "hdri")
     {
@@ -219,10 +267,33 @@ void Source::setBaseParameter(atom::Message pParam)
 
         mHdriActive = true;
     }
+    else if (paramName == "save")
+    {
+        float active, period;
+        string filename;
+
+        if (!readParam(pParam, active, 1))
+            return;
+        if (!readParam(pParam, period, 2))
+            return;
+        if (!readParam(pParam, filename, 3))
+            return;
+
+        if (active == 1.f)
+        {
+            mSaveToFile = true;
+            mSavePeriod = (int)period;
+            mBaseFilename = filename;
+        }
+        else
+        {
+            mSaveToFile = false;
+        }
+    }
 }
 
 /************/
-atom::Message Source::getBaseParameter(atom::Message pParam)
+atom::Message Source::getBaseParameter(atom::Message pParam) const
 {
     atom::Message msg;
 
@@ -258,10 +329,49 @@ float Source::getEV()
 }
 
 /************/
+void Source::applyMask(cv::Mat& pImg)
+{
+    // If not done yet, the mask is converted to float and resized accordingly to pImg
+    if (pImg.rows != mMask.rows || pImg.cols != mMask.cols)
+    {
+        cv::Mat buffer;
+        cv::resize(mMask, buffer, cv::Size(pImg.cols, pImg.rows), 0, 0, cv::INTER_NEAREST);
+        mMask = buffer;
+    }
+    if (mMask.depth() != pImg.type())
+    {
+        cv::Mat buffer = cv::Mat::zeros(mMask.rows, mMask.cols, pImg.type());
+        mMask.convertTo(buffer, pImg.type());
+        mMask = buffer;
+        mMask /= 255;
+    }
+
+    cv::multiply(mMask, pImg, pImg);
+}
+
+/************/
 void Source::filterNoise(cv::Mat& pImg)
 {
     // We apply a simple median filter of size 1px to reduce noise
     cv::medianBlur(pImg, pImg, 3);
+}
+
+/************/
+void Source::scale(cv::Mat& pImg)
+{
+    cv::Mat output;
+    cv::resize(pImg, output, cv::Size(), mScale, mScale, cv::INTER_LINEAR);
+    pImg = output;
+}
+
+/************/
+void Source::rotate(cv::Mat& pImg)
+{
+    cv::Point2f center = cv::Point2f((float)pImg.cols / 2.f, (float)pImg.rows / 2.f);
+    cv::Mat rotMat = cv::getRotationMatrix2D(center, mRotation, 1.0);
+    cv::Mat rotatedMat;
+    cv::warpAffine(pImg, rotatedMat, rotMat, cv::Size(pImg.cols, pImg.rows), cv::INTER_LINEAR);
+    pImg = rotatedMat;
 }
 
 /************/
@@ -290,7 +400,7 @@ void Source::correctVignetting(cv::Mat& pImg)
                     + mOpticalDesc.vignetting[2] * pow(sqradius, 4.f));
 
                 for (int c = 0; c < nbrChannels; ++c)
-                    mVignettingMat.at<float>(x*nbrChannels + mWidth*nbrChannels*y) = correction;
+                    mVignettingMat.at<cv::Vec3f>(y, x)[c] = correction;
             }
         }
 
@@ -374,6 +484,58 @@ cmsHTRANSFORM Source::loadICCTransform(std::string pFile)
 }
 
 /*************/
+void Source::applyAutoExposure(cv::Mat& pImg)
+{
+    if (pImg.channels() != 3)
+        return;
+
+    // TODO: Allow to chose the colorspace for luminance computation
+    // Compute the luminance in the ROI
+    cv::Rect roi = mAutoExposureRoi;
+    roi.x = min(roi.x, pImg.cols - 1);
+    roi.y = min(roi.y, pImg.rows - 1);
+    roi.width = min(roi.width, pImg.cols - 1 - roi.x);
+    roi.height = min(roi.height, pImg.rows - 1 - roi.y);
+
+    cv::Mat buffer;
+    pImg.convertTo(buffer, CV_32FC3);
+    buffer /= 255.f;
+    cv::pow(buffer, 1/mGamma, buffer); // Conversion from sRGB to RGB
+
+    float luminance = 0.f;
+    float pixelNumber = 0.f;
+    for (int x = roi.x; x < roi.x + roi.width && x < buffer.cols; ++x)
+        for (int y = roi.y; y < roi.y + roi.height && x < buffer.rows; ++y)
+        {
+            float r, g, b;
+            r = buffer.at<cv::Vec3f>(y, x)[0];
+            g = buffer.at<cv::Vec3f>(y, x)[1];
+            b = buffer.at<cv::Vec3f>(y, x)[2];
+
+            luminance += 0.2126f * r + 0.7152f * g + 0.0722f * b;
+            pixelNumber += 1.f;
+        }
+
+    if (pixelNumber == 0)
+        return;
+
+    luminance = pow(luminance / pixelNumber, mGamma) * 255.f;
+    // If we don't need to update exposure ...
+    if (abs(luminance - mAutoExposureTarget) < mAutoExposureThreshold)
+        return;
+
+    // We set the exposure 5% higher. No need to go too fast...
+    float exposure = mExposureTime * (1.f + mAutoExposureStep * (mAutoExposureTarget - luminance) / abs(luminance - mAutoExposureTarget)); 
+    if (exposure == 0.f) // We don't want to be stuck at the lowest value
+        return;
+
+    atom::Message message;
+    message.push_back(atom::StringValue::create("exposureTime"));
+    message.push_back(atom::FloatValue::create(exposure));
+    setParameter(message);
+}
+
+/*************/
 void Source::createHdri(cv::Mat& pImg)
 {
     // TODO: make this work even if cameras dont send the right exposure value
@@ -412,6 +574,32 @@ void Source::createHdri(cv::Mat& pImg)
 }
 
 /*************/
+void Source::saveToFile(cv::Mat& pImg)
+{
+    static int phase = 0;
+    static int index = 0;
+
+    if (phase == 0)
+    {
+        char buffer[16];
+        sprintf(buffer, "%i", index);
+        string filename = mBaseFilename + string(buffer);
+        if (pImg.depth() == CV_8U || pImg.depth() == CV_16U)
+        {
+            filename += string(".png");
+            cv::imwrite(filename, pImg);
+        }
+
+        index++;
+        phase++;
+    }
+    else
+    {
+        phase = (phase + 1) % mSavePeriod;
+    }
+}
+
+/*************/
 MatBuffer::MatBuffer(unsigned int size)
 {
     _mats.resize(size);
@@ -432,7 +620,7 @@ MatBuffer& MatBuffer::operator=(cv::Mat& mat)
 }
 
 /*************/
-cv::Mat MatBuffer::get()
+cv::Mat MatBuffer::get() const
 {
     unsigned int loc = _head;
     return _mats[loc];

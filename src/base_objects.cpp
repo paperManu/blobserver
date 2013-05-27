@@ -1,9 +1,12 @@
 #include "base_objects.h"
 
+using namespace std;
+
 #if HAVE_SHMDATA
 /*************/
-ShmImage::ShmImage(const char* filename)
-    : _writer(NULL)
+ShmImage::ShmImage(const char* filename):
+    _writer(NULL),
+    _startTime(0)
 {
     _filename = std::string(filename);
     _width = 0;
@@ -24,7 +27,22 @@ void ShmImage::setImage(cv::Mat& image, const unsigned long long timestamp)
         if (!init(image.cols, image.rows, image.type()))
             return;
 
-    shmdata_any_writer_push_data(_writer, (void*)(image.data), _width*_height*_bpp/8, 0, NULL, NULL);
+    // Get the current timestamp
+    unsigned long long currentTime;
+    if (timestamp == 0)
+    {
+        auto now = chrono::high_resolution_clock::now();
+        currentTime = chrono::duration_cast<chrono::milliseconds>(now.time_since_epoch()).count();
+    }
+    else
+    {
+        currentTime = timestamp;
+    }
+
+    if (_startTime == 0)
+      _startTime = currentTime;
+
+    shmdata_any_writer_push_data(_writer, (void*)(image.data), _width*_height*_bpp/8, (currentTime - _startTime) * 1e6, NULL, NULL);
 }
 
 /*************/

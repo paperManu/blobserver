@@ -1,5 +1,7 @@
 #include "source_shmdata.h"
 
+using namespace std;
+
 #if HAVE_SHMDATA
 #include <regex>
 
@@ -65,9 +67,6 @@ cv::Mat Source_Shmdata::retrieveFrame()
 /*************/
 void Source_Shmdata::setParameter(atom::Message pParam)
 {
-    if (pParam.size() < 2)
-        return;
-
     string paramName;
     float paramValue;
 
@@ -83,41 +82,29 @@ void Source_Shmdata::setParameter(atom::Message pParam)
     if (paramName == "location")
     {
         string location;
-        try
-        {
-            location = atom::toString(pParam[1]);
-        }
-        catch (...)
-        {
+        if (!readParam(pParam, location))
             return;
-        }
 
         if (mReader != NULL)
             shmdata_any_reader_close(mReader);
 
         mReader = shmdata_any_reader_init();
+        shmdata_any_reader_run_gmainloop(mReader, SHMDATA_FALSE);
         shmdata_any_reader_set_on_data_handler(mReader, Source_Shmdata::onData, this);
+        //shmdata_any_reader_set_debug(mReader, SHMDATA_TRUE);
         shmdata_any_reader_start(mReader, location.c_str());
     }
     else if (paramName == "cameraNumber")
     {
-        try
-        {
-            paramValue = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError exception)
-        {
-            return;
-        }
-
-        mSubsourceNbr = (unsigned int)paramValue;
+        if (readParam(pParam, paramValue))
+            mSubsourceNbr = (unsigned int)paramValue;
     }
     else
         setBaseParameter(pParam);
 }
 
 /*************/
-atom::Message Source_Shmdata::getParameter(atom::Message pParam)
+atom::Message Source_Shmdata::getParameter(atom::Message pParam) const
 {
     atom::Message msg;
 
@@ -150,7 +137,7 @@ atom::Message Source_Shmdata::getParameter(atom::Message pParam)
 }
 
 /*************/
-atom::Message Source_Shmdata::getSubsources()
+atom::Message Source_Shmdata::getSubsources() const
 {
     atom::Message message;
 
@@ -268,7 +255,15 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
 
         memcpy((char*)(buffer.data), (const char*)data, width*height*bpp/8);
 
-        if (red > blue && channels >= 3 && !isGray && !isYUV)
+        // If present, we dont keep the alpha channel
+        if (buffer.channels() > 3)
+        {
+            cv::Mat temp;
+            cv::cvtColor(buffer, temp, CV_RGBA2RGB);
+            buffer = temp;
+        }
+
+        if (abs(red) > blue && channels >= 3 && !isGray && !isYUV)
             cvtColor(buffer, buffer, CV_BGR2RGB);
         else if (isYUV)
             cvtColor(buffer, buffer, CV_YUV2BGR_UYVY);

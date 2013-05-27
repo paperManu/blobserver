@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * switcher is distributed in the hope that it will be useful,
+ * blobserver is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with switcher.  If not, see <http://www.gnu.org/licenses/>.
+ * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -22,8 +22,8 @@
  * The Detector_ObjOnAPlane class.
  */
 
- #ifndef DETECTOR_OBJONAPLANE_H
- #define DETECTOR_OBJONAPLANE_H
+#ifndef DETECTOR_OBJONAPLANE_H
+#define DETECTOR_OBJONAPLANE_H
 
 #include <memory>
 #include "detector.h"
@@ -38,7 +38,7 @@ class Detector_ObjOnAPlane : public Detector
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(std::vector<cv::Mat> pCaptures);
+        atom::Message detect(const std::vector<cv::Mat> pCaptures);
         void setParameter(atom::Message pMessage);
 
     private:

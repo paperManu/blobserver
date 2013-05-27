@@ -2,7 +2,8 @@
 
 /*************/
 Blob::Blob():
-    mLifetime(0)
+    mLifetime(0),
+    mAge(0)
 {
     static int lIdCounter = 0;
     lIdCounter++;

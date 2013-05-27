@@ -8,12 +8,12 @@ using namespace std;
 class Parallel_Remap : public cv::ParallelLoopBody
 {
     public:
-        Parallel_Remap(vector<cv::Mat>* imgs, vector<cv::Mat>* maps, vector<cv::Mat>* output, bool verbose, cv::Size size):
+        Parallel_Remap(const vector<cv::Mat>* imgs, vector<cv::Mat>* maps, vector<cv::Mat>* output, bool verbose, cv::Size size):
             _imgs(imgs), _maps(maps), _outputs(output), _verbose(verbose), _size(size) {}
 
         void operator()(const cv::Range& r) const
         {
-            cv::Mat* img = &(*_imgs)[r.start];
+            const cv::Mat* img = &(*_imgs)[r.start];
             cv::Mat* map = &(*_maps)[r.start + 1];
             cv::Mat* output = &(*_outputs)[r.start];
             for (int idx = r.start; idx < r.end; ++idx, ++img, ++map, ++output)
@@ -27,7 +27,7 @@ class Parallel_Remap : public cv::ParallelLoopBody
         }
 
     private:
-        vector<cv::Mat>* _imgs;
+        const vector<cv::Mat>* _imgs;
         vector<cv::Mat>* _maps;
         vector<cv::Mat>* _outputs;
         bool _verbose;
@@ -105,7 +105,7 @@ void Detector_ObjOnAPlane::make()
 }
 
 /*****************/
-atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
+atom::Message Detector_ObjOnAPlane::detect(const std::vector<cv::Mat> pCaptures)
 {
     // If the spaces definition changed
     if (mMapsUpdated == false)
@@ -226,8 +226,6 @@ atom::Message Detector_ObjOnAPlane::detect(std::vector<cv::Mat> pCaptures)
 /*****************/
 void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
 {
-    atom::Message::const_iterator iter = pMessage.begin();
-
     std::string cmd;
     try
     {
@@ -269,18 +267,9 @@ void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
     // Replace all the current spaces at once
     else if (cmd == "spaces")
     {
-        if (pMessage.size() <= 2)
-            return;
-
         int number;
-        try
-        {
-            number = toInt(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
+        if (!readParam(pMessage, number))
             return;
-        }
 
         int size = (pMessage.size()-2) / number;
         // If all spaces specified have not the same size
@@ -326,92 +315,38 @@ void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
     else if (cmd == "detectionLevel")
     {
         float value;
-        
-        try
-        {
-            value = toFloat(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-
-        mDetectionLevel = std::max(0.f, value);
+        if (readParam(pMessage, value))
+            mDetectionLevel = std::max(0.f, value);
     }
     else if (cmd == "processNoiseCov")
     {
         float value;
-        
-        try
-        {
-            value = toFloat(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-
-        mProcessNoiseCov = std::max(0.f, value);
+        if (readParam(pMessage, value))
+            mProcessNoiseCov = std::max(0.f, value);
     }
     else if (cmd == "measurementNoiseCov")
     {
         float value;
-        
-        try
-        {
-            value = toFloat(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-
-        mMeasurementNoiseCov = std::max(0.f, value);
+        if (readParam(pMessage, value))
+            mMeasurementNoiseCov = std::max(0.f, value);
     }
     else if (cmd == "filterSize")
     {
         float value;
-        
-        try
-        {
-            value = toFloat(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-
-        mFilterSize = std::max(0.f, value);
+        if (readParam(pMessage, value))
+            mFilterSize = std::max(0.f, value);
     }
     else if (cmd == "minBlobArea")
     {
         float value;
-        
-        try
-        {
-            value = toFloat(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-
-        mMinArea = std::max(0.f, value);
+        if (readParam(pMessage, value))
+            mMinArea = std::max(0.f, value);
     }
     else if (cmd == "maxTrackedBlobs")
     {
         float value;
-        
-        try
-        {
-            value = toFloat(pMessage[1]);
-        }
-        catch (atom::BadTypeTagError error)
-        {
-            return;
-        }
-
-        mMaxTrackedBlobs = std::max(0.f, value);
+        if (readParam(pMessage, value))
+            mMaxTrackedBlobs = std::max(0.f, value);
     }
     else
         setBaseParameter(pMessage);
@@ -441,8 +376,6 @@ void Detector_ObjOnAPlane::updateMaps(std::vector<cv::Mat> pCaptures)
         origin = space[0];
         
         // We have an ortho base, we can use the dot product
-
-
         cv::Vec2f max = 0.f;
         std::vector<cv::Vec2f>::iterator iterPoint;
         for (iterPoint = space.begin()+1; iterPoint != space.end(); ++iterPoint)

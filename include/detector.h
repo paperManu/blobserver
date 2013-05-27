@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * switcher is distributed in the hope that it will be useful,
+ * blobserver is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with switcher.  If not, see <http://www.gnu.org/licenses/>.
+ * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -31,9 +31,8 @@
 #include "opencv2/opencv.hpp"
 
 #include "blob.h"
+#include "helpers.h"
 #include "source.h"
-
-using namespace std;
 
 /*************/
 // Class for parallel masking
@@ -77,11 +76,11 @@ class Detector
         /**
          * \brief Gets the class name of the detector
          */
-        static string getClassName() {return mClassName;}
+        static std::string getClassName() {return mClassName;}
         /**
          * \brief Gets the class documentation of the detector
          */
-        static string getDocumentation() {return mDocumentation;}
+        static std::string getDocumentation() {return mDocumentation;}
         /**
          * \brief Get the number of sources this detector needs
          */
@@ -92,12 +91,12 @@ class Detector
          * The two first values in the message are the number of blob, and the size of each blob in the message
          * \param pCaptures A vector containing all captures. Their number should match mSourceNbr.
          */
-        virtual atom::Message detect(vector<cv::Mat> pCaptures) {}
+        virtual atom::Message detect(const std::vector<cv::Mat> pCaptures) {}
         
         /**
          * \brief Returns the message from the last call to detect()
          */
-        atom::Message getLastMessage() {return mLastMessage;}
+        atom::Message getLastMessage() const {return mLastMessage;}
 
         /**
          * \brief Sets the mask to use on detection
@@ -115,51 +114,53 @@ class Detector
          * \param pParam A message containing the name of the parameter
          * \return Returns a message containing the name of the parameter and its current value
          */
-        atom::Message getParameter(atom::Message pParam);
+        atom::Message getParameter(atom::Message pParam) const;
         
         /**
          * \brief Gives a ptr to the detector, for it to control the source (if needed)
          * \param source A shared_ptr to the source. A weak_ptr is created from it.
          */
-        void addSource(shared_ptr<Source> source);
+        void addSource(std::shared_ptr<Source> source);
         
         /**
          * \brief Gets the name to use in the osc path when sending the message related to this detector
          */
-        string getName() {return mName;}
+        std::string getName() const {return mName;}
 
         /**
          * \brief Gets the full OSC path to use for sending message from this detector
          */
-        string getOscPath() {return mOscPath;}
+        std::string getOscPath() const {return mOscPath;}
 
         /**
          * \brief Gets the resulting image from the detector.
          */
-        cv::Mat getOutput() {return mOutputBuffer.clone();}
+        cv::Mat getOutput() const {return mOutputBuffer.clone();}
 
     protected:
         cv::Mat mOutputBuffer; //!< The output buffer, resulting from the detection
         atom::Message mLastMessage; //!< Last message built by detect()
         bool mVerbose;
 
-        string mOscPath; //!< OSC path for the detector, to be set in child class
-        string mName; // !< Name of the detector, to be set in child class
+        std::string mOscPath; //!< OSC path for the detector, to be set in child class
+        std::string mName; // !< Name of the detector, to be set in child class
 
-        vector<weak_ptr<Source>> mSources;
+        std::vector<std::weak_ptr<Source>> mSources;
 
+        // Methods
         cv::Mat getMask(cv::Mat pCapture, int pInterpolation = CV_INTER_NN);
-        void setBaseParameter(atom::Message pParam);
+        void setBaseParameter(const atom::Message pMessage);
 
     private:
-        static string mClassName; //!< Class name, to be set in child class
-        static string mDocumentation; //!< Class documentation, to be set in child class
+        static std::string mClassName; //!< Class name, to be set in child class
+        static std::string mDocumentation; //!< Class documentation, to be set in child class
         static unsigned int mSourceNbr; //!< Number of sources needed for the detector, to be set in child class
 
         cv::Mat mSourceMask, mMask;
 
 };
 
+/*************/
 // Useful functions
 // trackBlobs is used to keep track of blobs through frames
 /*************/
@@ -194,7 +195,7 @@ class BlobPair
 
 /*************/
 template<class T>
-void trackBlobs(vector<Blob::properties> &pProperties, vector<T> &pBlobs, int pLifetime = 30)
+void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs, int pLifetime = 30)
 {
     // First we update all the previous blobs we detected,
     // and keep their predicted new position
@@ -203,10 +204,10 @@ void trackBlobs(vector<Blob::properties> &pProperties, vector<T> &pBlobs, int pL
     
     // Then we compare all these prediction with real measures and
     // associate them together
-    vector<BlobPair<T> > lPairs;
+    std::vector< BlobPair<T> > lPairs;
     if(pBlobs.size() != 0)
     {
-        vector<BlobPair<T> > lSearchPairs;
+        std::vector<BlobPair<T> > lSearchPairs;
 
         // Compute the squared distance between all new blobs, and all tracked ones
         for (int i = 0; i < pProperties.size(); ++i)
@@ -221,9 +222,9 @@ void trackBlobs(vector<Blob::properties> &pProperties, vector<T> &pBlobs, int pL
         // We loop through the pairs to find the closest ones
         while (lSearchPairs.size())
         {
-            make_heap(lSearchPairs.begin(), lSearchPairs.end());
+            std::make_heap(lSearchPairs.begin(), lSearchPairs.end());
             // Get the nearest new blob
-            pop_heap(lSearchPairs.begin(), lSearchPairs.end());
+            std::pop_heap(lSearchPairs.begin(), lSearchPairs.end());
             BlobPair<T> nearest = lSearchPairs.back();
             lSearchPairs.pop_back();
             lPairs.push_back(nearest);
@@ -258,9 +259,11 @@ void trackBlobs(vector<Blob::properties> &pProperties, vector<T> &pBlobs, int pL
                 isIn = true;
         }
 
+        pBlobs[i].getOlder();
+
         if (!isIn)
         {
-            pBlobs[i].getOlder();
+            pBlobs[i].reduceLifetime();
             if (pBlobs[i].getLifetime() < 0)
             {
                 pBlobs.erase(pBlobs.begin() + i);

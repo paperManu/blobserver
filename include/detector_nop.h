@@ -8,52 +8,47 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * switcher is distributed in the hope that it will be useful,
+ * blobserver is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with switcher.  If not, see <http://www.gnu.org/licenses/>.
+ * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
- * @source_opencv.h
- * The Source_OpenCV class.
+ * @detector_nop.h
+ * The Detector_Nop class.
  */
 
-#ifndef SOURCE_OPENCV_H
-#define SOURCE_OPENCV_H
+#ifndef DETECTOR_NOP_H
+#define DETECTOR_NOP_H
 
-#include "source.h"
+#include "detector.h"
 
-class Source_OpenCV : public Source
+ /*************/
+// Class Detector_Nop
+class Detector_Nop : public Detector
 {
     public:
-        Source_OpenCV();
-        Source_OpenCV(int pParam);
-        ~Source_OpenCV();
+        Detector_Nop();
+        Detector_Nop(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message getSubsources(); 
-
-        bool connect();
-        bool disconnect();
-        bool grabFrame();
-        cv::Mat retrieveFrame();
-
-        void setParameter(atom::Message pParam);
-        atom::Message getParameter(atom::Message pParam);
+        atom::Message detect(std::vector<cv::Mat> pCaptures);
+        void setParameter(atom::Message pMessage);
 
     private:
         static std::string mClassName;
         static std::string mDocumentation;
+        static unsigned int mSourceNbr;
 
-        cv::VideoCapture mCamera;
+        unsigned int mFrameNumber;
 
-        void make(int pParam);
+        void make();
 };
 
-#endif // SOURCE_OPENCV_H
+#endif // DETECTOR_NOP_H

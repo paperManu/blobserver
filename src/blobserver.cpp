@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * switcher is distributed in the hope that it will be useful,
+ * blobserver is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with switcher.  If not, see <http://www.gnu.org/licenses/>.
+ * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -49,6 +49,7 @@
 #if HAVE_SHMDATA
 #include "source_shmdata.h"
 #endif
+#include "detector_hog.h"
 #include "detector_lightSpots.h"
 #include "detector_meanOutliers.h"
 #include "detector_nop.h"
@@ -75,7 +76,7 @@ static GOptionEntry gEntries[] =
     {"verbose", 'V', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
     {"mask", 'm', 0, G_OPTION_ARG_STRING, &gMaskFilename, "Specifies a mask which will be applied to all detectors", NULL},
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
-    {"port", 'p', 0, G_OPTION_ARG_STRING, &gPort, "Specifies TCP port to use for server (default 9002", NULL},
+    {"port", 'p', 0, G_OPTION_ARG_STRING, &gPort, "Specifies TCP port to use for server (default 9002)", NULL},
     {"bench", 'B', 0, G_OPTION_ARG_NONE, &gBench, "Enables printing timings of main loop, for debug purpose", NULL},
     {NULL}
 };
@@ -265,6 +266,12 @@ int App::init(int argc, char** argv)
         configurator.loadXML((char*)gConfigFile);
     }
 
+    // We need a nap before launching cameras
+    timespec nap;
+    nap.tv_nsec = 0;
+    nap.tv_sec = 1;
+    nanosleep(&nap, NULL);
+
     // Create the thread which will grab from all sources
     // This must be run AFTER loading the configuration, as some params
     // can't be changed after the first grab for some sources
@@ -280,7 +287,7 @@ int App::parseArgs(int argc, char** argv)
     GError *error = NULL;
     GOptionContext* context;
 
-    context = g_option_context_new("- blobserver, sends blobs through OSC");
+    context = g_option_context_new("- blobserver, detects objects and sends result through OSC");
     g_option_context_add_main_entries(context, gEntries, NULL);
     //g_option_context_add_group(context, gst_init_get_option_group());
 
@@ -308,12 +315,14 @@ int App::parseArgs(int argc, char** argv)
 void App::registerClasses()
 {
     // Register detectors
-    mDetectorFactory.register_class<Detector_Nop>(Detector_Nop::getClassName(),
-        Detector_Nop::getDocumentation());
+    mDetectorFactory.register_class<Detector_Hog>(Detector_Hog::getClassName(),
+        Detector_Hog::getDocumentation());
     mDetectorFactory.register_class<Detector_LightSpots>(Detector_LightSpots::getClassName(),
         Detector_LightSpots::getDocumentation());
     mDetectorFactory.register_class<Detector_MeanOutliers>(Detector_MeanOutliers::getClassName(),
         Detector_MeanOutliers::getDocumentation());
+    mDetectorFactory.register_class<Detector_Nop>(Detector_Nop::getClassName(),
+        Detector_Nop::getDocumentation());
     mDetectorFactory.register_class<Detector_ObjOnAPlane>(Detector_ObjOnAPlane::getClassName(),
         Detector_ObjOnAPlane::getDocumentation());
 

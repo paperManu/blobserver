@@ -1,5 +1,5 @@
 [DESCRIPTION]
-Blob detection server
+Blobserver is an OSC-based server aimed at detecting entities (objects / people / light / ...), in any compatible image flow. Its structure is so that it should be relatively easy to add new detectors as well as new light sources. As of yet, configuration and communication with Blobserver is done entirely through OSC messaging. Some kind of configuration file will be added soon to simplify the setup and usability, especially for permanent installations.
 
 [INTERACTIVE USAGE]
 If the camera window is not hidden (with the --hide command line option):

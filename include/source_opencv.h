@@ -8,51 +8,52 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * switcher is distributed in the hope that it will be useful,
+ * blobserver is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with switcher.  If not, see <http://www.gnu.org/licenses/>.
+ * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
- * @detector_mainOutliers.h
- * The Detector_MainOutliers class.
+ * @source_opencv.h
+ * The Source_OpenCV class.
  */
 
-#ifndef DETECTOR_MEANOUTLIERS_H
-#define DETECTOR_MEANOUTLIERS_H
+#ifndef SOURCE_OPENCV_H
+#define SOURCE_OPENCV_H
 
-#include "detector.h"
-#include "blob_2D.h"
+#include "source.h"
 
-/*************/
-// Class Detector_MeanOutliers
-class Detector_MeanOutliers : public Detector
+class Source_OpenCV : public Source
 {
     public:
-        Detector_MeanOutliers();
-        Detector_MeanOutliers(int pParam);
+        Source_OpenCV();
+        Source_OpenCV(int pParam);
+        ~Source_OpenCV();
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(std::vector<cv::Mat> pCaptures);
-        void setParameter(atom::Message pMessage);
+        atom::Message getSubsources() const; 
+
+        bool connect();
+        bool disconnect();
+        bool grabFrame();
+        cv::Mat retrieveFrame();
+
+        void setParameter(atom::Message pParam);
+        atom::Message getParameter(atom::Message pParam) const;
 
     private:
         static std::string mClassName;
         static std::string mDocumentation;
-        static unsigned int mSourceNbr;
 
-        float mDetectionLevel; // Above std dev * mDetectionLevel, an object is detected
-        int mFilterSize;
-        Blob2D mMeanBlob;
-        bool isInitialized;
+        cv::VideoCapture mCamera;
 
-        void make();
+        void make(int pParam);
 };
 
-#endif // DETECTOR_MEANOUTLIERS_H
+#endif // SOURCE_OPENCV_H

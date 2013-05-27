@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * switcher is distributed in the hope that it will be useful,
+ * blobserver is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with switcher.  If not, see <http://www.gnu.org/licenses/>.
+ * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -52,10 +52,14 @@ class Blob
         virtual void setNewMeasures(properties pNewBlob) {};
         virtual float getDistanceFromPrediction(properties pBlob) {};
         
+        // Lifetime is linked to the time left for the blob to live if not detected again
         void setLifetime(int time) {mTotalLifetime = mLifetime = time;}
         void renewLifetime() {mLifetime = mTotalLifetime;}
-        void getOlder() {mLifetime--;}
+        void reduceLifetime() {mLifetime--;}
         int getLifetime() const {return mLifetime;}
+        // Age is the total time the blob has been there
+        void getOlder() {mAge++;}
+        unsigned long getAge() const {return mAge;}
 
         properties getBlob();
         bool isUpdated();
@@ -65,6 +69,7 @@ class Blob
         
         int mTotalLifetime;
         int mLifetime;
+        unsigned long mAge;
         properties mProperties;
         properties mPrediction;
 

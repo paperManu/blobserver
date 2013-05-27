@@ -44,6 +44,7 @@ bool Source_OpenCV::connect()
     mWidth = (unsigned int)(mCamera.get(CV_CAP_PROP_FRAME_WIDTH));
     mHeight = (unsigned int)(mCamera.get(CV_CAP_PROP_FRAME_HEIGHT));
     mFramerate = (unsigned int)(mCamera.get(CV_CAP_PROP_FPS));
+    mExposureTime = (float)(mCamera.get(CV_CAP_PROP_EXPOSURE));
     
     int channels;
     channels = (int)(mCamera.get(CV_CAP_PROP_FORMAT));
@@ -85,9 +86,6 @@ cv::Mat Source_OpenCV::retrieveFrame()
 /*************/
 void Source_OpenCV::setParameter(atom::Message pParam)
 {
-    if (pParam.size() < 2)
-        return;
-
     std::string paramName;
     float paramValue;
 
@@ -100,72 +98,30 @@ void Source_OpenCV::setParameter(atom::Message pParam)
         return;
     }
 
+    if (!readParam(pParam, paramValue))
+        return;
+
     if (paramName == "width")
     {
-        try
-        {
-            paramValue = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError exception)
-        {
-            return;
-        }
-
         mCamera.set(CV_CAP_PROP_FRAME_WIDTH, paramValue);
         mWidth = (unsigned int)(mCamera.get(CV_CAP_PROP_FRAME_WIDTH));
     }
     else if (paramName == "height")
     {
-        try
-        {
-            paramValue = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError exception)
-        {
-            return;
-        }
-
         mCamera.set(CV_CAP_PROP_FRAME_HEIGHT, paramValue);
         mHeight = (unsigned int)(mCamera.get(CV_CAP_PROP_FRAME_HEIGHT));
     }
     else if (paramName == "framerate")
     {
-        try
-        {
-            paramValue = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError exception)
-        {
-            return;
-        }
-
         mCamera.set(CV_CAP_PROP_FPS, paramValue);
         mFramerate = (unsigned int)(mCamera.get(CV_CAP_PROP_FPS));
     }
     else if (paramName == "iso")
     {
-        try
-        {
-            paramValue = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError exception)
-        {
-            return;
-        }
-
         mCamera.set(CV_CAP_PROP_ISO_SPEED, paramValue);
     }
     else if (paramName == "exposureTime")
     {
-        try
-        {
-            paramValue = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError exception)
-        {
-            return;
-        }
-
         mCamera.set(CV_CAP_PROP_AUTO_EXPOSURE, 0);
         mCamera.set(CV_CAP_PROP_EXPOSURE, paramValue);
         mExposureTime = (float)(mCamera.get(CV_CAP_PROP_EXPOSURE));
@@ -173,69 +129,24 @@ void Source_OpenCV::setParameter(atom::Message pParam)
     }
     else if (paramName == "gain")
     {
-        try
-        {
-            paramValue = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError exception)
-        {
-            return;
-        }
-
         mCamera.set(CV_CAP_PROP_GAIN, paramValue);
         mGain = (float)(mCamera.get(CV_CAP_PROP_GAIN));
     }
     else if (paramName == "gamma")
     {
-        try
-        {
-            paramValue = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError exception)
-        {
-            return;
-        }
-
         mCamera.set(CV_CAP_PROP_GAMMA, paramValue*1024.f);
         mGamma = (float)(mCamera.get(CV_CAP_PROP_GAMMA));
     }
     else if (paramName == "whiteBalanceRed")
     {
-        try
-        {
-            paramValue = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError exception)
-        {
-            return;
-        }
-
         mCamera.set(CV_CAP_PROP_WHITE_BALANCE_BLUE_U, paramValue);
     }
     else if (paramName == "whiteBalanceBlue")
     {
-        try
-        {
-            paramValue = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError exception)
-        {
-            return;
-        }
-
         mCamera.set(CV_CAP_PROP_WHITE_BALANCE_RED_V, paramValue);
     }
     else if (paramName == "cameraNumber")
     {
-        try
-        {
-            paramValue = atom::toFloat(pParam[1]);
-        }
-        catch (atom::BadTypeTagError exception)
-        {
-            return;
-        }
-
         mSubsourceNbr = (unsigned int)paramValue;
     }
     else
@@ -243,7 +154,7 @@ void Source_OpenCV::setParameter(atom::Message pParam)
 }
 
 /*************/
-atom::Message Source_OpenCV::getParameter(atom::Message pParam)
+atom::Message Source_OpenCV::getParameter(atom::Message pParam) const
 {
     atom::Message msg;
 
@@ -268,11 +179,7 @@ atom::Message Source_OpenCV::getParameter(atom::Message pParam)
     else if (paramName == "framerate")
         msg.push_back(atom::IntValue::create(mFramerate));
     else if (paramName == "exposureTime")
-    {
-        int value = mCamera.get(CV_CAP_PROP_EXPOSURE);
-        mExposureTime = (float)value;
-        msg.push_back(atom::IntValue::create(value));
-    }
+        msg.push_back(atom::FloatValue::create(mExposureTime));
     else if (paramName == "subsourcenbr")
         msg.push_back(atom::IntValue::create(mSubsourceNbr));
     else
@@ -282,7 +189,7 @@ atom::Message Source_OpenCV::getParameter(atom::Message pParam)
 }
 
 /*************/
-atom::Message Source_OpenCV::getSubsources()
+atom::Message Source_OpenCV::getSubsources() const
 {
     atom::Message message;
 

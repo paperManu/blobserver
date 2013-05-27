@@ -1,18 +1,39 @@
 <Blobserver>
     <Flow>
         <Detector>
-            <Type>Detector_Nop</Type>
+            <Type>Detector_Hog</Type>
+            <Param>
+                <Name>verbose</Name>
+                <Value>0</Value>
+            </Param>
+
+            <Param>
+                <Name>modelFilename</Name>
+                <Value>model.xml</Value>
+            </Param>
+            <Param>
+                <Name>maxTimePerFrame</Name>
+                <Value>1e5</Value>
+            </Param>
+            <Param>
+                <Name>maxThreads</Name>
+                <Value>8</Value>
+            </Param>
+            <Param>
+                <Name>mergeDistance</Name>
+                <Value>64</Value>
+            </Param>
         </Detector>
         <Source>
             <Type>Source_OpenCV</Type>
             <Subsource>300</Subsource>
             <Param>
                 <Name>framerate</Name>
-                <Value>15</Value>
+                <Value>30</Value>
             </Param>
             <Param>
                 <Name>iso</Name>
-                <Value>400</Value>
+                <Value>800</Value>
             </Param>
             <Param>
                 <Name>width</Name>
@@ -24,19 +45,11 @@
             </Param>
             <Param>
                 <Name>exposureTime</Name>
-                <Value>500</Value>
+                <Value>1024</Value>
             </Param>
             <Param>
                 <Name>gain</Name>
-                <Value>0</Value>
-            </Param>
-            <Param>
-                <Name>gamma</Name>
-                <Value>1.8</Value>
-            </Param>
-            <Param>
-                <Name>autoExposure</Name>
-                <Value>310 230 20 20 118 32 0.1</Value>
+                <Value>512</Value>
             </Param>
             <Param>
                 <Name>whiteBalanceRed</Name>
@@ -47,8 +60,8 @@
                 <Value>512</Value>
             </Param>
             <Param>
-                <Name>save</Name>
-                <Value>0 5 /home/manu/tmp/test_</Value>
+                <Name>gamma</Name>
+                <Value>2.2</Value>
             </Param>
         </Source>
         <Client>

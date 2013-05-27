@@ -1,5 +1,7 @@
 #include "detector_nop.h"
 
+using namespace std;
+
 std::string Detector_Nop::mClassName = "Detector_Nop";
 std::string Detector_Nop::mDocumentation = "N/A";
 unsigned int Detector_Nop::mSourceNbr = 1;

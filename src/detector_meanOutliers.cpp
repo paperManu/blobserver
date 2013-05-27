@@ -1,6 +1,6 @@
 #include "detector_meanOutliers.h"
 
-//using namespace atom;
+using namespace std;
 
 std::string Detector_MeanOutliers::mClassName = "Detector_MeanOutliers";
 std::string Detector_MeanOutliers::mDocumentation = "N/A";
@@ -34,7 +34,7 @@ void Detector_MeanOutliers::make()
 }
 
 /*************/
-atom::Message Detector_MeanOutliers::detect(std::vector<cv::Mat> pCaptures)
+atom::Message Detector_MeanOutliers::detect(const std::vector<cv::Mat> pCaptures)
 {
     cv::Mat lMean, lStdDev;
     cv::Mat lOutlier, lEroded, lFiltered;
@@ -128,39 +128,40 @@ atom::Message Detector_MeanOutliers::detect(std::vector<cv::Mat> pCaptures)
 /*************/
 void Detector_MeanOutliers::setParameter(atom::Message pMessage)
 {
-    atom::Message::const_iterator iter = pMessage.begin();
-
-    if ((*iter).get()->getTypeTag() == atom::StringValue::TYPE_TAG)
+    std::string cmd;
+    try
     {
-        std::string cmd = atom::StringValue::convert(*iter)->getString();
-
-        std::cout << cmd << std::endl;
-
-        ++iter;
-        if (iter == pMessage.end())
-            return;
-
-        if (cmd == "detectionLevel" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
-        {
-            float param = atom::FloatValue::convert(*iter)->getFloat();
-            mDetectionLevel = std::max(0.f, param);
-        }
-        else if (cmd == "filterSize" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
-        {
-            float param = atom::FloatValue::convert(*iter)->getFloat();
-            mFilterSize= std::max(0.f, param);
-        }
-        else if (cmd == "processNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
-        {
-            float param = atom::FloatValue::convert(*iter)->getFloat();
-            mMeanBlob.setParameter("processNoiseCov", param);
-        }
-        else if (cmd == "measurementNoiseCov" && (*iter).get()->getTypeTag() == atom::FloatValue::TYPE_TAG)
-        {
-            float param = atom::FloatValue::convert(*iter)->getFloat();
-            mMeanBlob.setParameter("measurementNoiseCov", param);
-        }
+        cmd = toString(pMessage[0]);
+    }
+    catch (atom::BadTypeTagError error)
+    {
+        return;
     }
 
-    setBaseParameter(pMessage);
+    if (cmd == "detectionLevel")
+    {
+        float level;
+        if (readParam(pMessage, level))
+            mDetectionLevel = max(0.f, level);
+    }
+    else if (cmd == "filterSize")
+    {
+        float size;
+        if (readParam(pMessage, size))
+            mFilterSize = max(0.f, size);
+    }
+    else if (cmd == "processNoiseCov")
+    {
+        float cov;
+        if (readParam(pMessage, cov))
+            mMeanBlob.setParameter("processNoiseCov", cov);
+    }
+    else if (cmd == "measurementNoiseCov")
+    {
+        float cov;
+        if (readParam(pMessage, cov))
+            mMeanBlob.setParameter("measurementNoiseCov", cov);
+    }
+    else
+        setBaseParameter(pMessage);
 }

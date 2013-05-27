@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * switcher is distributed in the hope that it will be useful,
+ * blobserver is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with switcher.  If not, see <http://www.gnu.org/licenses/>.
+ * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -36,9 +36,7 @@
 #include "config.h"
 #include "base_objects.h"
 
-#define LOAD_MAX_WAIT_TIME_MS 500
-
-using namespace std;
+#define LOAD_MAX_WAIT_TIME_MS 5000
 
 class Configurator
 {
@@ -54,17 +52,17 @@ class Configurator
 
         lo_server_thread mOscServer;
 
-        atomic_int mLastIndexReceived;
+        std::atomic_int mLastIndexReceived;
         bool mVerbose;
 
         /*** Methods ***/
         bool loadFlow(const xmlDocPtr doc, xmlNodePtr cur);
 
-        string getStringValueFrom(const xmlDocPtr doc, const xmlNodePtr cur, const xmlChar* attr);
+        std::string getStringValueFrom(const xmlDocPtr doc, const xmlNodePtr cur, const xmlChar* attr);
         int getIntValueFrom(const xmlDocPtr doc, const xmlNodePtr cur, const xmlChar* attr);
-        bool getParamValuesFrom(const xmlDocPtr doc, xmlNodePtr cur, string& paramName, atom::Message& values);
+        bool getParamValuesFrom(const xmlDocPtr doc, xmlNodePtr cur, std::string& paramName, atom::Message& values);
 
-        void checkString(string& str, const string defaultStr);
+        void checkString(std::string& str, const std::string defaultStr);
         void checkInt(int& value, const int defaultValue);
 
         static void oscError(int num, const char* msg, const char* path);

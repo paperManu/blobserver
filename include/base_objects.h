@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * switcher is distributed in the hope that it will be useful,
+ * blobserver is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with switcher.  If not, see <http://www.gnu.org/licenses/>.
+ * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -35,8 +35,6 @@
 #include "source.h"
 #include "detector.h"
 
-using namespace std;
-
 /*************/
 // lo_address in an object
 class OscClient
@@ -45,7 +43,7 @@ class OscClient
         OscClient(lo_address pAddress) {mAddress = pAddress;}
         ~OscClient() {lo_address_free(mAddress);}
 
-        lo_address get() {return mAddress;}
+        lo_address get() const {return mAddress;}
         void replace(lo_address newAddress)
         {
             lo_address_free(mAddress);
@@ -71,6 +69,7 @@ class ShmImage
         std::string _filename;
         int _type;
         unsigned int _width, _height, _bpp;
+        unsigned long long _startTime;
 
         bool init(const unsigned int width, const unsigned int height, int type);
 };
@@ -80,12 +79,12 @@ class ShmImage
 // Struct to contain a complete flow, from capture to client
 struct Flow
 {
-    vector<shared_ptr<Source>> sources;
-    shared_ptr<Detector> detector;
+    std::vector<std::shared_ptr<Source>> sources;
+    std::shared_ptr<Detector> detector;
 #if HAVE_SHMDATA
-    shared_ptr<ShmImage> shm;
+    std::shared_ptr<ShmImage> shm;
 #endif
-    shared_ptr<OscClient> client;
+    std::shared_ptr<OscClient> client;
     unsigned int id;
     bool run;
 };

@@ -3,22 +3,20 @@
 
 AC_PREREQ(2.68)
 AC_INIT([BLOBSERVER],
-        [0.4.0],
+        [0.4.2],
         [http://code.sat.qc.ca/redmine/projects/blobserver/issues],
         [blobserver],
         [http://code.sat.qc.ca/redmine/projects/blobserver])
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE()
-AC_CONFIG_HEADERS([src/config.h])
+AC_CONFIG_HEADERS([include/config.h])
 
 # Check for C and C++ compilers
 AC_PROG_CXX
 AC_PROG_CC
 
 AC_MSG_CHECKING([to see if compiler understands -std=gnu++0x])
-#CXXFLAGS="$CFLAGS -std=gnu++0x"
-#CXXFLAGS="-g3 -O0 -std=gnu++0x"
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ ], [ ])], [
   CXXFLAGS="$CFLAGS -std=gnu++0x"
 #  CXXFLAGS="-g3 -O0 -std=gnu++0x"
@@ -27,6 +25,25 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ ], [ ])], [
   AC_MSG_RESULT([no])
   AC_MSG_ERROR([compiler does not understand -std=c++0x])
 ])
+
+case "$host" in *-darwin* | *-macos10*)
+  LIBTOOL="glibtool"
+  CXXFLAGS+=" -D__Darwin"
+  LDFLAGS+=" -undefined dynamic_lookup -Wl,-headerpad_max_install_names"
+  if test -d /opt/local ; then
+    CXXFLAGS+=" -I/usr/local/include -I/opt/local/include"
+    #LDFLAGS+=" -L/usr/local/lib -L/opt/local/lib"
+  elif test -d /sw ; then
+    CXXFLAGS+=" -I/sw/include"
+    #LDFLAGS+=" -L/sw/lib"
+  fi
+  # OSX does not include /usr/local/lib/pkgconfig path, so we need to
+  # add it. 
+  PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/Library/Frameworks/GStreamer.framework/Libraries/pkgconfig:$PKG_CONFIG_PATH
+  export PKG_CONFIG_PATH
+  LDFLAGS+=" -fPIC -L/usr/local/lib -L/usr/local/lib64"
+  ;;
+esac
 
 # Check for header files
 AC_HEADER_STDC
@@ -38,15 +55,15 @@ if test "x${have_glib}" = "xfalse" ; then
 fi
 
 # OpenCV
-PKG_CHECK_MODULES([OPENCV], [opencv >= 2.3])
+PKG_CHECK_MODULES([OPENCV], [opencv >= 2.4])
 if test "x${have_opencv}" = "xfalse" ; then
     AC_MSG_ERROR([Missing opencv])
 fi
 
 # Shmdata
-PKG_CHECK_MODULES([SHMDATA], [shmdata-0.6 shmdata-any-0.6],
-    AC_DEFINE([HAVE_SHMDATA], [1], [libshmdata detected]),
-    AC_DEFINE([HAVE_SHMDATA], [0], [libshmdata not detected]))
+PKG_CHECK_MODULES([SHMDATA], [shmdata-0.8 shmdata-any-0.8],
+    AC_DEFINE([HAVE_SHMDATA], [1], [Defined to 1 if libshmdata is detected]),
+    AC_DEFINE([HAVE_SHMDATA], [0], [Defined to 1 if libshmdata is detected]))
 
 # Liblo
 PKG_CHECK_MODULES([LIBLO], [liblo >= 0.26])
@@ -84,7 +101,7 @@ else
 fi
 
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
-if test -z "x$DOXYGEN" = "xtrue" ; then
+if test "x$DOXYGEN" = "xtrue" ; then
     AC_MSG_WARN([Doxygen not found - documentation will not be generated])
 fi
 

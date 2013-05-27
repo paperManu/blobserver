@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * switcher is distributed in the hope that it will be useful,
+ * blobserver is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with switcher.  If not, see <http://www.gnu.org/licenses/>.
+ * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -27,12 +27,9 @@
 
 #include <opencv2/opencv.hpp>
 
-using namespace std;
-using namespace cv;
-
 struct LDRi
 {
-    Mat image;
+    cv::Mat image;
     float EV;
 };
 
@@ -44,11 +41,11 @@ class HdriBuilder
     
         // Adds an LDR image to the list
         // LDRi must be of type RGB8u
-        bool addLDR(const Mat* pImage, float pEV);
+        bool addLDR(const cv::Mat* pImage, float pEV);
 
         // Retrieves the HDRI
         // To call after the HDRI generation
-        Mat getHDRI();
+        cv::Mat getHDRI() const;
     
         // Generate the HDRI
         // Empties the LDRi list
@@ -58,10 +55,10 @@ class HdriBuilder
         /*****************/
         // Attributes
         // LDR images list
-        vector<LDRi> mLDRi;
+        std::vector<LDRi> mLDRi;
     
         // Computed HDRi
-        Mat mHDRi;
+        cv::Mat mHDRi;
     
         // Minimum sum used in the HDRi computation
         float mMinSum;
@@ -74,7 +71,7 @@ class HdriBuilder
         // Methods
         // Returns the coefficient to apply to a 8u value
         // according to a gaussian curve centered on 127
-        float getGaussian(unsigned char pValue);
+        float getGaussian(unsigned char pValue) const;
     
         // Orders the LDRi from the most to least exposed
         void orderLDRi();
