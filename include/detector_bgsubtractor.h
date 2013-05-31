@@ -51,7 +51,7 @@ class Detector_BgSubtractor : public Detector
         static unsigned int mSourceNbr;
 
         cv::SimpleBlobDetector* mBlobDetector; // OpenCV object which detects the blobs in an image
-		cv::SimpleBlobDetector::Params mBlobDetectorParams;
+        cv::SimpleBlobDetector::Params mBlobDetectorParams;
         std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
 
         // Some filtering parameters
