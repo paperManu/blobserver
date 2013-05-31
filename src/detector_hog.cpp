@@ -301,12 +301,13 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
 
     for(int i = 0; i < mBlobs.size(); ++i)
     {
-        int lX, lY, lSize, ldX, ldY, lId;
+        int lX, lY, lSize, lId;
+        float ldX, ldY;
         Blob::properties properties = mBlobs[i].getBlob();
         lX = (int)(properties.position.x);
         lY = (int)(properties.position.y);
-        ldX = (int)(properties.speed.x);
-        ldY = (int)(properties.speed.y);
+        ldX = properties.speed.x;
+        ldY = properties.speed.y;
         lId = (int)mBlobs[i].getId();
 
         // Print the blob number on the blob
@@ -320,8 +321,8 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
         // Add this blob to the message
         mLastMessage.push_back(atom::IntValue::create(lX));
         mLastMessage.push_back(atom::IntValue::create(lY));
-        mLastMessage.push_back(atom::IntValue::create(ldX));
-        mLastMessage.push_back(atom::IntValue::create(ldY));
+        mLastMessage.push_back(atom::FloatValue::create(ldX));
+        mLastMessage.push_back(atom::FloatValue::create(ldY));
         mLastMessage.push_back(atom::IntValue::create(lId));
     }
 

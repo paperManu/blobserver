@@ -50,8 +50,6 @@ class Detector_BgSubtractor : public Detector
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        cv::SimpleBlobDetector* mBlobDetector; // OpenCV object which detects the blobs in an image
-        cv::SimpleBlobDetector::Params mBlobDetectorParams;
         std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
 
         // Some filtering parameters
@@ -68,9 +66,7 @@ class Detector_BgSubtractor : public Detector
 
         // Various variables
         cv::Mat mBgSubtractorBuffer;
-        float mBlobMergeDistance; // Distance to considerer two blobs as one
-        bool mSaveSamples; // If true, save samples older than mSaveSamplesAge
-        unsigned long mSaveSamplesAge;
+        float mMinArea, mMaxArea;
 
         // Methods
         void make();

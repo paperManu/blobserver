@@ -33,29 +33,17 @@ void Detector_BgSubtractor::make()
     mOutputBuffer = cv::Mat::zeros(480, 640, CV_8UC3);
 
     mName = mClassName;
-    mOscPath = "/blobserver/hog";
+    mOscPath = "/blobserver/bgsubtractor";
 
     mFilterSize = 3;
-    mFilterDilateCoeff = 3;
+    mFilterDilateCoeff = 2;
 
     mBlobLifetime = 30;
     mProcessNoiseCov = 1e-6;
     mMeasurementNoiseCov = 1e-4;
 
-    // Set mBlobDetector to indeed detect light
-    mBlobDetectorParams.filterByColor = true;
-    mBlobDetectorParams.blobColor = 255;
-   mBlobDetectorParams.filterByCircularity = false;
-    mBlobDetectorParams.minCircularity = 0.0f;
-    mBlobDetectorParams.maxCircularity = 1.f;
-   mBlobDetectorParams.filterByInertia = false;
-    mBlobDetectorParams.minInertiaRatio = 0.f;
-    mBlobDetectorParams.maxInertiaRatio = 1.f;
-   mBlobDetectorParams.filterByArea = true;
-    mBlobDetectorParams.minArea = 128.f;
-    mBlobDetectorParams.maxArea = 65535.f;
-   mBlobDetectorParams.filterByConvexity = false;
-    mBlobDetector = new cv::SimpleBlobDetector(mBlobDetectorParams);
+    mMinArea = 0.f;
+    mMaxArea = 65535.f;
 }
 
 /*************/
@@ -73,25 +61,28 @@ atom::Message Detector_BgSubtractor::detect(const vector<cv::Mat> pCaptures)
     cv::dilate(lEroded, mBgSubtractorBuffer, cv::Mat(), cv::Point(-1, -1), mFilterSize * mFilterDilateCoeff);
     cv::threshold(mBgSubtractorBuffer, mBgSubtractorBuffer, 250, 255, cv::THRESH_BINARY);
 
-   vector< vector<cv::Point> > contours;
-   cv::Mat buffer = mBgSubtractorBuffer.clone();
-   cv::findContours(buffer, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+    vector< vector<cv::Point> > contours;
+    cv::Mat buffer = mBgSubtractorBuffer.clone();
+    cv::findContours(buffer, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
 
     vector<Blob::properties> properties;
-   for (unsigned int i = 0; i < contours.size(); ++i)
-   {
-      cv::Rect box = cv::boundingRect(contours[i]);
-      float area = cv::contourArea(contours[i], false);
+    for (unsigned int i = 0; i < contours.size(); ++i)
+    {
+        cv::Rect box = cv::boundingRect(contours[i]);
+        float area = cv::contourArea(contours[i], false);
 
-      Blob::properties property;
-      property.position.x = box.x + box.width / 2;
-      property.position.y = box.y + box.height / 2;
-      property.size = area;
-      property.speed.x = 0.f;
-      property.speed.y = 0.f;
+        if (area < mMinArea || area > mMaxArea)
+            continue;
 
-      properties.push_back(property);
-   }
+        Blob::properties property;
+        property.position.x = box.x + box.width / 2;
+        property.position.y = box.y + box.height / 2;
+        property.size = area;
+        property.speed.x = 0.f;
+        property.speed.y = 0.f;
+
+        properties.push_back(property);
+    }
 
     // We want to track them
     trackBlobs<Blob2D>(properties, mBlobs, mBlobLifetime);
@@ -107,7 +98,7 @@ atom::Message Detector_BgSubtractor::detect(const vector<cv::Mat> pCaptures)
     for_each (mBlobs.begin(), mBlobs.end(), [&] (Blob2D blob)
     {
         Blob::properties props = blob.getBlob();
-      cv::circle(resultMat, props.position, sqrtf(props.size), cv::Scalar(1, 1, 1), CV_FILLED);
+        cv::circle(resultMat, props.position, sqrtf(props.size), cv::Scalar(1, 1, 1), CV_FILLED);
     } );
 
     // The result is shown
@@ -116,16 +107,18 @@ atom::Message Detector_BgSubtractor::detect(const vector<cv::Mat> pCaptures)
     // Constructing the message
     mLastMessage.clear();
     mLastMessage.push_back(atom::IntValue::create((int)mBlobs.size()));
-    mLastMessage.push_back(atom::IntValue::create(5));
+    mLastMessage.push_back(atom::IntValue::create(6));
 
     for(int i = 0; i < mBlobs.size(); ++i)
     {
-        int lX, lY, lSize, ldX, ldY, lId;
+        int lX, lY, lSize, lId;
+        float ldX, ldY;
         Blob::properties properties = mBlobs[i].getBlob();
         lX = (int)(properties.position.x);
         lY = (int)(properties.position.y);
-        ldX = (int)(properties.speed.x);
-        ldY = (int)(properties.speed.y);
+        lSize = (int)(properties.size);
+        ldX = properties.speed.x;
+        ldY = properties.speed.y;
         lId = (int)mBlobs[i].getId();
 
         // Print the blob number on the blob
@@ -139,8 +132,9 @@ atom::Message Detector_BgSubtractor::detect(const vector<cv::Mat> pCaptures)
         // Add this blob to the message
         mLastMessage.push_back(atom::IntValue::create(lX));
         mLastMessage.push_back(atom::IntValue::create(lY));
-        mLastMessage.push_back(atom::IntValue::create(ldX));
-        mLastMessage.push_back(atom::IntValue::create(ldY));
+        mLastMessage.push_back(atom::IntValue::create(lSize));
+        mLastMessage.push_back(atom::FloatValue::create(ldX));
+        mLastMessage.push_back(atom::FloatValue::create(ldY));
         mLastMessage.push_back(atom::IntValue::create(lId));
     }
 
@@ -186,63 +180,17 @@ void Detector_BgSubtractor::setParameter(atom::Message pMessage)
         if (readParam(pMessage, cov))
             mMeasurementNoiseCov = abs(cov);
     }
-   else if (cmd == "circularity")
-   {
-      float mini, maxi;
-        if (!readParam(pMessage, mini, 1))
-         return;
-      if (!readParam(pMessage, maxi, 2))
-         return;
+    else if (cmd == "area")
+    {
+       float mini, maxi;
+       if (!readParam(pMessage, mini, 1))
+          return;
+       if (!readParam(pMessage, maxi, 2))
+          return;
 
-      mBlobDetectorParams.filterByCircularity = true;
-      mBlobDetectorParams.minCircularity = max(0.f, mini);
-      mBlobDetectorParams.maxCircularity = min(1.f, maxi);
-
-      delete mBlobDetector;
-      mBlobDetector = new cv::SimpleBlobDetector(mBlobDetectorParams);
-   }
-   else if (cmd == "inertia")
-   {
-      float mini, maxi;
-      if (!readParam(pMessage, mini, 1))
-         return;
-      if (!readParam(pMessage, maxi, 2))
-         return;
-
-      mBlobDetectorParams.filterByInertia = true;
-      mBlobDetectorParams.minInertiaRatio = max(0.f, mini);
-      mBlobDetectorParams.maxInertiaRatio = min(1.f, maxi);
-
-      mBlobDetector = new cv::SimpleBlobDetector(mBlobDetectorParams);
-   }
-   else if (cmd == "convexity")
-   {
-      float mini, maxi;
-      if (!readParam(pMessage, mini, 1))
-         return;
-      if (!readParam(pMessage, maxi, 2))
-         return;
-
-      mBlobDetectorParams.filterByConvexity = true;
-      mBlobDetectorParams.minConvexity = max(0.f, mini);
-      mBlobDetectorParams.maxConvexity = min(1.f, maxi);
-
-      mBlobDetector = new cv::SimpleBlobDetector(mBlobDetectorParams);
-   }
-   else if (cmd == "area")
-   {
-      float mini, maxi;
-      if (!readParam(pMessage, mini, 1))
-         return;
-      if (!readParam(pMessage, maxi, 2))
-         return;
-
-      mBlobDetectorParams.filterByArea = true;
-      mBlobDetectorParams.minArea = mini;
-      mBlobDetectorParams.maxArea = maxi;
-
-      mBlobDetector = new cv::SimpleBlobDetector(mBlobDetectorParams);
-   }
+       mMinArea = mini;
+       mMaxArea = maxi;
+    }
     else
         setBaseParameter(pMessage);
 }
