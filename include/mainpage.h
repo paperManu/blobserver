@@ -78,6 +78,50 @@
  **************
  * \section detectors_sec List of detectors
  * 
+ * \subsection detector_bgsubtractor_sec Background subtractor using mixtures of gaussians as models
+ *
+ * This detector detects objects based on a model of the background which uses mixture of gaussians. It is mostly based on the implementation from OpenCV (http://docs.opencv.org/modules/video/doc/motion_analysis_and_object_tracking.html?#BackgroundSubtractorMOG2%20:%20public%20BackgroundSubtractor).
+ * 
+ * Number of source(s) needed: 1
+
+ * Available parameters:
+ * - filterSize (int, default 3): size of the morphologicial filter used to filter noise.
+ * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
+ * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
+ * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
+ * - area (int[2], default 0 65535): minimum and maximum areas of the detected objects.
+ *
+ * OSC output:
+ * - name: bgsubtractor
+ * - values: X(int) Y(int) Size(int) dX(float) dY(float) Id(int)
+ *
+ * \subsection detector_hog_sec Histogram of Oriented Gradients (Detector_Hog)
+ *
+ * This detector searches for objects corresponding to the model trained with blobtrainer.
+ *
+ * Number of source(s) needed: 1
+ *
+ * Available parameters:
+ * - modelFilename (string): path to the file model
+ * - maxTimePerFrame (int, default 1e5): maximum time (in us) to allow for detection at each frame
+ * - maxThreads (int, default 4): maximum number of threads to use
+ * - mergeDistance (int, default 64): distance below which detected blobs are merged
+ * - filterSize (int, default 3): size of the morphological filter used to filter noise in the background subtraction pass
+ * - roiSize (int[2], default 64 128): size (in pixels) of the detection window
+ * - blockSize (int[2], default 2 2): size (in cells) where normalization is applied
+ * - cellSize (int[2], default 16 16): size (in pixels) of a histogram of oriented gradients cell
+ * - bins (int, default 9): number of orientations to consider
+ * - margin (float, default 0.0): margin to the hyperplane to add to the detection (higher = less false positives and less hit rate)
+ * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
+ * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
+ * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
+ * - saveSamples (int, default 0): if set to 1, saves detected samples older than saveSamplesAge
+ * - saveSamplesAge (int, default 120): see saveSamples
+ *
+ * OSC output:
+ * - name: hog
+ * - values: X(int) Y(int) dX(int) dY(int) Id(int)
+ * 
  * \subsection detector_lightspot_sec Lighspots (Detector_LightSpots)
  * 
  * Detects the brightest spots in an input image, i.e. light from a torchlight, and outputs the resulting blobs' size, position and ID.
@@ -110,33 +154,6 @@
  * - name: meanOutliers
  * - values: X(int) Y(int) Size(int) dX(int) dY(int)
  *
- * \subsection detector_hog_sec Histogram of Oriented Gradients (Detector_Hog)
- *
- * This detector searches for objects corresponding to the model trained with blobtrainer.
- *
- * Number of source(s) needed: 1
- *
- * Available parameters:
- * - modelFilename (string): path to the file model
- * - maxTimePerFrame (int, default 1e5): maximum time (in us) to allow for detection at each frame
- * - maxThreads (int, default 4): maximum number of threads to use
- * - mergeDistance (int, default 64): distance below which detected blobs are merged
- * - filterSize (int, default 3): size of the morphological filter used to filter noise in the background subtraction pass
- * - roiSize (int[2], default 64 128): size (in pixels) of the detection window
- * - blockSize (int[2], default 2 2): size (in cells) where normalization is applied
- * - cellSize (int[2], default 16 16): size (in pixels) of a histogram of oriented gradients cell
- * - bins (int, default 9): number of orientations to consider
- * - margin (float, default 0.0): margin to the hyperplane to add to the detection (higher = less false positives and less hit rate)
- * - lifetime (int, default 30): time (in frames) during which a blob is kepts even if not detected
- * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
- * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
- * - saveSamples (int, default 0): if set to 1, saves detected samples older than saveSamplesAge
- * - saveSamplesAge (int, default 120): see saveSamples
- *
- * OSC output:
- * - name: hog
- * - values: X(int) Y(int) dX(int) dY(int) Id(int)
- * 
  **************
  * \section howto_xml_sec How to use Blobserver - Configuration through a XML file
  * 
