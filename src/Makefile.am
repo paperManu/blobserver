@@ -16,6 +16,7 @@ blobserver_SOURCES = \
     descriptor_hog.cpp \
     detector.cpp \
     detector_bgsubtractor.cpp \
+	detector_depthtouch.cpp \
     detector_hog.cpp \
     detector_lightSpots.cpp \
     detector_meanOutliers.cpp \

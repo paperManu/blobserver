@@ -50,6 +50,7 @@
 #include "source_shmdata.h"
 #endif
 #include "detector_bgsubtractor.h"
+#include "detector_depthtouch.h"
 #include "detector_hog.h"
 #include "detector_lightSpots.h"
 #include "detector_meanOutliers.h"
@@ -318,6 +319,8 @@ void App::registerClasses()
     // Register detectors
     mDetectorFactory.register_class<Detector_BgSubtractor>(Detector_BgSubtractor::getClassName(),
         Detector_BgSubtractor::getDocumentation());
+    mDetectorFactory.register_class<Detector_DepthTouch>(Detector_DepthTouch::getClassName(),
+        Detector_DepthTouch::getDocumentation());
     mDetectorFactory.register_class<Detector_Hog>(Detector_Hog::getClassName(),
         Detector_Hog::getDocumentation());
     mDetectorFactory.register_class<Detector_LightSpots>(Detector_LightSpots::getClassName(),

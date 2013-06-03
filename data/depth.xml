@@ -1,0 +1,40 @@
+<Blobserver>
+    <Flow>
+        <Detector>
+            <Type>Detector_DepthTouch</Type>
+            <Param>
+                <Name>verbose</Name>
+                <Value>1</Value>
+            </Param>
+
+            <Param>
+                <Name>detectionDistance</Name>
+                <Value>20</Value>
+            </Param>
+            <Param>
+                <Name>filterSize</Name>
+                <Value>3</Value>
+            </Param>
+            <Param>
+                <Name>learningTime</Name>
+                <Value>120</Value>
+            </Param>
+        </Detector>
+        <Source>
+            <Type>Source_Shmdata</Type>
+            <Subsource>0</Subsource>
+            <Param>
+                <Name>location</Name>
+                <Value>/tmp/cam0-depth</Value>
+            </Param>
+        </Source>
+        <Client>
+            <Address>localhost</Address>
+            <Port>9000</Port>
+        </Client>
+        <Server>
+            <Address>localhost</Address>
+            <Port>9002</Port>
+        </Server>
+    </Flow>
+</Blobserver>
