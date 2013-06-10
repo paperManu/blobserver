@@ -6,9 +6,12 @@
                 <Name>verbose</Name>
                 <Value>1</Value>
             </Param>
-
             <Param>
                 <Name>detectionDistance</Name>
+                <Value>5</Value>
+            </Param>
+            <Param>
+                <Name>stddevCoeff</Name>
                 <Value>20</Value>
             </Param>
             <Param>

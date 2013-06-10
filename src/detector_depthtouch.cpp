@@ -37,6 +37,7 @@ void Detector_DepthTouch::make()
 
     mFilterSize = 2;
     mDetectionDistance = 25.f;
+    mSigmaCoeff = 20.f;
 
     mBlobLifetime = 5;
     mProcessNoiseCov = 1e-6;
@@ -88,7 +89,8 @@ atom::Message Detector_DepthTouch::detect(const vector<cv::Mat> pCaptures)
 
     // Comparing distance with detection distance, plus some morphological operations
     cv::Mat touch;
-    cv::compare(distance, mDetectionDistance, touch, cv::CMP_LE);
+    cv::Mat touchDistance = cv::max((mBackgroundStddev + 1.0) * mSigmaCoeff, mDetectionDistance);
+    cv::compare(distance, touchDistance, touch, cv::CMP_LE);
     cv::Mat lEroded;
     cv::erode(touch, lEroded, cv::Mat(), cv::Point(-1, -1), mFilterSize);
     cv::dilate(lEroded, touch, cv::Mat(), cv::Point(-1, -1), mFilterSize * 2);
@@ -244,6 +246,12 @@ void Detector_DepthTouch::setParameter(atom::Message pMessage)
         float distance;
         if (readParam(pMessage, distance))
             mDetectionDistance = max(1.f, (float)distance);
+    }
+    else if (cmd == "stddevCoeff")
+    {
+        float coeff;
+        if (readParam(pMessage, coeff))
+            mSigmaCoeff = max(10.f, (float)coeff);
     }
     else if (cmd == "learningTime")
     {

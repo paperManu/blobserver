@@ -53,6 +53,7 @@ class Detector_DepthTouch : public Detector
         // Detection parameters
         int mFilterSize;
         float mDetectionDistance;
+        float mSigmaCoeff;
         int mLearningTime;
 
         // Internal variables
