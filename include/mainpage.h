@@ -78,6 +78,23 @@
  **************
  * \section detectors_sec List of detectors
  * 
+ * \subsection detector_bgsubtractor_sec Background subtractor using mixtures of gaussians as models (Detector_BgSubtractor)
+ *
+ * This detector detects objects based on a model of the background which uses mixture of gaussians. It is mostly based on the implementation from OpenCV (http://docs.opencv.org/modules/video/doc/motion_analysis_and_object_tracking.html?#BackgroundSubtractorMOG2%20:%20public%20BackgroundSubtractor).
+ * 
+ * Number of source(s) needed: 1
+
+ * Available parameters:
+ * - filterSize (int, default 3): size of the morphologicial filter used to filter noise.
+ * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
+ * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
+ * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
+ * - area (int[2], default 0 65535): minimum and maximum areas of the detected objects.
+ *
+ * OSC output:
+ * - name: bgsubtractor
+ * - values: X(int) Y(int) Size(int) dX(float) dY(float) Id(int)
+ *
  * \subsection detector_depthtouch_sec Adding touch interaction to surfaces using depth map (Detector_DepthTouch)
  *
  * This detector uses an input depth map (16 bits single channel image) to create a model of the targeted surface. After the model is created, it detects any object coming close to the surface, depending on the parameters. This means that objects passing in front of the surface are not detected unless their depth is close to the original surface.
@@ -97,24 +114,6 @@
  * OSC output:
  * - name: depthtouch
  * - values: X(int) Y(int) dX(float) dY(float) Id(int)
- * 
- * \subsection detector_bgsubtractor_sec Background subtractor using mixtures of gaussians as models (Detector_BgSubtractor)
- *
- * This detector detects objects based on a model of the background which uses mixture of gaussians. It is mostly based on the implementation from OpenCV (http://docs.opencv.org/modules/video/doc/motion_analysis_and_object_tracking.html?#BackgroundSubtractorMOG2%20:%20public%20BackgroundSubtractor).
- * 
- * Number of source(s) needed: 1
-
- * Available parameters:
- * - filterSize (int, default 3): size of the morphologicial filter used to filter noise.
- * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
- * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
- * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
- * - area (int[2], default 0 65535): minimum and maximum areas of the detected objects.
- *
- * OSC output:
- * - name: bgsubtractor
- * - values: X(int) Y(int) Size(int) dX(float) dY(float) Id(int)
-
  *
  * \subsection detector_hog_sec Histogram of Oriented Gradients (Detector_Hog)
  *
@@ -151,9 +150,9 @@
  * 
  * Available parameters: 
  * - detectionLevel (int, default 2): minimum level (as a multiple of the standard deviation) to consider a point as a light spot.
- * - filterSize (int, default 3): Size of the kernel for the morphological operations (to smooth the noise).
- * - processNoiseCov (int, default 1e-5): Noise of the movement of the tracked object. Used for filtering detection.
- * - measurementNoiseCov (int, default 1e-5): Noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
+ * - filterSize (int, default 3): size of the kernel for the morphological operations (to smooth the noise).
+ * - processNoiseCov (int, default 1e-5): noise of the movement of the tracked object. Used for filtering detection.
+ * - measurementNoiseCov (int, default 1e-5): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
  * 
  * OSC output:
  * - name: lightSpots
@@ -167,13 +166,30 @@
  * 
  * Available parameters:
  * - detectionLevel (int, default 2): minimum level (as a multiple of the standard deviation) to consider a point as a light spot.
- * - filterSize (int, default 3): Size of the kernel for the morphological operations (to smooth the noise).
- * - processNoiseCov (int, default 1e-6): Noise of the movement of the tracked object. Used for filtering detection.
- * - measurementNoiseCov (int, default 1e-4): Noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
+ * - filterSize (int, default 3): size of the kernel for the morphological operations (to smooth the noise).
+ * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
+ * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
  * 
  * OSC output:
  * - name: meanOutliers
  * - values: X(int) Y(int) Size(int) dX(int) dY(int)
+ *
+ * \subsection detector_objonaplane_sec Objects on a plane (Detector_ObjOnAPlane)
+ *
+ * This detector is specificaly designed to detect objects placed on a planar surface, by comparing images from two or more cameras. These cameras should be calibrated geometrically and colorimetrically to get optimal results. Note that this detector is still in development. Cameras are calibrated by specifying to all of them the coordinates, in the image space, of a set of fixed points in the real space.
+ *
+ * Number of source(s) needed: 2+
+ *
+ * Available parameters:
+ * - addSpace (float[4+]): adds the coordinates of the plane for the next input source (depending on which spaces have been given yet). All points are given in the input image space.
+ * - spaces (float[*], no default): give all the coordinates of the plane for all the input sources. All set of coordinates should have the same number of points, each set being expressed in the corresponding source 2D space.
+ * - clearSpace (no args): clears up all registered spaces.
+ * - detectionLevel (float, default 10): sets the minimum distance in the color space to consider two colors as being different.
+ * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
+ * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
+ * - filterSize (int, default 3): size of the kernel for the morphological operations (to smooth the noise).
+ * - minBlobArea (int, default 32): minimum size of a blob to not be considered as noise.
+ * - maxTrackedBlobs (int, default 16): maximum number of blobs to track
  *
  **************
  * \section howto_xml_sec How to use Blobserver - Configuration through a XML file
