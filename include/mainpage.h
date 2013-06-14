@@ -78,7 +78,27 @@
  **************
  * \section detectors_sec List of detectors
  * 
- * \subsection detector_bgsubtractor_sec Background subtractor using mixtures of gaussians as models
+ * \subsection detector_depthtouch_sec Adding touch interaction to surfaces using depth map (Detector_DepthTouch)
+ *
+ * This detector uses an input depth map (16 bits single channel image) to create a model of the targeted surface. After the model is created, it detects any object coming close to the surface, depending on the parameters. This means that objects passing in front of the surface are not detected unless their depth is close to the original surface.
+ * 
+ * Number of source(s) needed: 1
+
+ * Available parameters:
+ * - filterSize (int, default 3): size of the morphologicial filter used to filter noise.
+ * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
+ * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
+ * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
+ * - detectionDistance (float, default 25): maximum distance (in mm) for the detection to happen
+ * - stddevCoeff (float, default 20): coefficient applied to the standard deviation map of the original depth map. If the resulting value is greater than detectionDistance, this value is used
+ * - learningTime (int, defaut 60): number of frames to use to create the model
+ * - learn (no parameter): send this message through OSC to restart the learning process
+ *
+ * OSC output:
+ * - name: depthtouch
+ * - values: X(int) Y(int) dX(float) dY(float) Id(int)
+ * 
+ * \subsection detector_bgsubtractor_sec Background subtractor using mixtures of gaussians as models (Detector_BgSubtractor)
  *
  * This detector detects objects based on a model of the background which uses mixture of gaussians. It is mostly based on the implementation from OpenCV (http://docs.opencv.org/modules/video/doc/motion_analysis_and_object_tracking.html?#BackgroundSubtractorMOG2%20:%20public%20BackgroundSubtractor).
  * 
@@ -94,6 +114,7 @@
  * OSC output:
  * - name: bgsubtractor
  * - values: X(int) Y(int) Size(int) dX(float) dY(float) Id(int)
+
  *
  * \subsection detector_hog_sec Histogram of Oriented Gradients (Detector_Hog)
  *
