@@ -24,6 +24,8 @@
  */
 
 #include <chrono>
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,6 +60,7 @@ static double gSigma = 0.0;
 static double gMargin = 0.0;
 
 static double gPca = 1.0;
+static double gCrossValidation = 1.0;
 
 int _svmCriteria;
 cv::Point_<int> _roiPosition;
@@ -86,6 +89,7 @@ static GOptionEntry gEntries[] =
     {"sigma", 0, 0, G_OPTION_ARG_DOUBLE, &gSigma, "Specifies the sigma parameter for the gaussian kernel applied over blocks (default: 1.0)", NULL},
     {"margin", 0, 0, G_OPTION_ARG_DOUBLE, &gMargin, "Specifies the distance to the margin for positive images to be detected as such (default: 0.0)", NULL},
     {"pca", 0, 0, G_OPTION_ARG_DOUBLE, &gPca, "Enables PCA and specifies the ratio of components to keep (default: 1.0)", NULL},
+    {"crossValidation", 'C', 0, G_OPTION_ARG_DOUBLE, &gCrossValidation, "Enables cross validation if value is lower than 1.0 (default: 1.0)", NULL},
     {NULL}
 };
 
@@ -177,6 +181,262 @@ unsigned timeSince(unsigned long long timestamp)
 }
 
 /*************/
+void trainSVM(vector<string>& pPositiveFiles, vector<string>& pNegativeFiles, Descriptor_Hog& pDescriptor, CvSVM& pSvm, cv::PCA& pPca, float pPortion = 1.0)
+{
+    int result;
+
+    if (!gTable)
+    {
+        cout << "Training parameters: " << endl;
+        if (_svmCriteria == CV_TERMCRIT_ITER)
+            cout << "   iterations = " << gIterations << endl;
+        if (_svmCriteria == CV_TERMCRIT_EPS)
+            cout << "   epsilon = " << gEpsilon << endl;
+        cout << "   C penalty = " << gCPenalty << endl;
+        cout << "   output file = " << gOutput << endl;
+        cout << "   ROI position = " << gPosition << endl;
+        cout << "   cell size = " << gCellSize << endl;
+        cout << "   block size = " << gBlockSize << endl;
+        cout << "   roi size = " << gRoiSize << endl;
+        cout << "   bins per cell = " << gBins << endl;
+        cout << "   sigma = " << gSigma << endl;
+        cout << "   pca = " << gPca << endl;
+    }
+    
+    // Set up training data
+    if (!gVerbose && !gTable)
+        cout << "Loading training data... " << flush;
+
+    int nbrImg = 0;
+    vector<float> labels;
+    vector<float> trainingData;
+    int portionOfPositiveFiles = (int)((float)pPositiveFiles.size() * pPortion);
+    for (int i = 0; i < portionOfPositiveFiles; ++i)
+    {
+        if (gVerbose)
+            cout << "Analysing " << pPositiveFiles[i] << endl;
+
+        cv::Mat image = cv::imread(pPositiveFiles[i]);
+        pDescriptor.setImage(image);
+        vector<float> description = pDescriptor.getDescriptor(_roiPosition);
+        if (description.size() == 0)
+            continue;
+
+        labels.push_back(1.f);
+        for (int j = 0; j < description.size(); ++j)
+            trainingData.push_back(description[j]);
+
+        nbrImg++;
+    }
+    if (!gVerbose && !gTable)
+        cout << "Positive data loaded... " << flush;
+
+    int portionOfNegativeFiles = (int)((float)pNegativeFiles.size() * pPortion);
+    for (int i = 0; i < portionOfNegativeFiles; ++i)
+    {
+        if (gVerbose)
+            cout << "Analysing " << pNegativeFiles[i] << endl;
+
+        cv::Mat image = cv::imread(pNegativeFiles[i]);
+        pDescriptor.setImage(image);
+        for (int x = 0; x < image.cols - _roiSize.x; x += image.cols/5)
+        {
+            for (int y = 0; y < image.rows - _roiSize.y; y += image.rows/5)
+            {
+                vector<float> description = pDescriptor.getDescriptor(_roiPosition + cv::Point_<int>(x, y));
+                if (description.size() == 0)
+                    continue;
+
+                labels.push_back(-1.f);
+                for (int j = 0; j < description.size(); ++j)
+                    trainingData.push_back(description[j]);
+
+                nbrImg++;
+            }
+        }
+    }
+    if (!gVerbose && !gTable)
+        cout << "Negative data loaded" << endl;
+
+    // Applying the PCA and reformating input data
+    if (gPca < 1.0)
+    {
+        cout << "Applying PCA before SVM train... ";
+        cout.flush();
+
+        int vectorSize = trainingData.size() / nbrImg;
+        cv::Mat trainingPCA = cv::Mat::zeros(nbrImg, vectorSize, CV_32F);
+        for (int i = 0; i < nbrImg; ++i)
+        {
+            for (int j = 0; j < vectorSize; ++j)
+            {
+                trainingPCA.at<float>(i, j) = trainingData[i*vectorSize + j];
+            }
+        }
+        int keptComponents = (int)((float)vectorSize * gPca);
+        pPca(trainingPCA, cv::noArray(), CV_PCA_DATA_AS_ROW, keptComponents);
+
+        // Reproject all vectors
+        cv::Mat projected;
+        pPca.project(trainingPCA, projected);
+
+        // Store the result as the training data
+        trainingData.clear();
+        for (int i = 0; i < projected.rows; ++i)
+            for (int j = 0; j < projected.cols; ++j)
+            {
+                trainingData.push_back(projected.at<float>(i, j));
+            }
+
+        cout << "Kept " << keptComponents << " components" << endl;
+
+        // Save the resulting space
+        cv::FileStorage file("pca.xml", cv::FileStorage::WRITE);
+        file << "eigenVectors" << pPca.eigenvectors;
+        file << "mean" << pPca.mean;
+    }
+    
+    if (!gTable)
+        cout << "Training the SVM classifier..." << endl;
+    // Set up the SVM train parameter
+    CvSVMParams svmParams;
+    svmParams.svm_type = CvSVM::C_SVC;
+    svmParams.C = gCPenalty;
+    svmParams.kernel_type = CvSVM::LINEAR;
+    svmParams.term_crit = cvTermCriteria(_svmCriteria, gIterations, gEpsilon);
+
+    // Train the SVM
+    cv::Mat labelsMat((int)labels.size(), 1, CV_32FC1, &labels[0]);
+    cv::Mat trainingMat(nbrImg, (int)trainingData.size() / nbrImg, CV_32FC1, &trainingData[0]);
+    result = pSvm.train(trainingMat, labelsMat, cv::Mat(), cv::Mat(), svmParams);
+
+    pSvm.save((const char*)gOutput);
+}
+
+/*************/
+void testSVM(vector<string>& pPositiveFiles, vector<string>& pNegativeFiles, Descriptor_Hog& pDescriptor, CvSVM& pSvm, cv::PCA pPca, float pPortion = 1.0)
+{
+    float portion;
+    if (pPortion < 1.f)
+        portion = pPortion;
+    else
+        portion = 0.f;
+
+    // We compute the total detection time (descriptor creation + prediction)
+    unsigned long long totalTime = 0;
+    unsigned long long chronoTime;
+    auto chronoStart = std::chrono::high_resolution_clock::now();
+
+    /***/
+    if (!gTable)
+        cout << "Testing positive files... " << flush;
+
+    int positive = 0;
+    int negative = 0;
+    int portionOfPositiveFiles = (int)((float)pPositiveFiles.size() * portion);
+    for (int i = portionOfPositiveFiles; i < pPositiveFiles.size(); ++i)
+    {
+        cv::Mat image = cv::imread(pPositiveFiles[i]);
+
+        chronoStart = std::chrono::high_resolution_clock::now();
+        chronoTime = chrono::duration_cast<chrono::microseconds>(chronoStart.time_since_epoch()).count();
+
+        pDescriptor.setImage(image);
+
+        vector<float> description = pDescriptor.getDescriptor(_roiPosition);
+        cv::Mat descriptionMat(1, (int)description.size(), CV_32FC1, &description[0]);
+
+        // If we used PCA for training
+        if (gPca < 1.0)
+            descriptionMat = pPca.project(descriptionMat);
+
+        float value = pSvm.predict(descriptionMat, true);
+
+        if (gVerbose)
+            cout << pPositiveFiles[i] << " -> " << value << endl;
+
+        if (value < -gMargin)
+            positive++;
+
+        totalTime += timeSince(chronoTime);
+    }
+
+    /***/
+    if (!gTable)
+        cout << "Testing negative files" << endl;
+
+    int totalNegatives = 0;
+    int portionOfNegativeFiles = (int)((float)pNegativeFiles.size() * portion);
+    for (int i = portionOfNegativeFiles; i < pNegativeFiles.size(); ++i)
+    {
+        cv::Mat image = cv::imread(pNegativeFiles[i]);
+        chronoStart = std::chrono::high_resolution_clock::now();
+        chronoTime = chrono::duration_cast<chrono::microseconds>(chronoStart.time_since_epoch()).count();
+        pDescriptor.setImage(image);
+
+        for (int x = 0; x < image.cols - _roiSize.x; x += image.cols/5)
+        {
+            for (int y = 0; y < image.rows - _roiSize.y; y += image.rows/5)
+            {
+                vector<float> description = pDescriptor.getDescriptor(_roiPosition + cv::Point_<int>(x, y));
+                cv::Mat descriptionMat(1, (int)description.size(), CV_32FC1, &description[0]);
+                if (description.size() == 0)
+                    continue;
+
+                // If we used PCA for training
+                if (gPca < 1.0)
+                    descriptionMat = pPca.project(descriptionMat);
+
+                float value = pSvm.predict(descriptionMat, true);
+
+                if (gVerbose)
+                    cout << pNegativeFiles[i] << " -> " << value << endl;
+
+                totalNegatives++;
+                if (value > -gMargin)
+                    negative++;
+            }
+        }
+
+        totalTime += timeSince(chronoTime);
+    }
+
+    if (!gTable)
+    {
+        cout << "Positive: " << positive << " / " << pPositiveFiles.size() - portionOfPositiveFiles << endl;
+        cout << "Negative: " << negative << " / " << totalNegatives << endl;
+        cout << "Time per prediction (us): " << totalTime / (pPositiveFiles.size() - portionOfPositiveFiles + totalNegatives) << endl;
+    }
+    else
+    {
+        cout << gIterations << " ";
+        cout << gEpsilon << " ";
+        cout << gCPenalty << " ";
+        cout << gOutput << " ";
+        cout << gPosition << " ";
+        cout << gCellSize << " ";
+        cout << gBlockSize << " ";
+        cout << gRoiSize << " ";
+        cout << gBins << " ";
+        cout << gSigma << " ";
+        cout << gPca << " ";
+        cout << totalTime / (pPositiveFiles.size() - portionOfPositiveFiles + totalNegatives) << " ";
+        cout << (float)positive / ((float)pPositiveFiles.size() - (float)portionOfPositiveFiles) << " " << (float)negative/(float)totalNegatives << endl;
+    }
+}
+
+/*************/
+void randomize(vector<string>& pFiles)
+{
+    srand(time(0));
+    for (unsigned int i = 0; i < pFiles.size(); ++i)
+    {
+        int index = rand() % pFiles.size();
+        pFiles[i].swap(pFiles[index]);
+    }
+}
+
+/*************/
 int main(int argc, char** argv)
 {
     int result = parseArgs(argc, argv);
@@ -196,238 +456,23 @@ int main(int argc, char** argv)
     vector<string> positiveFiles = loadFileList(string(gPositiveDir));
     vector<string> negativeFiles = loadFileList(string(gNegativeDir));
 
+    if (gCrossValidation != 1.f)
+    {
+        randomize(positiveFiles);
+        randomize(negativeFiles);
+    }
+
     // If no model file is specified for testing, we have to create one
     if (gTestFile == NULL)
     {
-        if (!gTable)
-        {
-            cout << "Training parameters: " << endl;
-            if (_svmCriteria == CV_TERMCRIT_ITER)
-                cout << "   iterations = " << gIterations << endl;
-            if (_svmCriteria == CV_TERMCRIT_EPS)
-                cout << "   epsilon = " << gEpsilon << endl;
-            cout << "   C penalty = " << gCPenalty << endl;
-            cout << "   output file = " << gOutput << endl;
-            cout << "   ROI position = " << gPosition << endl;
-            cout << "   cell size = " << gCellSize << endl;
-            cout << "   block size = " << gBlockSize << endl;
-            cout << "   roi size = " << gRoiSize << endl;
-            cout << "   bins per cell = " << gBins << endl;
-            cout << "   sigma = " << gSigma << endl;
-            cout << "   pca = " << gPca << endl;
-        }
-        
-        // Set up training data
-        if (!gVerbose && !gTable)
-            cout << "Loading training data... " << flush;
-
-        int nbrImg = 0;
-        vector<float> labels;
-        vector<float> trainingData;
-        for (int i = 0; i < positiveFiles.size(); ++i)
-        {
-            if (gVerbose)
-                cout << "Analysing " << positiveFiles[i] << endl;
-
-            cv::Mat image = cv::imread(positiveFiles[i]);
-            descriptor.setImage(image);
-            vector<float> description = descriptor.getDescriptor(_roiPosition);
-            if (description.size() == 0)
-                continue;
-
-            labels.push_back(1.f);
-            for (int j = 0; j < description.size(); ++j)
-                trainingData.push_back(description[j]);
-
-            nbrImg++;
-        }
-        if (!gVerbose && !gTable)
-            cout << "Positive data loaded... " << flush;
-
-        for (int i = 0; i < negativeFiles.size(); ++i)
-        {
-            if (gVerbose)
-                cout << "Analysing " << negativeFiles[i] << endl;
-
-            cv::Mat image = cv::imread(negativeFiles[i]);
-            descriptor.setImage(image);
-            for (int x = 0; x < image.cols - _roiSize.x; x += image.cols/5)
-            {
-                for (int y = 0; y < image.rows - _roiSize.y; y += image.rows/5)
-                {
-                    vector<float> description = descriptor.getDescriptor(_roiPosition + cv::Point_<int>(x, y));
-                    if (description.size() == 0)
-                        continue;
-
-                    labels.push_back(-1.f);
-                    for (int j = 0; j < description.size(); ++j)
-                        trainingData.push_back(description[j]);
-
-                    nbrImg++;
-                }
-            }
-        }
-        if (!gVerbose && !gTable)
-            cout << "Negative data loaded" << endl;
-
-        // Applying the PCA and reformating input data
-        if (gPca < 1.0)
-        {
-            cout << "Applying PCA before SVM train... ";
-            cout.flush();
-
-            int vectorSize = trainingData.size() / nbrImg;
-            cv::Mat trainingPCA = cv::Mat::zeros(nbrImg, vectorSize, CV_32F);
-            for (int i = 0; i < nbrImg; ++i)
-            {
-                for (int j = 0; j < vectorSize; ++j)
-                {
-                    trainingPCA.at<float>(i, j) = trainingData[i*vectorSize + j];
-                }
-            }
-            int keptComponents = (int)((float)vectorSize * gPca);
-            pca(trainingPCA, cv::noArray(), CV_PCA_DATA_AS_ROW, keptComponents);
-
-            // Reproject all vectors
-            cv::Mat projected;
-            pca.project(trainingPCA, projected);
-
-            // Store the result as the training data
-            trainingData.clear();
-            for (int i = 0; i < projected.rows; ++i)
-                for (int j = 0; j < projected.cols; ++j)
-                {
-                    trainingData.push_back(projected.at<float>(i, j));
-                }
-
-            cout << "Kept " << keptComponents << " components" << endl;
-
-            // Save the resulting space
-            cv::FileStorage file("pca.xml", cv::FileStorage::WRITE);
-            file << "eigenVectors" << pca.eigenvectors;
-            file << "mean" << pca.mean;
-        }
-        
-        if (!gTable)
-            cout << "Training the SVM classifier..." << endl;
-        // Set up the SVM train parameter
-        CvSVMParams svmParams;
-        svmParams.svm_type = CvSVM::C_SVC;
-        svmParams.C = gCPenalty;
-        svmParams.kernel_type = CvSVM::LINEAR;
-        svmParams.term_crit = cvTermCriteria(_svmCriteria, gIterations, gEpsilon);
-
-        // Train the SVM
-        cv::Mat labelsMat((int)labels.size(), 1, CV_32FC1, &labels[0]);
-        cv::Mat trainingMat(nbrImg, (int)trainingData.size() / nbrImg, CV_32FC1, &trainingData[0]);
-        result = svm.train(trainingMat, labelsMat, cv::Mat(), cv::Mat(), svmParams);
-
-        svm.save((const char*)gOutput);
+        trainSVM(positiveFiles, negativeFiles, descriptor, svm, pca, gCrossValidation);
     }
     else
     {
         svm.load((const char*)gTestFile);
     }
 
-    // We compute the total detection time (descriptor creation + prediction)
-    unsigned long long totalTime = 0;
-    unsigned long long chronoTime;
-    auto chronoStart = std::chrono::high_resolution_clock::now();
-
-    /***/
-    if (!gTable)
-        cout << "Testing positive files... " << flush;
-
-    int positive = 0;
-    int negative = 0;
-    for (int i = 0; i < positiveFiles.size(); ++i)
-    {
-        cv::Mat image = cv::imread(positiveFiles[i]);
-
-        chronoStart = std::chrono::high_resolution_clock::now();
-        chronoTime = chrono::duration_cast<chrono::microseconds>(chronoStart.time_since_epoch()).count();
-
-        descriptor.setImage(image);
-
-        vector<float> description = descriptor.getDescriptor(_roiPosition);
-        cv::Mat descriptionMat(1, (int)description.size(), CV_32FC1, &description[0]);
-
-        // If we used PCA for training
-        if (gPca < 1.0)
-            descriptionMat = pca.project(descriptionMat);
-
-        float value = svm.predict(descriptionMat, true);
-
-        if (gVerbose)
-            cout << positiveFiles[i] << " -> " << value << endl;
-
-        if (value < -gMargin)
-            positive++;
-
-        totalTime += timeSince(chronoTime);
-    }
-
-    /***/
-    if (!gTable)
-        cout << "Testing negative files" << endl;
-
-    int totalNegatives = 0;
-    for (int i = 0; i < negativeFiles.size(); ++i)
-    {
-        cv::Mat image = cv::imread(negativeFiles[i]);
-        chronoStart = std::chrono::high_resolution_clock::now();
-        chronoTime = chrono::duration_cast<chrono::microseconds>(chronoStart.time_since_epoch()).count();
-        descriptor.setImage(image);
-
-        for (int x = 0; x < image.cols - _roiSize.x; x += image.cols/5)
-        {
-            for (int y = 0; y < image.rows - _roiSize.y; y += image.rows/5)
-            {
-                vector<float> description = descriptor.getDescriptor(_roiPosition + cv::Point_<int>(x, y));
-                cv::Mat descriptionMat(1, (int)description.size(), CV_32FC1, &description[0]);
-                if (description.size() == 0)
-                    continue;
-
-                // If we used PCA for training
-                if (gPca < 1.0)
-                    descriptionMat = pca.project(descriptionMat);
-
-                float value = svm.predict(descriptionMat, true);
-
-                if (gVerbose)
-                    cout << negativeFiles[i] << " -> " << value << endl;
-
-                totalNegatives++;
-                if (value > -gMargin)
-                    negative++;
-            }
-        }
-
-        totalTime += timeSince(chronoTime);
-    }
-
-    if (!gTable)
-    {
-        cout << "Positive: " << positive << " / " << positiveFiles.size() << endl;
-        cout << "Negative: " << negative << " / " << totalNegatives << endl;
-        cout << "Time per prediction (us): " << totalTime / (positiveFiles.size() + totalNegatives) << endl;
-    }
-    else
-    {
-        cout << gIterations << " ";
-        cout << gEpsilon << " ";
-        cout << gCPenalty << " ";
-        cout << gOutput << " ";
-        cout << gPosition << " ";
-        cout << gCellSize << " ";
-        cout << gBlockSize << " ";
-        cout << gRoiSize << " ";
-        cout << gBins << " ";
-        cout << gSigma << " ";
-        cout << gPca << " ";
-        cout << totalTime / (positiveFiles.size() + totalNegatives) << " ";
-        cout << (float)positive / (float)positiveFiles.size() << " " << (float)negative/(float)totalNegatives << endl;
-    }
+    testSVM(positiveFiles, negativeFiles, descriptor, svm, pca, gCrossValidation);
 
     return 0;
 }

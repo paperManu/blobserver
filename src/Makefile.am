@@ -15,6 +15,8 @@ blobserver_SOURCES = \
     configurator.cpp \
     descriptor_hog.cpp \
     detector.cpp \
+    detector_bgsubtractor.cpp \
+	detector_depthtouch.cpp \
     detector_hog.cpp \
     detector_lightSpots.cpp \
     detector_meanOutliers.cpp \
@@ -36,6 +38,8 @@ noinst_HEADERS = \
     $(top_srcdir)/include/creator.h \
     $(top_srcdir)/include/descriptor_hog.h \
     $(top_srcdir)/include/detector.h \
+    $(top_srcdir)/include/detector_bgsubtractor.h \
+    $(top_srcdir)/include/detector_depthtouch.h \
     $(top_srcdir)/include/detector_hog.h \
     $(top_srcdir)/include/detector_lightSpots.h \
     $(top_srcdir)/include/detector_meanOutliers.h \

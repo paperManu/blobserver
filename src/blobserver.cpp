@@ -49,6 +49,8 @@
 #if HAVE_SHMDATA
 #include "source_shmdata.h"
 #endif
+#include "detector_bgsubtractor.h"
+#include "detector_depthtouch.h"
 #include "detector_hog.h"
 #include "detector_lightSpots.h"
 #include "detector_meanOutliers.h"
@@ -315,6 +317,10 @@ int App::parseArgs(int argc, char** argv)
 void App::registerClasses()
 {
     // Register detectors
+    mDetectorFactory.register_class<Detector_BgSubtractor>(Detector_BgSubtractor::getClassName(),
+        Detector_BgSubtractor::getDocumentation());
+    mDetectorFactory.register_class<Detector_DepthTouch>(Detector_DepthTouch::getClassName(),
+        Detector_DepthTouch::getDocumentation());
     mDetectorFactory.register_class<Detector_Hog>(Detector_Hog::getClassName(),
         Detector_Hog::getDocumentation());
     mDetectorFactory.register_class<Detector_LightSpots>(Detector_LightSpots::getClassName(),
@@ -639,9 +645,9 @@ int App::oscHandlerSignIn(const char* path, const char* types, lo_arg** argv, in
 
         lock_guard<mutex> lock(theApp->mFlowMutex);
         theApp->mClients[addressStr] = address;
-        lo_send(address->get(), "/blobserver/sinIn", "s", "Sucessfully signed in to the blobserver.");
+        lo_send(address->get(), "/blobserver/signIn", "s", "Sucessfully signed in to the blobserver.");
     }
-    // If already connect, we send a message to say so
+    // If already connected, we send a message to say so
     else
     {
         shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), port)));

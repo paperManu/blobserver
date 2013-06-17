@@ -1,7 +1,15 @@
 <Blobserver>
     <Flow>
         <Detector>
-            <Type>Detector_Nop</Type>
+            <Type>Detector_BgSubtractor</Type>
+            <Param>
+                <Name>verbose</Name>
+                <Value>0</Value>
+            </Param>
+            <Param>
+                <Name>filterSize</Name>
+                <Value>3</Value>
+            </Param>
         </Detector>
         <Source>
             <Type>Source_OpenCV</Type>
@@ -25,6 +33,14 @@
             <Param>
                 <Name>exposureTime</Name>
                 <Value>500</Value>
+            </Param>
+            <Param>
+                <Name>gain</Name>
+                <Value>0</Value>
+            </Param>
+            <Param>
+                <Name>gamma</Name>
+                <Value>1.8</Value>
             </Param>
             <Param>
                 <Name>whiteBalanceRed</Name>
