@@ -142,7 +142,7 @@
  * - name: hog
  * - values: X(int) Y(int) dX(int) dY(int) Id(int)
  * 
- * \subsection detector_lightspot_sec Lighspots (Detector_LightSpots)
+ * \subsection detector_lightspot_sec Light spots (Detector_LightSpots)
  * 
  * Detects the brightest spots in an input image, i.e. light from a torchlight, and outputs the resulting blobs' size, position and ID.
  * 
@@ -158,7 +158,7 @@
  * - name: lightSpots
  * - values: X(int) Y(int) Size(int) dX(int) dY(int) Id(int)
  * 
- * \subsection detector_mean_outliers_sec Mean Outliers (Detector_MeanOutliers)
+ * \subsection detector_mean_outliers_sec Mean outliers (Detector_MeanOutliers)
  * 
  * This detector is a generalization of the Lightspots detector, except that it does not only detect blobs brighter that the mean, but any blob which is far from the mean value of the current frame.
  * 
