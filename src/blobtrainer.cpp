@@ -24,6 +24,8 @@
  */
 
 #include <chrono>
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -424,6 +426,17 @@ void testSVM(vector<string>& pPositiveFiles, vector<string>& pNegativeFiles, Des
 }
 
 /*************/
+void randomize(vector<string>& pFiles)
+{
+    srand(time(0));
+    for (unsigned int i = 0; i < pFiles.size(); ++i)
+    {
+        int index = rand() % pFiles.size();
+        pFiles[i].swap(pFiles[index]);
+    }
+}
+
+/*************/
 int main(int argc, char** argv)
 {
     int result = parseArgs(argc, argv);
@@ -442,6 +455,12 @@ int main(int argc, char** argv)
     // Load both valid and invalid file list
     vector<string> positiveFiles = loadFileList(string(gPositiveDir));
     vector<string> negativeFiles = loadFileList(string(gNegativeDir));
+
+    if (gCrossValidation != 1.f)
+    {
+        randomize(positiveFiles);
+        randomize(negativeFiles);
+    }
 
     // If no model file is specified for testing, we have to create one
     if (gTestFile == NULL)
