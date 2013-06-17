@@ -39,6 +39,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/descriptor_hog.h \
     $(top_srcdir)/include/detector.h \
     $(top_srcdir)/include/detector_bgsubtractor.h \
+    $(top_srcdir)/include/detector_depthtouch.h \
     $(top_srcdir)/include/detector_hog.h \
     $(top_srcdir)/include/detector_lightSpots.h \
     $(top_srcdir)/include/detector_meanOutliers.h \

@@ -1,8 +1,19 @@
 Blobserver release notes
 ========================
 
-Blobserver 0.4.3 (2013-xx-xx)
+Blobserver 0.4.4 (2013-xx-xx)
 -----------------------------
+
+Blobserver 0.4.3 (2013-06-17)
+-----------------------------
+New features:
+* Added Detector_BgSubtractor
+* Added Detector_DepthTouch
+* Added cross validation to blobtrainer
+
+Other:
+* Updated documentation
+* Various bug correction
 
 Blobserver 0.4.2 (2013-05-27)
 -----------------------------
