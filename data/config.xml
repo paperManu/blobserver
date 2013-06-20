@@ -40,7 +40,7 @@
             </Param>
         </Source>
         <Client>
-            <Address>localhost</Address>
+            <Address>hermes.local</Address>
             <Port>9000</Port>
         </Client>
         <Server>

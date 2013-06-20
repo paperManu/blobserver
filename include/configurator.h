@@ -44,7 +44,7 @@ class Configurator
         Configurator();
         ~Configurator();
 
-        void loadXML(const char* filename);
+        void loadXML(const char* filename, bool distant = false);
 
     private:
         /*** Attributes ***/
@@ -56,7 +56,7 @@ class Configurator
         bool mVerbose;
 
         /*** Methods ***/
-        bool loadFlow(const xmlDocPtr doc, xmlNodePtr cur);
+        bool loadFlow(const xmlDocPtr doc, xmlNodePtr cur, bool distant = false);
 
         std::string getStringValueFrom(const xmlDocPtr doc, const xmlNodePtr cur, const xmlChar* attr);
         int getIntValueFrom(const xmlDocPtr doc, const xmlNodePtr cur, const xmlChar* attr);

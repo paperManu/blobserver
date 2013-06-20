@@ -22,7 +22,7 @@ Configurator::~Configurator()
 }
 
 /*************/
-void Configurator::loadXML(const char* filename)
+void Configurator::loadXML(const char* filename, bool distant)
 {
     cout << "Attempting to read XML file " << filename << endl;
 
@@ -49,7 +49,7 @@ void Configurator::loadXML(const char* filename)
     {
         if (!xmlStrcmp(cur->name, (const xmlChar*)"Flow"))
         {
-            bool error = loadFlow(doc, cur);
+            bool error = loadFlow(doc, cur, distant);
             if (error)
             {
                 cout << "An error has been detected while parsing file " << filename << endl;
@@ -61,7 +61,7 @@ void Configurator::loadXML(const char* filename)
 }
 
 /*************/
-bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
+bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool distant)
 {
     bool error = false;
     xmlNodePtr lCur;
@@ -93,7 +93,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
         string detector;
         vector<string> sources;
         vector<int> subsources;
-        string client, server;
+        string client, realClient, server;
         string serverPort;
         int clientPort;
 
@@ -110,7 +110,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
             }
             else if (!xmlStrcmp(lCur->name, (const xmlChar*)"Client"))
             {
-                client = getStringValueFrom(doc, lCur, (const xmlChar*)"Address");
+                realClient = getStringValueFrom(doc, lCur, (const xmlChar*)"Address");
                 clientPort = getIntValueFrom(doc, lCur, (const xmlChar*)"Port");
             }
             else if (!xmlStrcmp(lCur->name, (const xmlChar*)"Server"))
@@ -124,7 +124,12 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
 
 
         // Create a new client for the specified server
-        checkString(client, string("127.0.0.1"));
+        // TODO: check if specified IP is the same as local ip
+        checkString(realClient, string("127.0.0.1"));
+        if (distant)
+            client = realClient;
+        else
+            client = string("127.0.0.1");
         checkInt(clientPort, 9000);
         checkString(server, string("127.0.0.1"));
         checkString(serverPort, string("9002"));
@@ -290,8 +295,8 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
         nanosleep(&nap, NULL);
 
         {
-            // We change the client port from the one used for configuration to the specified one
-            lo_send(address->get(), "/blobserver/changePort", "si", client.c_str(), clientPort);
+            // We change the client ip and port from the one used for configuration to the specified one
+            lo_send(address->get(), "/blobserver/changeIp", "ssi", "127.0.0.1", realClient.c_str(), clientPort);
 
             // Now we can start the flow
             atom::Message message;

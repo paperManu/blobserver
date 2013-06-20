@@ -67,7 +67,7 @@ int main(int argc, char** argv)
     else
     {
         Configurator configurator;
-        configurator.loadXML((char*)gConfigFile);
+        configurator.loadXML((char*)gConfigFile, true);
     }
 
     return 0;
