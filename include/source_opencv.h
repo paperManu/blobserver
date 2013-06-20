@@ -52,6 +52,7 @@ class Source_OpenCV : public Source
         static std::string mDocumentation;
 
         cv::VideoCapture mCamera;
+        std::string mVideoUrl;
 
         void make(int pParam);
 };
