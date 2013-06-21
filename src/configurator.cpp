@@ -124,7 +124,6 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool dist
 
 
         // Create a new client for the specified server
-        // TODO: check if specified IP is the same as local ip
         checkString(realClient, string("127.0.0.1"));
         if (distant)
             client = realClient;
