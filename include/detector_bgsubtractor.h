@@ -66,6 +66,7 @@ class Detector_BgSubtractor : public Detector
 
         // Various variables
         cv::Mat mBgSubtractorBuffer;
+        float mLearningRate;
         float mMinArea, mMaxArea;
 
         // Methods
