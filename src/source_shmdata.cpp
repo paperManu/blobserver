@@ -160,6 +160,7 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
         regRgb = regex("(video/x-raw-rgb)(.*)", regex_constants::extended);
         regGray = regex("(video/x-raw-gray)(.*)", regex_constants::extended);
         regYUV = regex("(video/x-raw-yuv)(.*)", regex_constants::extended);
+        regFormatYUV = regex("(.*format=\\(fourcc\\))(.*)", regex_constants::extended);
         regBpp = regex("(.*bpp=\\(int\\))(.*)", regex_constants::extended);
         regWidth = regex("(.*width=\\(int\\))(.*)", regex_constants::extended);
         regHeight = regex("(.*height=\\(int\\))(.*)", regex_constants::extended);
@@ -177,6 +178,7 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
         int bpp, width, height, red, green, blue, channels;
         bool isGray = false;
         bool isYUV = false;
+        bool is420 = false;
 
         smatch match;
         string substr, format;
@@ -229,6 +231,16 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
         {
             bpp = 16;
             channels = 3;
+
+            if (regex_match(dataType, match, regFormatYUV))
+            {
+                char format[16];
+                ssub_match subMatch = match[2];
+                substr = subMatch.str();
+                sscanf(substr.c_str(), ")%s", format);
+                if (strstr(format, (char*)"I420") != NULL)
+                    is420 = true;
+            }
         }
 
         if (width == 0 || height == 0 || bpp == 0)
@@ -250,10 +262,36 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
         else if (channels == 4)
             buffer = cv::Mat::zeros(height, width, CV_8UC4);
 
-        if (isYUV)
+        if (isYUV && !is420)
+        {
             buffer = cv::Mat::zeros(height, width, CV_8UC2);
+            memcpy((char*)(buffer.data), (const char*)data, width*height*bpp/8);
+        }
+        else if (isYUV && is420)
+        {
+            cv::Mat buffer_Y = cv::Mat::zeros(height, width, CV_8U);
+            cv::Mat buffer_U = cv::Mat::zeros(height / 2, width / 2, CV_8U);
+            cv::Mat buffer_V = cv::Mat::zeros(height / 2, width / 2, CV_8U);
 
-        memcpy((char*)(buffer.data), (const char*)data, width*height*bpp/8);
+            memcpy((char*)buffer_Y.data, (const char*)data, width*height);
+            memcpy((char*)buffer_U.data, (const char*)data + width*height, width*height / 4);
+            memcpy((char*)buffer_V.data, (const char*)data + width*height + width*height / 4, width*height / 4);
+
+            cv::Mat buffer_U_res, buffer_V_res;
+            cv::resize(buffer_U, buffer_U_res, cv::Size(0, 0), 2.0, 2.0, CV_INTER_NN);
+            cv::resize(buffer_V, buffer_V_res, cv::Size(0, 0), 2.0, 2.0, CV_INTER_NN);
+
+            vector<cv::Mat> buffers;
+            buffers.push_back(buffer_Y);
+            buffers.push_back(buffer_U_res);
+            buffers.push_back(buffer_V_res);
+
+            cv::merge(buffers, buffer);
+        }
+        else
+        {
+            memcpy((char*)(buffer.data), (const char*)data, width*height*bpp/8);
+        }
 
         // If present, we dont keep the alpha channel
         if (buffer.channels() > 3)
@@ -265,8 +303,12 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
 
         if (abs(red) > blue && channels >= 3 && !isGray && !isYUV)
             cvtColor(buffer, buffer, CV_BGR2RGB);
-        else if (isYUV)
+        else if (isYUV && !is420)
             cvtColor(buffer, buffer, CV_YUV2BGR_UYVY);
+        else if (isYUV && is420)
+            cvtColor(buffer, buffer, CV_YCrCb2RGB);
+        else
+            return;
 
         context->mBuffer = buffer;
         context->mUpdated = true;

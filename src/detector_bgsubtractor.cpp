@@ -42,6 +42,7 @@ void Detector_BgSubtractor::make()
     mProcessNoiseCov = 1e-6;
     mMeasurementNoiseCov = 1e-4;
 
+    mLearningRate = 300;
     mMinArea = 0.f;
     mMaxArea = 65535.f;
 }
@@ -54,7 +55,7 @@ atom::Message Detector_BgSubtractor::detect(const vector<cv::Mat> pCaptures)
 
     // We get windows of interest, using BG subtraction
     // and previous blobs positions
-    mBgSubtractor(input, mBgSubtractorBuffer);
+    mBgSubtractor(input, mBgSubtractorBuffer, mLearningRate);
     // Erode and dilate to suppress noise
     cv::Mat lEroded;
     cv::erode(mBgSubtractorBuffer, lEroded, cv::Mat(), cv::Point(-1, -1), mFilterSize);
@@ -179,6 +180,16 @@ void Detector_BgSubtractor::setParameter(atom::Message pMessage)
         float cov;
         if (readParam(pMessage, cov))
             mMeasurementNoiseCov = abs(cov);
+    }
+    else if (cmd == "learningTime")
+    {
+        float time;
+        if (readParam(pMessage, time))
+        {
+            float rate = 1.f/time * log(0.9);
+            rate = 1.f - exp(rate);
+            mLearningRate = min(1.0, (double)rate);
+        }
     }
     else if (cmd == "area")
     {

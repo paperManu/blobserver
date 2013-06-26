@@ -10,6 +10,10 @@
                 <Name>filterSize</Name>
                 <Value>3</Value>
             </Param>
+            <Param>
+                <Name>learningTime</Name>
+                <Value>300</Value>
+            </Param>
         </Detector>
         <Source>
             <Type>Source_OpenCV</Type>

@@ -1,7 +1,9 @@
 #include "source_opencv.h"
 
-std::string Source_OpenCV::mClassName = "Source_OpenCV";
-std::string Source_OpenCV::mDocumentation = "N/A";
+using namespace std;
+
+string Source_OpenCV::mClassName = "Source_OpenCV";
+string Source_OpenCV::mDocumentation = "N/A";
 
 /*************/
 Source_OpenCV::Source_OpenCV()
@@ -20,6 +22,8 @@ void Source_OpenCV::make(int pParam)
 {
     mName = mClassName;
     mSubsourceNbr = pParam;
+
+    mVideoUrl = string("");
 }
 
 /*************/
@@ -32,9 +36,10 @@ Source_OpenCV::~Source_OpenCV()
 bool Source_OpenCV::connect()
 {
     if (mSubsourceNbr == 0)
-        return false;
+        return true;
 
     mCamera.open(mSubsourceNbr);
+
     if (!mCamera.isOpened())
     {
         return false;
@@ -86,7 +91,7 @@ cv::Mat Source_OpenCV::retrieveFrame()
 /*************/
 void Source_OpenCV::setParameter(atom::Message pParam)
 {
-    std::string paramName;
+    string paramName;
     float paramValue;
 
     try
@@ -98,10 +103,23 @@ void Source_OpenCV::setParameter(atom::Message pParam)
         return;
     }
 
-    if (!readParam(pParam, paramValue))
-        return;
+    if (paramName == "url")
+    {
+        string url;
+        if (!readParam(pParam, url))
+            return;
+        mVideoUrl = url;
 
-    if (paramName == "width")
+        if (mCamera.isOpened())
+            return;
+        mCamera.open(url);
+    }
+    // Next parameters are all numbers
+    else if (!readParam(pParam, paramValue))
+    {
+        return;
+    }
+    else if (paramName == "width")
     {
         mCamera.set(CV_CAP_PROP_FRAME_WIDTH, paramValue);
         mWidth = (unsigned int)(mCamera.get(CV_CAP_PROP_FRAME_WIDTH));
@@ -161,7 +179,7 @@ atom::Message Source_OpenCV::getParameter(atom::Message pParam) const
     if (pParam.size() < 1)
         return msg;
 
-    std::string paramName;
+    string paramName;
     try
     {
         paramName = atom::toString(pParam[0]);

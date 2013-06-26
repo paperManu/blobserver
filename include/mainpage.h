@@ -86,6 +86,7 @@
 
  * Available parameters:
  * - filterSize (int, default 3): size of the morphologicial filter used to filter noise.
+ * - learningTime (int, default 300): number of frames for a pixel to be considered background
  * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
  * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
  * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
