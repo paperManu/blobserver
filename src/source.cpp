@@ -35,13 +35,16 @@ Source::Source():
     mRotation = 0.f;
 
     mCorrectDistortion = false;
+    mCorrectFisheye = false;
     mCorrectVignetting = false;
 
     mOpticalDesc.distortion = 0.0;
+    mOpticalDesc.fisheye = 0.0;
     mOpticalDesc.vignetting = 0.0;
 
     mRecomputeVignettingMat = false;
     mRecomputeDistortionMat = false;
+    mRecomputeFisheyeMat = false;
 
     mICCTransform = NULL;
 
@@ -87,6 +90,8 @@ cv::Mat Source::retrieveModifiedFrame()
             cmsDoTransform(mICCTransform, buffer.data, buffer.data, buffer.total());
         if (mCorrectDistortion)
             correctDistortion(buffer);
+        if (mCorrectFisheye)
+            correctFisheye(buffer);
         if (mScale != 1.f)
             scale(buffer);
         if (mRotation != 0.f)
@@ -222,6 +227,25 @@ void Source::setBaseParameter(atom::Message pParam)
 
         mCorrectDistortion = true;
         mRecomputeDistortionMat = true;
+    }
+    else if (paramName == "fisheye")
+    {
+        if (pParam.size() == 1)
+        {
+            float value;
+            try
+            {
+                value = atom::toFloat(pParam[1]);
+            }
+            catch (atom::BadTypeTagError error)
+            {
+                return;
+            }
+
+            mOpticalDesc.fisheye[0] = value;
+            mCorrectFisheye = true;
+            mRecomputeFisheyeMat = true;
+        }
     }
     else if (paramName == "iccInputProfile")
     {
@@ -455,6 +479,48 @@ void Source::correctDistortion(cv::Mat& pImg)
 
     cv::Mat resultMat;
     cv::remap(pImg, resultMat, mDistortionMat, cv::Mat(), cv::INTER_LINEAR);
+
+    pImg = resultMat;
+}
+
+/************/
+void Source::correctFisheye(cv::Mat& pImg)
+{
+    if (mRecomputeFisheyeMat == true || mFisheyeMat.size() != pImg.size())
+    {
+        mFisheyeMat = cv::Mat::zeros(mHeight, mWidth, CV_32FC2);
+        float inFocal = mOpticalDesc.distortion[0];
+        float outFocal = mOpticalDesc.distortion[1];
+
+        cv::Point2f center;
+        center.x = (float)mWidth / 2.f;
+        center.y = (float)mHeight / 2.f;
+
+        // See http://wiki.panotools.org/Fisheye_Projection for more information
+        float radius = std::min(center.x, center.y);
+
+        for (int x = 0; x < (int)mWidth; ++x)
+        {
+            for (int y = 0; y < (int)mHeight; ++y)
+            {
+                float dstRadius = sqrtf(pow((float)x - center.x, 2.f) + pow((float)y - center.y, 2.f));
+                cv::Vec2f dir;
+                dir[0] = ((float)x - center.x) / dstRadius;
+                dir[1] = ((float)y - center.y) / dstRadius;
+
+                float angle = atan(dstRadius / outFocal);
+                float srcRadius = inFocal * angle;
+
+                mFisheyeMat.at<cv::Vec2f>(y, x)[0] = center.x + srcRadius*dir[0];
+                mFisheyeMat.at<cv::Vec2f>(y, x)[1] = center.y + srcRadius*dir[1];
+            }
+        }
+
+        mRecomputeFisheyeMat = false;
+    }
+
+    cv::Mat resultMat;
+    cv::remap(pImg, resultMat, mFisheyeMat, cv::Mat(), cv::INTER_LINEAR);
 
     pImg = resultMat;
 }

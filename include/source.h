@@ -209,17 +209,21 @@ class Source
 
         // Distorsion parameters
         bool mCorrectDistortion; //!< Flag set if distortion correction is activated
+        bool mCorrectFisheye; //!< Flag set if fisheye correction is activated
         bool mCorrectVignetting; //!< Flag set if vignetting correction is activated
         struct OpticalDesc 
         {
             cv::Vec3f distortion;
+            cv::Vec2f fisheye;
             cv::Vec3f vignetting;
         } mOpticalDesc; //!< Struct which contains correction data
-        
+
         cv::Mat mVignettingMat;
         cv::Mat mDistortionMat;
+        cv::Mat mFisheyeMat;
         bool mRecomputeVignettingMat;
         bool mRecomputeDistortionMat;
+        bool mRecomputeFisheyeMat;
 
         // HDRi builder
         HdriBuilder mHdriBuilder;
@@ -256,6 +260,7 @@ class Source
         // Methods to correct the optical distortion
         void correctVignetting(cv::Mat& pImg);
         void correctDistortion(cv::Mat& pImg);
+        void correctFisheye(cv::Mat& pImg);
 
         // Method related to colorimetry. Default output profile is sRGB
         cmsHTRANSFORM loadICCTransform(std::string pFile);
