@@ -230,22 +230,23 @@ void Source::setBaseParameter(atom::Message pParam)
     }
     else if (paramName == "fisheye")
     {
-        if (pParam.size() == 1)
+        if (pParam.size() >= 2)
         {
-            float value;
             try
             {
-                value = atom::toFloat(pParam[1]);
+                mOpticalDesc.fisheye[0] = atom::toFloat(pParam[1]);
+                mOpticalDesc.fisheye[1] = atom::toFloat(pParam[2]);
             }
             catch (atom::BadTypeTagError error)
             {
                 return;
             }
-
-            mOpticalDesc.fisheye[0] = value;
-            mCorrectFisheye = true;
-            mRecomputeFisheyeMat = true;
         }
+        else
+            return;
+
+        mCorrectFisheye = true;
+        mRecomputeFisheyeMat = true;
     }
     else if (paramName == "iccInputProfile")
     {
