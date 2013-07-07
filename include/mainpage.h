@@ -48,6 +48,7 @@
  * - rotation (float): apply rotation on the image, in degrees
  * - noiseFiltering (int, default 0): set to 1 to activate noise filtering
  * - distortion (int[3]): distortion correction (see http://wiki.panotools.org/Lens_correction_model). Parameters are: [a] [b] [c]
+ * - fisheye (float[2]): fisheye correction (see http://wiki.panotools.org/Fisheye_Projection). Parameters are, in pixels: [fisheyeFocal] [rectilinearFocal] 
  * - vignetting (int[3]): correction of the vignetting (see http://lensfun.berlios.de/lens-calibration/lens-vignetting.html). Parameters are: [k1] [k2] [k3]
  * - iccInputProfile (string): file path to an ICC profile (for color correction)
  * - hdri (int[3]): activates the creation of a HDR image. Parameters are: [startExposure] [stepSize] [nbrSteps].
