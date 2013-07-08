@@ -6,8 +6,8 @@
 #ifndef DETECTOR_STITCH_H
 #define DETECTOR_STITCH_H
 
-#include "config.h"
 #include "detector.h"
+ #include "base_objects.h"
 
  /*************/
 // Class Detector_Stitch
