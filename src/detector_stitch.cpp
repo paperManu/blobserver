@@ -66,6 +66,7 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
 void Detector_Stitch::setParameter(atom::Message pMessage)
 {
     std::string cmd;
+    cout << "Detector_Stitch :: setParameter " << endl;
 
     try
     {
@@ -78,6 +79,7 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
 
     if (cmd == "output")
     {
+        cout << "output " << endl;
         string output;
         if (!readParam(pMessage, output))
             return;
@@ -87,6 +89,7 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
     }
     else if (cmd == "cam0_crop")
     {
+        out << "cam0_crop " << endl;
         if (pMessage.size() == 5)
         {
             try
@@ -102,6 +105,7 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
             }
 
             source_crop[0] = true;
+            out << "source_crop[0] = true " << endl;
         }
         else
             return;
