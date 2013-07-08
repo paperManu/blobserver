@@ -52,7 +52,7 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
     mOutputBuffer = pCaptures[0].clone();
 
 #if HAVE_SHMDATA
-        ShmImage outputImg = new ShmImage(outputShmFile);
+        ShmImage outputImg = ShmImage(outputShmFile); 
         outputImg.setImage(mOutputBuffer);
 #endif
 
