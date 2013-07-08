@@ -39,6 +39,8 @@ void Detector_Stitch::make()
         source_pos[i][0] = 0;
         source_pos[i][1] = 0;
     }
+
+    sprintf(outputShmFile, "tmp/blobserver_stitch_%i", 0);
 }
 
 /*************/
@@ -78,7 +80,7 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
     if (cmd == "output")
     {
         string output;
-        if (!readParam(pParam, output))
+        if (!readParam(pMessage, output))
             return;
 
         sprintf(outputShmFile, "%s", output);
@@ -86,14 +88,14 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
     }
     else if (cmd == "cam0_crop")
     {
-        if (pParam.size() == 5)
+        if (pMessage.size() == 5)
         {
             try
             {
-                source_crop_parameters[0][0] = atom::toInt(pParam[1]);
-                source_crop_parameters[0][1] = atom::toInt(pParam[2]);
-                source_crop_parameters[0][2] = atom::toInt(pParam[3]);
-                source_crop_parameters[0][3] = atom::toInt(pParam[4]);
+                source_crop_parameters[0][0] = atom::toInt(pMessage[1]);
+                source_crop_parameters[0][1] = atom::toInt(pMessage[2]);
+                source_crop_parameters[0][2] = atom::toInt(pMessage[3]);
+                source_crop_parameters[0][3] = atom::toInt(pMessage[4]);
             }
             catch (atom::BadTypeTagError error)
             {
@@ -107,14 +109,14 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
     }
     else if (cmd == "cam1_crop")
     {
-        if (pParam.size() == 5)
+        if (pMessage.size() == 5)
         {
             try
             {
-                source_crop_parameters[1][0] = atom::toInt(pParam[1]);
-                source_crop_parameters[1][1] = atom::toInt(pParam[2]);
-                source_crop_parameters[1][2] = atom::toInt(pParam[3]);
-                source_crop_parameters[1][3] = atom::toInt(pParam[4]);
+                source_crop_parameters[1][0] = atom::toInt(pMessage[1]);
+                source_crop_parameters[1][1] = atom::toInt(pMessage[2]);
+                source_crop_parameters[1][2] = atom::toInt(pMessage[3]);
+                source_crop_parameters[1][3] = atom::toInt(pMessage[4]);
             }
             catch (atom::BadTypeTagError error)
             {
@@ -128,12 +130,12 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
     }
     else if (cmd == "cam0_pos")
     {
-        if (pParam.size() == 3)
+        if (pMessage.size() == 3)
         {
             try
             {
-                source_pos[0][0] = atom::toInt(pParam[1]);
-                source_pos[0][1] = atom::toInt(pParam[2]);
+                source_pos[0][0] = atom::toInt(pMessage[1]);
+                source_pos[0][1] = atom::toInt(pMessage[2]);
             }
             catch (atom::BadTypeTagError error)
             {
@@ -145,12 +147,12 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
     }
     else if (cmd == "cam1_pos")
     {
-        if (pParam.size() == 3)
+        if (pMessage.size() == 3)
         {
             try
             {
-                source_pos[1][0] = atom::toInt(pParam[1]);
-                source_pos[1][1] = atom::toInt(pParam[2]);
+                source_pos[1][0] = atom::toInt(pMessage[1]);
+                source_pos[1][1] = atom::toInt(pMessage[2]);
             }
             catch (atom::BadTypeTagError error)
             {
