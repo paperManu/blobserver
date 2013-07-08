@@ -52,9 +52,8 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
     mOutputBuffer = pCaptures[0].clone();
 
 #if HAVE_SHMDATA
-        ShmImage outputImg;
-        outputImg = new ShmImage(outputShmFile);
-        outputImg->setImage(mOutputBuffer);
+        ShmImage outputImg = new ShmImage(outputShmFile);
+        outputImg.setImage(mOutputBuffer);
 #endif
 
     mFrameNumber++;
@@ -83,7 +82,7 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
         if (!readParam(pMessage, output))
             return;
 
-        sprintf(outputShmFile, "%s", output);
+        sprintf(outputShmFile, "%s", output.c_str());
         cout << "Detector_Stitch output: " << output << endl;
     }
     else if (cmd == "cam0_crop")
