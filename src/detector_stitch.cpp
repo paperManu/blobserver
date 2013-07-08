@@ -89,7 +89,7 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
     }
     else if (cmd == "cam0_crop")
     {
-        out << "cam0_crop " << endl;
+        cout << "cam0_crop " << endl;
         if (pMessage.size() == 5)
         {
             try
@@ -105,7 +105,7 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
             }
 
             source_crop[0] = true;
-            out << "source_crop[0] = true " << endl;
+            cout << "source_crop[0] = true " << endl;
         }
         else
             return;
