@@ -21,6 +21,7 @@ blobserver_SOURCES = \
     detector_lightSpots.cpp \
     detector_meanOutliers.cpp \
     detector_objOnAPlane.cpp \
+    detector_stitch.cpp \
     detector_nop.cpp \
 	hdribuilder.cpp \
     source.cpp \
@@ -44,6 +45,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/detector_lightSpots.h \
     $(top_srcdir)/include/detector_meanOutliers.h \
     $(top_srcdir)/include/detector_objOnAPlane.h \
+    $(top_srcdir)/include/detector_stitch.h \
     $(top_srcdir)/include/detector_nop.h \
 	$(top_srcdir)/include/hdribuilder.h \
 	$(top_srcdir)/include/helpers.h \
