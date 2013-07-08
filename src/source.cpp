@@ -490,8 +490,8 @@ void Source::correctFisheye(cv::Mat& pImg)
     if (mRecomputeFisheyeMat == true || mFisheyeMat.size() != pImg.size())
     {
         mFisheyeMat = cv::Mat::zeros(mHeight, mWidth, CV_32FC2);
-        float inFocal = mOpticalDesc.distortion[0];
-        float outFocal = mOpticalDesc.distortion[1];
+        float inFocal = mOpticalDesc.fisheye[0];
+        float outFocal = mOpticalDesc.fisheye[1];
 
         cv::Point2f center;
         center.x = (float)mWidth / 2.f;
