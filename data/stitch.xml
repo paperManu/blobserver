@@ -1,0 +1,43 @@
+<Blobserver>
+	<Flow>
+		<Source>
+            <Type>Source_Shmdata</Type>
+            <Subsource>0</Subsource>
+            <Param>
+                <Name>location</Name>
+                <Value>/tmp/switcher_default_cam0_video</Value>
+            </Param>
+        </Source>
+        <Source>
+            <Type>Source_Shmdata</Type>
+            <Subsource>0</Subsource>
+            <Param>
+                <Name>location</Name>
+                <Value>/tmp/switcher_default_cam1_video</Value>
+            </Param>
+        </Source>
+        <Detector>
+            <Type>Detector_Stitch</Type>
+            <Param>
+                <Name>location</Name>
+                <Value>/tmp/blobserver_stitch_video</Value>
+            </Param>
+            <Param>
+                <Name>cam0_crop</Name>
+                <Value>0 0 0 0</Value>
+            </Param>
+            <Param>
+                <Name>cam0_pos</Name>
+                <Value>0 0</Value>
+            </Param>
+            <Param>
+                <Name>cam1_crop</Name>
+                <Value>0 0 0 0</Value>
+            </Param>
+            <Param>
+                <Name>cam1_pos</Name>
+                <Value>400 0</Value>
+            </Param>
+        </Detector>
+	</Flow>
+</Blobserver>
