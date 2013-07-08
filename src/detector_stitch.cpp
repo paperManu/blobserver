@@ -45,7 +45,6 @@ void Detector_Stitch::make()
         source_pos[i][1] = 0;
     }
 
-    sprintf(outputShmFile, "/tmp/blobserver_stitch_%i", 0);
 }
 
 /*************/
@@ -55,12 +54,19 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
     if (pCaptures.size() == 0)
         return mLastMessage;
 
-    mOutputBuffer = pCaptures[0].clone();
+    
 
-#if HAVE_SHMDATA
-        ShmImage outputImg = ShmImage(outputShmFile); 
-        outputImg.setImage(mOutputBuffer);
-#endif
+    // make sure there are 2 sources
+    if (pCaptures.size() < 2)
+        mOutputBuffer = pCaptures[0].clone();
+    else
+    {
+        // cv::Mat input1 = pCaptures[0];
+        // cv::Mat input2 = pCaptures[1];
+        // paste cropped images on same image
+        mOutputBuffer = pCaptures[1].clone();
+    }
+
 
     mFrameNumber++;
     mLastMessage = atom::createMessage("iii", 1, 1, mFrameNumber);
@@ -83,17 +89,7 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
         return;
     }
 
-    if (cmd == "output")
-    {
-        cout << "output " << endl;
-        string output;
-        if (!readParam(pMessage, output))
-            return;
-
-        sprintf(outputShmFile, "%s", output.c_str());
-        cout << "Detector_Stitch output: " << output << endl;
-    }
-    else if (cmd == "cam0_crop")
+    if (cmd == "cam0_crop")
     {
         cout << "cam0_crop " << endl;
         if (pMessage.size() == 5)
