@@ -50,7 +50,8 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
     mOutputBuffer = pCaptures[0].clone();
 
 #if HAVE_SHMDATA
-        ShmImage outputImg = new ShmImage(outputShmFile);
+        ShmImage outputImg;
+        outputImg = new ShmImage(outputShmFile);
         outputImg->setImage(mOutputBuffer);
 #endif
 
@@ -63,19 +64,18 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
 /*************/
 void Detector_Stitch::setParameter(atom::Message pMessage)
 {
-    string paramName;
-    float paramValue;
+    std::string cmd;
 
     try
     {
-        paramName = atom::toString(pParam[0]);
+        cmd = toString(pMessage[0]);
     }
     catch (atom::BadTypeTagError exception)
     {
         return;
     }
 
-    if (paramName == "output")
+    if (cmd == "output")
     {
         string output;
         if (!readParam(pParam, output))
@@ -84,7 +84,7 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
         sprintf(outputShmFile, "%s", output);
         cout << "Detector_Stitch output: " << output << endl;
     }
-    else if (paramName == "cam0_crop")
+    else if (cmd == "cam0_crop")
     {
         if (pParam.size() == 5)
         {
@@ -105,7 +105,7 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
         else
             return;
     }
-    else if (paramName == "cam1_crop")
+    else if (cmd == "cam1_crop")
     {
         if (pParam.size() == 5)
         {
@@ -126,7 +126,7 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
         else
             return;
     }
-    else if (paramName == "cam0_pos")
+    else if (cmd == "cam0_pos")
     {
         if (pParam.size() == 3)
         {
@@ -143,7 +143,7 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
         else
             return;
     }
-    else if (paramName == "cam1_pos")
+    else if (cmd == "cam1_pos")
     {
         if (pParam.size() == 3)
         {
@@ -158,7 +158,8 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
             }
         }
         else
-      
+            return;
+    }
     else
         setBaseParameter(pMessage);
 }
