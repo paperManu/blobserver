@@ -1,4 +1,5 @@
 #include "detector_stitch.h"
+#include <iostream>
 
 using namespace std;
 
@@ -21,6 +22,9 @@ Detector_Stitch::Detector_Stitch(int pParam)
 /*************/
 void Detector_Stitch::make()
 {
+
+    cout << "Detector_Stitch :: make " << endl;
+
     mOutputBuffer = cv::Mat::zeros(480, 640, CV_8UC3);
 
     mName = mClassName;
