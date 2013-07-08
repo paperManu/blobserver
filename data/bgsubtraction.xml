@@ -20,7 +20,7 @@
             <Subsource>300</Subsource>
             <Param>
                 <Name>framerate</Name>
-                <Value>15</Value>
+                <Value>30</Value>
             </Param>
             <Param>
                 <Name>iso</Name>
@@ -40,7 +40,7 @@
             </Param>
             <Param>
                 <Name>gain</Name>
-                <Value>0</Value>
+                <Value>512</Value>
             </Param>
             <Param>
                 <Name>gamma</Name>
