@@ -31,6 +31,10 @@ class Detector_Stitch : public Detector
         unsigned int mFrameNumber;
         char outputShmFile[128];
 
+        bool source_crop[2];
+        unsigned int source_crop_parameters[2][4];
+        unsigned int source_pos[2][2];
+
         void make();
 };
 
