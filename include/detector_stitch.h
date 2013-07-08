@@ -8,9 +8,6 @@
 
 #include "config.h"
 #include "detector.h"
- #if HAVE_SHMDATA
-#include <mutex>
-#include <shmdata/any-data-reader.h>
 
  /*************/
 // Class Detector_Stitch
