@@ -38,6 +38,11 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
 
     mOutputBuffer = pCaptures[0].clone();
 
+#if HAVE_SHMDATA
+        outputImg = new ShmImage(outputShmFile);
+        outputImg->setImage(mOutputBuffer);
+#endif
+
     mFrameNumber++;
     mLastMessage = atom::createMessage("iii", 1, 1, mFrameNumber);
 
@@ -47,5 +52,27 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
 /*************/
 void Detector_Stitch::setParameter(atom::Message pMessage)
 {
-    setBaseParameter(pMessage);
+    string paramName;
+    float paramValue;
+
+    try
+    {
+        paramName = atom::toString(pParam[0]);
+    }
+    catch (atom::BadTypeTagError exception)
+    {
+        return;
+    }
+
+    if (paramName == "output")
+    {
+        string output;
+        if (!readParam(pParam, output))
+            return;
+
+        sprintf(outputShmFile, "%s", output);
+        cout << "Detector_Stitch output: " << output << endl;
+    }
+    else
+        setBaseParameter(pMessage);
 }

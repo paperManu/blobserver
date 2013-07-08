@@ -19,7 +19,7 @@
         <Detector>
             <Type>Detector_Stitch</Type>
             <Param>
-                <Name>location</Name>
+                <Name>output</Name>
                 <Value>/tmp/blobserver_stitch_video</Value>
             </Param>
             <Param>
