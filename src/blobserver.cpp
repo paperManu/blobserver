@@ -56,7 +56,7 @@
 #include "detector_meanOutliers.h"
 #include "detector_nop.h"
 #include "detector_objOnAPlane.h"
-#include "detector_stich.h"
+#include "detector_stitch.h"
 
 using namespace std;
 
@@ -334,8 +334,8 @@ void App::registerClasses()
         Detector_Nop::getDocumentation());
     mDetectorFactory.register_class<Detector_ObjOnAPlane>(Detector_ObjOnAPlane::getClassName(),
         Detector_ObjOnAPlane::getDocumentation());
-    mDetectorFactory.register_class<Detector_Stich>(Detector_Stich::getClassName(),
-        Detector_Stich::getDocumentation());
+    mDetectorFactory.register_class<Detector_Stitch>(Detector_Stitch::getClassName(),
+        Detector_Stitch::getDocumentation());
 
     // Register sources
     mSourceFactory.register_class<Source_OpenCV>(Source_OpenCV::getClassName(),
