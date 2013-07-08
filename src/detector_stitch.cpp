@@ -45,7 +45,7 @@ void Detector_Stitch::make()
         source_pos[i][1] = 0;
     }
 
-    sprintf(outputShmFile, "tmp/blobserver_stitch_%i", 0);
+    sprintf(outputShmFile, "/tmp/blobserver_stitch_%i", 0);
 }
 
 /*************/
@@ -60,7 +60,6 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
 #if HAVE_SHMDATA
         ShmImage outputImg = ShmImage(outputShmFile); 
         outputImg.setImage(mOutputBuffer);
-        cout << "Detector_Stitch :: write to outputShmFile " << endl;
 #endif
 
     mFrameNumber++;
