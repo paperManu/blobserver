@@ -2,9 +2,9 @@
 
 using namespace std;
 
-std::string Detector_Nop::mClassName = "Detector_Stitch";
-std::string Detector_Nop::mDocumentation = "N/A";
-unsigned int Detector_Nop::mSourceNbr = 1;
+std::string Detector_Stitch::mClassName = "Detector_Stitch";
+std::string Detector_Stitch::mDocumentation = "N/A";
+unsigned int Detector_Stitch::mSourceNbr = 1;
 
 /*************/
 Detector_Stitch::Detector_Stitch()
