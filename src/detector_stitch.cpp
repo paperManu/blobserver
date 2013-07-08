@@ -1,4 +1,5 @@
 #include "detector_stitch.h"
+
 #include <iostream>
 
 using namespace std;
@@ -51,8 +52,6 @@ void Detector_Stitch::make()
 atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
 {
 
-    cout << "Detector_Stitch :: detect " << endl;
-    
     if (pCaptures.size() == 0)
         return mLastMessage;
 
@@ -61,6 +60,7 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
 #if HAVE_SHMDATA
         ShmImage outputImg = ShmImage(outputShmFile); 
         outputImg.setImage(mOutputBuffer);
+        cout << "Detector_Stitch :: write to outputShmFile " << endl;
 #endif
 
     mFrameNumber++;
