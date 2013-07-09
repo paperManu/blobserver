@@ -307,8 +307,6 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
             cvtColor(buffer, buffer, CV_YUV2BGR_UYVY);
         else if (isYUV && is420)
             cvtColor(buffer, buffer, CV_YCrCb2RGB);
-        else
-            return;
 
         context->mBuffer = buffer;
         context->mUpdated = true;
