@@ -63,9 +63,15 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
         cv::Mat input1 = pCaptures[0];
         cv::Mat input2 = pCaptures[1];
         // paste cropped images on same image
-        if (source_crop[0])
-            cv::Rect crop1(source_crop_parameters[0][0], source_crop_parameters[0][1], input1.cols - source_crop_parameters[0][2], input1.rows - source_crop_parameters[0][3]);
-            mOutputBuffer = pCaptures[1](crop1).clone();
+        if (source_crop[1])
+        {
+            // cv::Rect crop1;
+            // crop1.x = source_crop_parameters[0][0];
+            // crop1.y = source_crop_parameters[0][1];
+            // crop1.width = input1.cols - source_crop_parameters[0][2];
+            // crop1.height = input1.rows - source_crop_parameters[0][3];
+            mOutputBuffer = pCaptures[1](cv::Rect(8, 90, 126, 146)).clone();
+        }
         else
             mOutputBuffer = pCaptures[1].clone();
     }
