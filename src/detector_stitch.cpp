@@ -23,6 +23,7 @@ Detector_Stitch::Detector_Stitch(int pParam)
 /*************/
 void Detector_Stitch::make()
 {
+    defineOutputResolution = false;
     mOutputBuffer = cv::Mat::zeros(480, 1280, CV_8UC3);
 
     mName = mClassName;
@@ -69,13 +70,21 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
         int px2 = source_pos[1][0];
         int py2 = source_pos[1][1];
 
+        if (defineOutputResolution == false)    // only do this once (unless size of input changes)
+        {
+            int maxw = max(px1 + input1.cols - source_crop_parameters[0][0] - source_crop_parameters[0][2], px2 + input2.cols - source_crop_parameters[1][0] - source_crop_parameters[1][2]);
+            int maxh = max(py1 + input1.rows - source_crop_parameters[0][1] - source_crop_parameters[0][3], py2 + input2.rows - source_crop_parameters[1][1] - source_crop_parameters[1][3]);
+            mOutputBuffer = cv::Mat::zeros(maxh, maxw, CV_8UC3);
+            defineOutputResolution = true;
+        }
+
         // paste cropped images on same image
         if (source_crop[0])
         {
             int x1 = source_crop_parameters[0][0];
             int y1 = source_crop_parameters[0][1];
-            int w1 = input1.cols - source_crop_parameters[0][2] - x1;
-            int h1 = input1.rows - source_crop_parameters[0][3] - y1;
+            int w1 = input1.cols - source_crop_parameters[0][0] - source_crop_parameters[0][2] - x1;
+            int h1 = input1.rows - source_crop_parameters[0][1] - source_crop_parameters[0][3] - y1;
             w1 = min (w1, mOutputBuffer.cols - px1);
             h1 = min (h1, mOutputBuffer.rows - py1);
             cv::Mat crop1 = input1(cv::Rect(x1,y1,w1,h1)).clone();
@@ -90,8 +99,8 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
         {
             int x2 = source_crop_parameters[1][0];
             int y2 = source_crop_parameters[1][1];
-            int w2 = input2.cols - source_crop_parameters[1][2] - x2;
-            int h2 = input2.rows - source_crop_parameters[1][3] - y2;
+            int w2 = input2.cols - source_crop_parameters[1][0] - source_crop_parameters[1][2] - x2;
+            int h2 = input2.rows - source_crop_parameters[1][1] - source_crop_parameters[1][3] - y2;
             w2 = min (w2, mOutputBuffer.cols - px2);
             h2 = min (h2, mOutputBuffer.rows - py2);
             // mOutputBuffer = pCaptures[1](cv::Rect(x1,y1,w1,h1)).clone();
@@ -204,4 +213,5 @@ void Detector_Stitch::setParameter(atom::Message pMessage)
     }
     else
         setBaseParameter(pMessage);
+
 }
