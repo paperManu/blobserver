@@ -76,8 +76,8 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
             int y1 = source_crop_parameters[0][1];
             int w1 = input1.cols - source_crop_parameters[0][2] - x1;
             int h1 = input1.rows - source_crop_parameters[0][3] - y1;
-            w1 = min (w1, mOutputBuffer.cols - px1)
-            h1 = min (h1, mOutputBuffer.rows - py1)
+            w1 = min (w1, mOutputBuffer.cols - px1);
+            h1 = min (h1, mOutputBuffer.rows - py1);
             cv::Mat crop1 = input1(cv::Rect(x1,y1,w1,h1)).clone();
 
             crop1.copyTo(mOutputBuffer(cv::Rect(px1,py1,crop1.cols,crop1.rows)));
@@ -92,8 +92,8 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
             int y2 = source_crop_parameters[1][1];
             int w2 = input2.cols - source_crop_parameters[1][2] - x2;
             int h2 = input2.rows - source_crop_parameters[1][3] - y2;
-            w2 = min (w2, mOutputBuffer.cols - px2)
-            h2 = min (h2, mOutputBuffer.rows - py2)
+            w2 = min (w2, mOutputBuffer.cols - px2);
+            h2 = min (h2, mOutputBuffer.rows - py2);
             // mOutputBuffer = pCaptures[1](cv::Rect(x1,y1,w1,h1)).clone();
 
             cv::Mat crop2 = input2(cv::Rect(x2,y2,w2,h2)).clone();
