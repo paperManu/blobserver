@@ -107,30 +107,21 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
             int h2 = input2.rows - source_crop_parameters[1][3] - y2;
             w2 = min (w2, mOutputBuffer.cols - px2);
             h2 = min (h2, mOutputBuffer.rows - py2);
-            // mOutputBuffer = pCaptures[1](cv::Rect(x1,y1,w1,h1)).clone();
 
             cv::Mat crop2 = input2(cv::Rect(x2,y2,w2,h2)).clone();
-            cv::Mat mask = cv::Mat::zeros(w2, h2, CV_8UC1);
-            mask(cv::Rect(50,50,100,100)).setTo(255);
+            // cv::Mat mask = cv::Mat::zeros(h2, w2, CV_8UC1);
+            // cv::Mat mask = cv::Mat::zeros(crop2.cols, crop2.rows, CV_8UC1);
             // for (int i=0; i<mask.rows; i++) 
             // {
             //     for (int j=0; j<mask.cols/2; j++)
             //     {
             //         // uchar& v = mask.at<uchar>(i,j);
             //         // v[0] = 0.5;
-            //         mask.at<uchar>(j,i) = 255;
+            //         mask.at<uchar>(i,j) = 0.01*j;    // int(255 * float(j) / (mask.cols/2))
             //     }
             // }
-
-            try
-            {
-                crop2.copyTo(mOutputBuffer(cv::Rect(px2,py2,crop2.cols,crop2.rows)), mask);
-            }
-            catch (exception& e)
-            {
-                cout << e.what() << endl;
-                crop2.copyTo(mOutputBuffer(cv::Rect(px2,py2,crop2.cols,crop2.rows)));
-            }
+            // crop2.copyTo(mOutputBuffer(cv::Rect(px2,py2,crop2.cols,crop2.rows)), mask);
+            crop2.copyTo(mOutputBuffer(cv::Rect(px2,py2,crop2.cols,crop2.rows)));
         }
         else
             // mOutputBuffer = pCaptures[1].clone();
@@ -139,7 +130,8 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
 
 
     mFrameNumber++;
-    mLastMessage = atom::createMessage("iii", 1, 1, mFrameNumber);
+    // no need to send out an OSC message
+    // mLastMessage = atom::createMessage("iii", 1, 1, mFrameNumber);
 
     return mLastMessage;
 }
