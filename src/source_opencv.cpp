@@ -42,6 +42,7 @@ bool Source_OpenCV::connect()
 
     if (!mCamera.isOpened())
     {
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Unable to open subsource %i", mClassName.c_str(), mSubsourceNbr);
         return false;
     }
 

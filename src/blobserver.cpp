@@ -71,6 +71,7 @@ static gboolean gTcp = FALSE;
 static gchar* gPort = NULL;
 
 static gboolean gBench = FALSE;
+static gboolean gDebug = FALSE;
 
 static GOptionEntry gEntries[] =
 {
@@ -82,6 +83,7 @@ static GOptionEntry gEntries[] =
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
     {"port", 'p', 0, G_OPTION_ARG_STRING, &gPort, "Specifies TCP port to use for server (default 9002)", NULL},
     {"bench", 'B', 0, G_OPTION_ARG_NONE, &gBench, "Enables printing timings of main loop, for debug purpose", NULL},
+    {"debug", 'd', 0, G_OPTION_ARG_NONE, &gDebug, "Enables printing of debug messages", NULL},
     {NULL}
 };
 
@@ -329,6 +331,9 @@ void App::logHandler(const gchar* log_domain, GLogLevelFlags log_level, const gc
     }
     case G_LOG_LEVEL_DEBUG:
     {
+        if (!gDebug)
+            return;
+
         cout << "[DEBUG] ";
         break;
     }
