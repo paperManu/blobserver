@@ -10,7 +10,7 @@
         </Source>
         <Source>
             <Type>Source_Shmdata</Type>
-            <Subsource>0</Subsource>
+            <Subsource>1</Subsource>
             <Param>
                 <Name>location</Name>
                 <Value>/tmp/switcher_default_cam1_video</Value>
@@ -36,4 +36,17 @@
             </Param>
         </Detector>
 	</Flow>
+    <Flow>
+        <Source>
+            <Type>Source_Shmdata</Type>
+            <Subsource>2</Subsource>
+            <Param>
+                <Name>location</Name>
+                <Value>/tmp/blobserver_output_1</Value>
+            </Param>
+        </Source>
+        <Detector>
+            <Type>Detector_Nop</Type>
+        </Detector>
+    </Flow>
 </Blobserver>

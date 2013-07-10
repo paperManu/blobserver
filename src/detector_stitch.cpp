@@ -24,6 +24,8 @@ Detector_Stitch::Detector_Stitch(int pParam)
 void Detector_Stitch::make()
 {
     defineOutputResolution = false;
+
+    // we assume to get 2 cameras with resolution 640x480
     mOutputBuffer = cv::Mat::zeros(480, 1280, CV_8UC3);
 
     mName = mClassName;
@@ -41,6 +43,7 @@ void Detector_Stitch::make()
         }
         
     }
+
     source_pos[0][0] = 0;
     source_pos[0][1] = 0;
     source_pos[1][0] = 640;
@@ -70,7 +73,8 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
         int px2 = source_pos[1][0];
         int py2 = source_pos[1][1];
 
-        if (defineOutputResolution == false)    // only do this once (unless size of input changes)
+        // only do this once (unless size of input changes)
+        if (defineOutputResolution == false)    
         {
             int maxw = max(px1 + input1.cols - source_crop_parameters[0][0] - source_crop_parameters[0][2], px2 + input2.cols - source_crop_parameters[1][0] - source_crop_parameters[1][2]);
             int maxh = max(py1 + input1.rows - source_crop_parameters[0][1] - source_crop_parameters[0][3], py2 + input2.rows - source_crop_parameters[1][1] - source_crop_parameters[1][3]);
@@ -78,7 +82,7 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
             defineOutputResolution = true;
         }
 
-        // paste cropped images on same image
+        // paste cropped images on output image
         if (source_crop[0])
         {
             int x1 = source_crop_parameters[0][0];
@@ -106,6 +110,15 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
             // mOutputBuffer = pCaptures[1](cv::Rect(x1,y1,w1,h1)).clone();
 
             cv::Mat crop2 = input2(cv::Rect(x2,y2,w2,h2)).clone();
+            // cv::Mat masked = crop2.clone()
+            for (int i=0; i<crop2.rows; i++) 
+            {
+                for (int j=0; j<crop2.cols / 2; j++)
+                {
+                    Vec4b& v = crop2.at<Vec4b>(i,j);
+                    v[3] = 0.5;
+                }
+            }
 
             crop2.copyTo(mOutputBuffer(cv::Rect(px2,py2,crop2.cols,crop2.rows)));
         }
