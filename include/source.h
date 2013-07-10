@@ -29,6 +29,7 @@
 #include <mutex>
 #include <vector>
 
+#include <glib.h>
 #include <opencv2/opencv.hpp>
 #include <lcms2.h>
 #include <atom/message.h>

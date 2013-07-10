@@ -3,6 +3,7 @@
 #include <cstring>
 #include <sstream>
 #include <atom/osc.h>
+#include <glib.h>
 
 using namespace std;
 
@@ -24,14 +25,14 @@ Configurator::~Configurator()
 /*************/
 void Configurator::loadXML(const char* filename, bool distant)
 {
-    cout << "Attempting to read XML file " << filename << endl;
+    g_log(NULL, G_LOG_LEVEL_INFO, "Attempting to read XML file %s", filename);
 
     xmlDocPtr doc;
     doc = xmlReadFile(filename, NULL, 0);
 
     if (doc == NULL)
     {
-        cout << "Failed to parse " << filename << endl;
+        g_log(NULL, G_LOG_LEVEL_ERROR, "Failed to parse %s", filename);
         return;
     }
 
@@ -39,7 +40,7 @@ void Configurator::loadXML(const char* filename, bool distant)
     cur = xmlDocGetRootElement(doc);
     if (cur == NULL || cur->xmlChildrenNode == NULL)
     {
-        cout << "Document seems to be empty" << endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "Configuration file seems to be empty");
         return;
     }
 
@@ -52,7 +53,7 @@ void Configurator::loadXML(const char* filename, bool distant)
             bool error = loadFlow(doc, cur, distant);
             if (error)
             {
-                cout << "An error has been detected while parsing file " << filename << endl;
+                g_log(NULL, G_LOG_LEVEL_ERROR, "An error has been detected while parsing file %s", filename);
             }
         }
 
@@ -450,7 +451,7 @@ void Configurator::checkInt(int& value, const int defaultValue)
 /*************/
 void Configurator::oscError(int num, const char* msg, const char* path)
 {
-    std::cout << "liblo server error " << num << endl;
+    g_log(NULL, G_LOG_LEVEL_WARNING, "liblo server error %i", num);
 }
 
 /*************/
@@ -460,7 +461,7 @@ int Configurator::oscGenericHandler(const char* path, const char* types, lo_arg*
 
     if(object->mVerbose)
     {
-        std::cout << "Unhandled message received:" << std::endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "Unhandled message received");
 
         for(int i = 0; i < argc; ++i)
         {
@@ -483,7 +484,7 @@ int Configurator::oscHandlerConnect(const char* path, const char* types, lo_arg*
 
     if (message.size() < 2)
     {
-        cout << "Error detected in the connect result." << endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "Error detected in the connect result");
         return 1;
     }
     

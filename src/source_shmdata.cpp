@@ -169,7 +169,7 @@ void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* da
     }
     catch (const regex_error& e)
     {
-        cout << __FUNCTION__ << " - Regex error code: " << e.code() << endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Regex error code: %i", mClassName.c_str(), e.code());
         return;
     }
 
