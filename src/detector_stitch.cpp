@@ -115,8 +115,9 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
             {
                 for (int j=0; j<mask.cols/2; j++)
                 {
-                    cv::Vec1b& v = mask.at<cv::Vec1b>(i,j);
-                    v[0] = 0.5;
+                    // uchar& v = mask.at<uchar>(i,j);
+                    // v[0] = 0.5;
+                    mask.at<uchar>(j,i) = 0.5;
                 }
             }
 
