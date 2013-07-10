@@ -110,19 +110,17 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
             // mOutputBuffer = pCaptures[1](cv::Rect(x1,y1,w1,h1)).clone();
 
             cv::Mat crop2 = input2(cv::Rect(x2,y2,w2,h2)).clone();
-            // cv::Mat masked = crop2.clone()
-            for (int i=0; i<crop2.rows; i++) 
+            cv::Mat mask = cv::Mat::zeros(crop2.rows, crop2.cols, CV_8UC1);
+            for (int i=0; i<mask.rows; i++) 
             {
-                for (int j=px2; j< px2+100; j++)
+                for (int j=0; j<mask.cols/2; j++)
                 {
-                    cv::Vec4b& v = crop2.at<cv::Vec4b>(i,j);
-                    v[0] = 1;
-                    v[1] = 0;
-                    v[2] = 0;
+                    cv::Vec1b& v = mask.at<cv::Vec1b>(i,j);
+                    v[0] = 0.5;
                 }
             }
 
-            crop2.copyTo(mOutputBuffer(cv::Rect(px2,py2,crop2.cols,crop2.rows)));
+            crop2.copyTo(mOutputBuffer(cv::Rect(px2,py2,crop2.cols,crop2.rows)), mask);
         }
         else
             // mOutputBuffer = pCaptures[1].clone();
