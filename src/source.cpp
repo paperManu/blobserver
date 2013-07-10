@@ -646,6 +646,8 @@ void Source::saveToFile(cv::Mat& pImg)
     static int phase = 0;
     static int index = 0;
 
+    cout << "saveToFile " << phase << endl;
+
     if (phase == 0)
     {
         char buffer[16];
