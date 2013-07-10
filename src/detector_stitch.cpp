@@ -111,7 +111,7 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
 
             cv::Mat crop2 = input2(cv::Rect(x2,y2,w2,h2)).clone();
             cv::Mat mask = cv::Mat::zeros(w2, h2, CV_8UC1);
-            mask(cv::Rect(50,50,100,100)).setTo(255)
+            mask(cv::Rect(50,50,100,100)).setTo(255);
             // for (int i=0; i<mask.rows; i++) 
             // {
             //     for (int j=0; j<mask.cols/2; j++)
