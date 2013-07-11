@@ -536,7 +536,7 @@ cmsHTRANSFORM Source::loadICCTransform(std::string pFile)
     inProfile = cmsOpenProfileFromFile(pFile.c_str(), "r");
     if (inProfile == NULL)
     {
-        std::cout << "Error while loading ICC profile " << pFile << std::endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Error while loading ICC profile %s", mClassName.c_str(), pFile.c_str());
         return transform;
     }
 
@@ -546,7 +546,7 @@ cmsHTRANSFORM Source::loadICCTransform(std::string pFile)
     cmsCloseProfile(inProfile);
     cmsCloseProfile(outProfile);
 
-    std::cout << "ICC profile " << pFile << " correctly loaded" << std::endl;
+    g_log(NULL, G_LOG_LEVEL_INFO, "%s - ICC profile %s correctly loaded", mClassName.c_str(), pFile.c_str());
     return transform;
 }
 

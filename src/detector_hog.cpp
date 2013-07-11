@@ -292,7 +292,7 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
     cv::multiply(input, resultMat, resultMat);
 
     if (mVerbose)
-        cout << "Detector_Hog - Evaluated ratio = " << 1.f - (float)validPositions / (float)totalSamples << endl;
+        g_log(NULL, G_LOG_LEVEL_INFO, "%s - Evaluated ratio = %f", mClassName.c_str(), 1.f - (float)validPositions / (float)totalSamples);
 
     // Constructing the message
     mLastMessage.clear();
@@ -350,7 +350,7 @@ void Detector_Hog::setParameter(atom::Message pMessage)
         if (!readParam(pMessage, filename))
             return;
 
-        cout << "Attemping to load SVM model from file " << filename << endl;
+        g_log(NULL, G_LOG_LEVEL_INFO, "%s - Attempting to load SVM model from file %s", mClassName.c_str(), filename.c_str());
         mSvm.load(filename.c_str());
         mIsModelLoaded = true;
     }
@@ -360,7 +360,7 @@ void Detector_Hog::setParameter(atom::Message pMessage)
         if (!readParam(pMessage, filename))
             return;
 
-        cout << "Attemping to load PCA transform from file " << filename << endl;
+        g_log(NULL, G_LOG_LEVEL_INFO, "%s - Attempting to load PCA transform from file from file %s", mClassName.c_str(), filename.c_str());
         cv::FileStorage file(filename, cv::FileStorage::READ);
         cv::Mat eigen, mean;
         file["eigenVectors"] >> eigen;

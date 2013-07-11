@@ -22,7 +22,9 @@
  * The main program from the blobserver suite.
  */
 
+#include <ctime>
 #include <iostream>
+#include <iomanip>
 #include <limits>
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,6 +72,7 @@ static gboolean gTcp = FALSE;
 static gchar* gPort = NULL;
 
 static gboolean gBench = FALSE;
+static gboolean gDebug = FALSE;
 
 static GOptionEntry gEntries[] =
 {
@@ -81,6 +84,7 @@ static GOptionEntry gEntries[] =
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
     {"port", 'p', 0, G_OPTION_ARG_STRING, &gPort, "Specifies TCP port to use for server (default 9002)", NULL},
     {"bench", 'B', 0, G_OPTION_ARG_NONE, &gBench, "Enables printing timings of main loop, for debug purpose", NULL},
+    {"debug", 'd', 0, G_OPTION_ARG_NONE, &gDebug, "Enables printing of debug messages", NULL},
     {NULL}
 };
 
@@ -143,6 +147,9 @@ class App
 
         // Factory registering
         void registerClasses();
+
+        // Log handler
+        static void logHandler(const gchar* log_domain, GLogLevelFlags log_level, const gchar* message, gpointer user_data);
 
         // Creates a new and unique ID for a flow
         unsigned int getValidId() {return ++mCurrentId;}
@@ -207,6 +214,10 @@ int App::init(int argc, char** argv)
 {
     (void) signal(SIGINT, leave);
 
+    // Initialize the logger
+    g_log_set_handler(NULL, (GLogLevelFlags)(G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_WARNING | G_LOG_LEVEL_ERROR | G_LOG_FLAG_FATAL),
+                      logHandler, this);
+
     // Register source and detector classes
     registerClasses();
 
@@ -224,8 +235,8 @@ int App::init(int argc, char** argv)
     else
         lNetProto = LO_UDP;
 
+    g_log(NULL, G_LOG_LEVEL_INFO, "Cleaning up shared memory in /tmp...");
 
-    cout << "Cleaning up shared memory in /tmp..." << endl;
     GDir* directory;
     GError* error;
     directory = g_dir_open((const gchar*)"/tmp", 0, &error);
@@ -236,7 +247,8 @@ int App::init(int argc, char** argv)
         {
             char buffer[128];
             sprintf(buffer, "/tmp/%s", filename);
-            cout << "Removing file " << buffer << endl;
+
+            g_log(NULL, G_LOG_LEVEL_INFO, "Removing file %s", buffer);
             g_remove((const gchar*)buffer);
         }
     }
@@ -260,7 +272,7 @@ int App::init(int argc, char** argv)
     }
     else
     {
-        cout << "TCP port not available for the Osc server to launch - Exiting" << endl;
+        g_log(NULL, G_LOG_LEVEL_ERROR, "TCP port not available for the OSC server to launch");
         exit(1);
     }
 
@@ -270,6 +282,8 @@ int App::init(int argc, char** argv)
         Configurator configurator;
         configurator.loadXML((char*)gConfigFile);
     }
+
+    g_log(NULL, G_LOG_LEVEL_INFO, "Configuration loaded");
 
     // We need a nap before launching cameras
     timespec nap;
@@ -287,6 +301,50 @@ int App::init(int argc, char** argv)
 }
 
 /*****************/
+void App::logHandler(const gchar* log_domain, GLogLevelFlags log_level, const gchar* message, gpointer user_data)
+{
+    App* theApp = static_cast<App*>(user_data);
+
+    if (message == NULL)
+        return;
+
+    time_t now = time(NULL);
+    char chrNow[100];
+    strftime(chrNow, 100, "%T", localtime(&now));
+
+    cout << chrNow << " ";
+    switch (log_level)
+    {
+    case G_LOG_LEVEL_ERROR:
+    {
+        cout << "[ERROR] ";
+        break;
+    }
+    case G_LOG_LEVEL_WARNING:
+    {
+        cout << "[WARNING] ";
+        break;
+    }
+    case G_LOG_LEVEL_INFO:
+    {
+        cout << "[INFO] ";
+        break;
+    }
+    case G_LOG_LEVEL_DEBUG:
+    {
+        if (!gDebug)
+            return;
+
+        cout << "[DEBUG] ";
+        break;
+    }
+    default:
+        break;
+    }
+    cout << message << endl;
+}
+
+/*****************/
 int App::parseArgs(int argc, char** argv)
 {
     GError *error = NULL;
@@ -298,7 +356,7 @@ int App::parseArgs(int argc, char** argv)
 
     if (!g_option_context_parse(context, &argc, &argv, &error))
     {
-        cout << "Error while parsing options: " << error->message << endl;
+        g_log(NULL, G_LOG_LEVEL_ERROR, "Error while parsing options: %s", error->message);
         return 1;
     }
 
@@ -310,6 +368,7 @@ int App::parseArgs(int argc, char** argv)
     if (gVersion)
     {
         cout << PACKAGE_TARNAME << " " << PACKAGE_VERSION << endl;
+        //g_log(NULL, G_LOG_LEVEL_INFO, "%s %s", PACKAGE_TARNAME, PACKAGE_VERSION);
         return 1;
     }
 
@@ -351,7 +410,7 @@ void timeSince(unsigned long long timestamp, std::string stage)
 {
     auto now = chrono::high_resolution_clock::now();
     unsigned long long currentTime = chrono::duration_cast<chrono::microseconds>(now.time_since_epoch()).count();
-    std::cout << stage << " - " << ((long long)currentTime - (long long)timestamp)/1000 << "ms" << std::endl;
+    g_log(NULL, G_LOG_LEVEL_INFO, "%s - %lli ms", stage.c_str(), ((long long)currentTime - (long long)timestamp)/1000);
 }
 
 /*****************/
@@ -512,7 +571,7 @@ int App::loop()
         if(lKey == 'w')
         {
             lSourceNumber = (lSourceNumber+1)%lBuffers.size();
-            cout << "Buffer displayed: " << lBufferNames[lSourceNumber] << endl;
+            g_log(NULL, G_LOG_LEVEL_INFO, "Buffer displayed: %s", lBufferNames[lSourceNumber].c_str());
         }
 
         unsigned long long chronoEnd = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
@@ -533,7 +592,7 @@ int App::loop()
         frameNbr++;
     }
 
-    cout << "Leaving..." << endl;
+    g_log(NULL, G_LOG_LEVEL_INFO, "Leaving...");
     mSourcesThread->join();
 
     return 0;
@@ -564,7 +623,7 @@ void App::updateSources()
                 // We also check if this source is still used
                 if (source.use_count() == 2) // 2, because this ptr and the one in the vector
                 {
-                    cout << "Source " << source->getName() << " is no longer used. Disconnecting." << endl;
+                    g_log(NULL, G_LOG_LEVEL_INFO, "Source %s is no longer used. Disconnecting.", source->getName().c_str());
                     theApp->mSources.erase(iter);
                     --iter;
                 }
@@ -588,7 +647,7 @@ void App::updateSources()
 /*****************/
 void App::oscError(int num, const char* msg, const char* path)
 {
-    cout << "liblo server error " << num << endl;
+    g_log(NULL, G_LOG_LEVEL_WARNING, "liblo server error %i", num);
 }
 
 /*****************/
@@ -596,7 +655,7 @@ int App::oscGenericHandler(const char* path, const char* types, lo_arg** argv, i
 {
     if(gVerbose)
     {
-        cout << "Unhandled message received:" << endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "Unhandled message received:");
 
         for(int i = 0; i < argc; ++i)
         {
@@ -619,7 +678,7 @@ int App::oscHandlerSignIn(const char* path, const char* types, lo_arg** argv, in
 
     if (message.size() < 2)
     {
-        cout << "Wrong number of arguments received." << endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Wrong number of arguments received.", __FUNCTION__);
         return 1;
     }
 
@@ -644,7 +703,7 @@ int App::oscHandlerSignIn(const char* path, const char* types, lo_arg** argv, in
         int error = lo_address_errno(address->get());
         if (error != 0)
         {
-            cout << "Received address wrongly formated." << endl;
+            g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Received address wrongly formated.", __FUNCTION__);
             return 0;
         }
 
@@ -659,7 +718,7 @@ int App::oscHandlerSignIn(const char* path, const char* types, lo_arg** argv, in
         int error = lo_address_errno(address->get());
         if (error != 0)
         {
-            cout << "Received address wrongly formated." << endl;
+            g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Received address wrongly formated.", __FUNCTION__);
             return 0;
         }
 
@@ -679,7 +738,7 @@ int App::oscHandlerSignOut(const char* path, const char* types, lo_arg** argv, i
 
     if (message.size() != 1)
     {
-        cout << "Wrong number of arguments received." << endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Wrong number of arguments received.", __FUNCTION__);
         return 1;
     }
 
@@ -1047,7 +1106,7 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
             {
                 lo_send(flow->client->get(), "/blobserver/disconnect", "s", "Disconnected");
                 theApp->mFlows.erase(flow);
-                cout << "Connection from address " << addressStr << " closed." << endl;
+                g_log(NULL, G_LOG_LEVEL_INFO, "Connection from address %s closed.", addressStr.c_str());
             }
             else
             {
@@ -1311,7 +1370,6 @@ int App::oscHandlerGetDetectors(const char* path, const char* types, lo_arg** ar
     atom::Message outMessage;
     for_each (keys.begin(), keys.end(), [&] (string key)
     {
-        cout << key << endl;
         outMessage.push_back(atom::StringValue::create(key.c_str()));
     } );
 
