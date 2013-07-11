@@ -1,5 +1,6 @@
 AM_CPPFLAGS = \
-    -I$(top_srcdir)/include
+    -I$(top_srcdir)/include \
+    -DG_LOG_DOMAIN=""
 
 bin_PROGRAMS = \
     blobserver \

@@ -27,6 +27,7 @@
 
 #include <algorithm>
 
+#include <glib.h>
 #include "atom/message.h"
 #include "opencv2/opencv.hpp"
 
