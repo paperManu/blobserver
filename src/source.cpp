@@ -309,6 +309,8 @@ void Source::setBaseParameter(atom::Message pParam)
             mSaveToFile = true;
             mSavePeriod = (int)period;
             mBaseFilename = filename;
+            index = 0;
+            phase = 0;
         }
         else
         {
@@ -643,10 +645,6 @@ void Source::createHdri(cv::Mat& pImg)
 /*************/
 void Source::saveToFile(cv::Mat& pImg)
 {
-    static int phase = 0;
-    static int index = 0;
-
-    
 
     if (phase == 0)
     {

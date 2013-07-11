@@ -242,6 +242,8 @@ class Source
         bool mSaveToFile;
         std::string mBaseFilename;
         int mSavePeriod;
+        int phase;
+        int index;
 
         /************/
         // Methods
