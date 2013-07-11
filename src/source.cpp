@@ -659,7 +659,7 @@ void Source::saveToFile(cv::Mat& pImg)
         {
             filename += string(".png");
             cout << "saveToFile " << filename << endl;
-            bool writeSuccess = null;
+            bool writeSuccess;
             writeSuccess = cv::imwrite(filename, pImg);
             cout << "cv::imwrite: " << writeSuccess << endl;
         }
