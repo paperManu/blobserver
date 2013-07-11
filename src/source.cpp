@@ -646,17 +646,21 @@ void Source::saveToFile(cv::Mat& pImg)
     static int phase = 0;
     static int index = 0;
 
-    cout << "saveToFile " << phase << endl;
+    
 
     if (phase == 0)
     {
         char buffer[16];
         sprintf(buffer, "%i", index);
         string filename = mBaseFilename + string(buffer);
+
+        cout << "saveToFile " << filename << endl;
         if (pImg.depth() == CV_8U || pImg.depth() == CV_16U)
         {
             filename += string(".png");
+            cout << "saveToFile " << filename << endl;
             cv::imwrite(filename, pImg);
+            cout << "cv::imwrite" << endl;
         }
 
         index++;
