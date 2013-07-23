@@ -36,6 +36,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/blob.h \
     $(top_srcdir)/include/blob_2D.h \
     $(top_srcdir)/include/configurator.h \
+    $(top_srcdir)/include/capture.h \
     $(top_srcdir)/include/creator.h \
     $(top_srcdir)/include/descriptor_hog.h \
     $(top_srcdir)/include/detector.h \
