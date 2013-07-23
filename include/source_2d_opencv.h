@@ -18,21 +18,21 @@
  */
 
 /*
- * @source_opencv.h
- * The Source_OpenCV class.
+ * @source_2d_opencv.h
+ * The Source_2D_OpenCV class.
  */
 
 #ifndef SOURCE_OPENCV_H
 #define SOURCE_OPENCV_H
 
-#include "source.h"
+#include "source_2d.h"
 
-class Source_OpenCV : public Source
+class Source_2D_OpenCV : public Source_2D
 {
     public:
-        Source_OpenCV();
-        Source_OpenCV(int pParam);
-        ~Source_OpenCV();
+        Source_2D_OpenCV();
+        Source_2D_OpenCV(int pParam);
+        ~Source_2D_OpenCV();
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}

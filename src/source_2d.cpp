@@ -1,12 +1,12 @@
-#include "source.h"
+#include "source_2d.h"
 
 using namespace std;
 
-std::string Source::mClassName = "Source";
-std::string Source::mDocumentation = "N/A";
+std::string Source_2D::mClassName = "Source_2D";
+std::string Source_2D::mDocumentation = "N/A";
 
 /*************/
-Source::Source():
+Source_2D::Source_2D():
     mUpdated(false)
 {
     mName = mClassName;
@@ -60,20 +60,20 @@ Source::Source():
 }
 
 /************/
-Source::Source(int pParam)
+Source_2D::Source_2D(int pParam)
 {
-    Source();
+    Source_2D();
 }
 
 /************/
-Source::~Source()
+Source_2D::~Source_2D()
 {
     if (mICCTransform != NULL)
         cmsDeleteTransform(mICCTransform);
 }
 
 /************/
-cv::Mat Source::retrieveModifiedFrame()
+cv::Mat Source_2D::retrieveModifiedFrame()
 {
     if (mUpdated)
     {
@@ -120,7 +120,7 @@ cv::Mat Source::retrieveModifiedFrame()
 }
 
 /************/
-void Source::setBaseParameter(atom::Message pParam)
+void Source_2D::setBaseParameter(atom::Message pParam)
 {
     std::string paramName;
     try
@@ -321,7 +321,7 @@ void Source::setBaseParameter(atom::Message pParam)
 }
 
 /************/
-atom::Message Source::getBaseParameter(atom::Message pParam) const
+atom::Message Source_2D::getBaseParameter(atom::Message pParam) const
 {
     atom::Message msg;
 
@@ -346,7 +346,7 @@ atom::Message Source::getBaseParameter(atom::Message pParam) const
 }
 
 /************/
-float Source::getEV()
+float Source_2D::getEV()
 {
     // Update the exposure time in case it changes automatically
     atom::Message msg;
@@ -357,7 +357,7 @@ float Source::getEV()
 }
 
 /************/
-void Source::applyMask(cv::Mat& pImg)
+void Source_2D::applyMask(cv::Mat& pImg)
 {
     // If not done yet, the mask is converted to float and resized accordingly to pImg
     if (pImg.rows != mMask.rows || pImg.cols != mMask.cols)
@@ -378,14 +378,14 @@ void Source::applyMask(cv::Mat& pImg)
 }
 
 /************/
-void Source::filterNoise(cv::Mat& pImg)
+void Source_2D::filterNoise(cv::Mat& pImg)
 {
     // We apply a simple median filter of size 1px to reduce noise
     cv::medianBlur(pImg, pImg, 3);
 }
 
 /************/
-void Source::scale(cv::Mat& pImg)
+void Source_2D::scale(cv::Mat& pImg)
 {
     cv::Mat output;
     cv::resize(pImg, output, cv::Size(), mScale, mScale, cv::INTER_LINEAR);
@@ -393,7 +393,7 @@ void Source::scale(cv::Mat& pImg)
 }
 
 /************/
-void Source::rotate(cv::Mat& pImg)
+void Source_2D::rotate(cv::Mat& pImg)
 {
     cv::Point2f center = cv::Point2f((float)pImg.cols / 2.f, (float)pImg.rows / 2.f);
     cv::Mat rotMat = cv::getRotationMatrix2D(center, mRotation, 1.0);
@@ -403,7 +403,7 @@ void Source::rotate(cv::Mat& pImg)
 }
 
 /************/
-void Source::correctVignetting(cv::Mat& pImg)
+void Source_2D::correctVignetting(cv::Mat& pImg)
 {
     if (mRecomputeVignettingMat == true || mVignettingMat.size() != pImg.size())
     {
@@ -439,7 +439,7 @@ void Source::correctVignetting(cv::Mat& pImg)
 }
 
 /************/
-void Source::correctDistortion(cv::Mat& pImg)
+void Source_2D::correctDistortion(cv::Mat& pImg)
 {
     if (mRecomputeDistortionMat == true || mDistortionMat.size() != pImg.size())
     {
@@ -488,7 +488,7 @@ void Source::correctDistortion(cv::Mat& pImg)
 }
 
 /************/
-void Source::correctFisheye(cv::Mat& pImg)
+void Source_2D::correctFisheye(cv::Mat& pImg)
 {
     if (mRecomputeFisheyeMat == true || mFisheyeMat.size() != pImg.size())
     {
@@ -530,7 +530,7 @@ void Source::correctFisheye(cv::Mat& pImg)
 }
 
 /************/
-cmsHTRANSFORM Source::loadICCTransform(std::string pFile)
+cmsHTRANSFORM Source_2D::loadICCTransform(std::string pFile)
 {
     cmsHTRANSFORM transform = NULL;
     cmsHPROFILE inProfile, outProfile;
@@ -554,7 +554,7 @@ cmsHTRANSFORM Source::loadICCTransform(std::string pFile)
 }
 
 /*************/
-void Source::applyAutoExposure(cv::Mat& pImg)
+void Source_2D::applyAutoExposure(cv::Mat& pImg)
 {
     if (pImg.channels() != 3)
         return;
@@ -606,7 +606,7 @@ void Source::applyAutoExposure(cv::Mat& pImg)
 }
 
 /*************/
-void Source::createHdri(cv::Mat& pImg)
+void Source_2D::createHdri(cv::Mat& pImg)
 {
     // TODO: make this work even if cameras dont send the right exposure value
 
@@ -644,7 +644,7 @@ void Source::createHdri(cv::Mat& pImg)
 }
 
 /*************/
-void Source::saveToFile(cv::Mat& pImg)
+void Source_2D::saveToFile(cv::Mat& pImg)
 {
     if (mSavePhase == 0)
     {

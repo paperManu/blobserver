@@ -18,8 +18,8 @@
  */
 
 /*
- * @source.h
- * The Source base class.
+ * @source_2d.h
+ * The Source_2D base class.
  */
 
 #ifndef SOURCE_H
@@ -66,25 +66,25 @@ class MatBuffer
 };
 
 /*************/
-//! Base Source class, from which all Source classes derive
-class Source
+//! Base Source_2D class, from which all Source_2D classes derive
+class Source_2D
 {
     public:
         /**
          * \brief Default constructor
          */
-        Source();
+        Source_2D();
 
         /**
          * \brief Constructor allowing to specify a subsource
          * \param pParam Index of the subsource to allocate
          */
-        Source(int pParam);
+        Source_2D(int pParam);
 
         /**
          * \brief Destructor
          */
-        ~Source();
+        ~Source_2D();
 
         /**
          * \return Returns the class name of the source

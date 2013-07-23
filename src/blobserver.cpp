@@ -47,9 +47,9 @@
 #include "configurator.h"
 #include "threadPool.h"
 
-#include "source_opencv.h"
+#include "source_2d_opencv.h"
 #if HAVE_SHMDATA
-#include "source_shmdata.h"
+#include "source_2d_shmdata.h"
 #endif
 #include "detector_bgsubtractor.h"
 #include "detector_depthtouch.h"
@@ -114,13 +114,13 @@ class App
 
         // Factories
         factory::AbstractFactory<Detector, string, string, int> mDetectorFactory;
-        factory::AbstractFactory<Source, string, string, int> mSourceFactory;
+        factory::AbstractFactory<Source_2D, string, string, int> mSourceFactory;
 
         // liblo related
         lo_server_thread mOscServer;
 
         // detection related
-        vector<shared_ptr<Source>> mSources;
+        vector<shared_ptr<Source_2D>> mSources;
         map<string, shared_ptr<OscClient>> mClients;
         vector<Flow> mFlows;
         // A mutex to prevent unexpected changes in flows
@@ -394,11 +394,11 @@ void App::registerClasses()
         Detector_ObjOnAPlane::getDocumentation());
 
     // Register sources
-    mSourceFactory.register_class<Source_OpenCV>(Source_OpenCV::getClassName(),
-        Source_OpenCV::getDocumentation());
+    mSourceFactory.register_class<Source_2D_OpenCV>(Source_2D_OpenCV::getClassName(),
+        Source_2D_OpenCV::getDocumentation());
 #if HAVE_SHMDATA
-    mSourceFactory.register_class<Source_Shmdata>(Source_Shmdata::getClassName(),
-        Source_Shmdata::getDocumentation());
+    mSourceFactory.register_class<Source_2D_Shmdata>(Source_2D_Shmdata::getClassName(),
+        Source_2D_Shmdata::getDocumentation());
 #endif // HAVE_SHMDATA
 }
 
@@ -441,7 +441,7 @@ int App::loop()
 
             // First we grab, then we retrieve all frames
             // This way, sync between frames is better
-            for_each (mSources.begin(), mSources.end(), [&] (shared_ptr<Source> source)
+            for_each (mSources.begin(), mSources.end(), [&] (shared_ptr<Source_2D> source)
             {
                 cv::Mat frame = source->retrieveModifiedFrame();
 
@@ -609,12 +609,12 @@ void App::updateSources()
         {
             lock_guard<mutex> lock(theApp->mSourceMutex);
             
-            vector<shared_ptr<Source>>::iterator iter;
+            vector<shared_ptr<Source_2D>>::iterator iter;
             // First we grab, then we retrieve all frames
             // This way, sync between frames is better
             for (iter = theApp->mSources.begin(); iter != theApp->mSources.end(); ++iter)
             {
-                shared_ptr<Source> source = (*iter);
+                shared_ptr<Source_2D> source = (*iter);
                 source->grabFrame();
             
                 // We also check if this source is still used
@@ -935,7 +935,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     unsigned int sourceNbr = detector->getSourceNbr();
     
     // Allocate all the sources
-    vector<shared_ptr<Source>> sources;
+    vector<shared_ptr<Source_2D>> sources;
     atom::Message::const_iterator iter;
     for (iter = message.begin()+2; iter != message.end(); iter+=2)
     {
@@ -960,7 +960,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 
         // Check if this source is not already connected
         bool alreadyConnected = false;
-        vector<shared_ptr<Source>>::const_iterator iterSource;
+        vector<shared_ptr<Source_2D>>::const_iterator iterSource;
         for (iterSource = theApp->mSources.begin(); iterSource != theApp->mSources.end(); ++iterSource)
         {
             if (iterSource->get()->getName() == sourceName && iterSource->get()->getSubsourceNbr() == (unsigned int)sourceIndex)
@@ -972,7 +972,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 
         if (!alreadyConnected)
         {
-            shared_ptr<Source> source;
+            shared_ptr<Source_2D> source;
             if (theApp->mSourceFactory.key_exists(sourceName))
                 source = theApp->mSourceFactory.create(sourceName, sourceIndex);
             else
@@ -1016,7 +1016,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         flow.shm.reset(new ShmImage(shmFile));
 #endif
 
-        vector<shared_ptr<Source>>::const_iterator source;
+        vector<shared_ptr<Source_2D>>::const_iterator source;
         for (source = sources.begin(); source != sources.end(); ++source)
         {
             flow.sources.push_back(*source);
@@ -1024,7 +1024,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             // Add the sources to the mSources vector
             // (if they are not already there)
             bool isInSources = false;
-            vector<shared_ptr<Source>>::const_iterator iter;
+            vector<shared_ptr<Source_2D>>::const_iterator iter;
             for (iter = theApp->mSources.begin(); iter != theApp->mSources.end(); ++iter)
             {
                 if (iter->get()->getName() == source->get()->getName() && iter->get()->getSubsourceNbr() == source->get()->getSubsourceNbr())
@@ -1419,7 +1419,7 @@ int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv
         }
 
         // We try to create the named source
-        shared_ptr<Source> source;
+        shared_ptr<Source_2D> source;
         if (theApp->mSourceFactory.key_exists(sourceName))
             source = theApp->mSourceFactory.create(sourceName, -1);
         else

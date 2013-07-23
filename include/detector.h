@@ -33,7 +33,7 @@
 
 #include "blob.h"
 #include "helpers.h"
-#include "source.h"
+#include "source_2d.h"
 
 /*************/
 // Class for parallel masking
@@ -121,7 +121,7 @@ class Detector
          * \brief Gives a ptr to the detector, for it to control the source (if needed)
          * \param source A shared_ptr to the source. A weak_ptr is created from it.
          */
-        void addSource(std::shared_ptr<Source> source);
+        void addSource(std::shared_ptr<Source_2D> source);
         
         /**
          * \brief Gets the name to use in the osc path when sending the message related to this detector
@@ -146,7 +146,7 @@ class Detector
         std::string mOscPath; //!< OSC path for the detector, to be set in child class
         std::string mName; // !< Name of the detector, to be set in child class
 
-        std::vector<std::weak_ptr<Source>> mSources;
+        std::vector<std::weak_ptr<Source_2D>> mSources;
 
         // Methods
         cv::Mat getMask(cv::Mat pCapture, int pInterpolation = CV_INTER_NN);

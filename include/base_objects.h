@@ -32,7 +32,7 @@
 #if HAVE_SHMDATA
 #include <shmdata/any-data-writer.h>
 #endif
-#include "source.h"
+#include "source_2d.h"
 #include "detector.h"
 
 /*************/
@@ -79,7 +79,7 @@ class ShmImage
 // Struct to contain a complete flow, from capture to client
 struct Flow
 {
-    std::vector<std::shared_ptr<Source>> sources;
+    std::vector<std::shared_ptr<Source_2D>> sources;
     std::shared_ptr<Detector> detector;
 #if HAVE_SHMDATA
     std::shared_ptr<ShmImage> shm;

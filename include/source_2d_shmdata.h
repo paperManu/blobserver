@@ -18,8 +18,8 @@
  */
 
 /*
- * @source_shmdata.h
- * The Source_Shmdata class.
+ * @source_2d_shmdata.h
+ * The Source_2D_Shmdata class.
  */
 
 #ifndef SOURCE_SHMDATA_H
@@ -30,14 +30,14 @@
 #include <mutex>
 #include <shmdata/any-data-reader.h>
 
-#include "source.h"
+#include "source_2d.h"
 
-class Source_Shmdata : public Source
+class Source_2D_Shmdata : public Source_2D
 {
     public:
-        Source_Shmdata();
-        Source_Shmdata(int pParam);
-        ~Source_Shmdata();
+        Source_2D_Shmdata();
+        Source_2D_Shmdata(int pParam);
+        ~Source_2D_Shmdata();
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
