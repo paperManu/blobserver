@@ -54,6 +54,9 @@ Source::Source():
     mAutoExposureStep = 0.05f;
 
     mHdriActive = false;
+
+    mSaveIndex = 0;
+    mSavePhase = 0;
 }
 
 /************/
@@ -643,13 +646,10 @@ void Source::createHdri(cv::Mat& pImg)
 /*************/
 void Source::saveToFile(cv::Mat& pImg)
 {
-    static int phase = 0;
-    static int index = 0;
-
-    if (phase == 0)
+    if (mSavePhase == 0)
     {
         char buffer[16];
-        sprintf(buffer, "%i", index);
+        sprintf(buffer, "%05i", mSaveIndex);
         string filename = mBaseFilename + string(buffer);
         if (pImg.depth() == CV_8U || pImg.depth() == CV_16U)
         {
@@ -657,12 +657,12 @@ void Source::saveToFile(cv::Mat& pImg)
             cv::imwrite(filename, pImg);
         }
 
-        index++;
-        phase++;
+        mSaveIndex++;
+        mSavePhase++;
     }
     else
     {
-        phase = (phase + 1) % mSavePeriod;
+        mSavePhase = (mSavePhase + 1) % mSavePeriod;
     }
 }
 
