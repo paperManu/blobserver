@@ -28,57 +28,28 @@
 #include <glib.h>
 
 /*************/
-//! Class containing a capture from a source
-template <typename T>
 class Capture
 {
     public:
-        Capture();
-        Capture(const T& input);
-        ~Capture();
+        Capture() {};
+        ~Capture() {};
 
-        Capture& operator=(const T& input);
-        T& operator()();
-
-        type_info type() {return typeid(mBuffer);}
-
-    private:
-        T mBuffer;
+        virtual std::string type() {};
 };
 
-
 /*************/
-template <typename T>
-Capture::Capture()
+class Capture_2D_Mat : public Capture
 {
-}
+    public:
+        Capture_2D_Mat() {};
+        Capture_2D_Mat(cv::Mat input) {mBuffer = input;}
 
-/*************/
-template <typename T>
-Capture::Capture(const T& input)
-{
-    mBuffer = input;
-}
+        cv::Mat& get() {return mBuffer;}
 
-/*************/
-template <typename T>
-Capture::~Capture()
-{
-}
+        std::string type() {return std::string("Capture_2D_Mat");}
 
-/*************/
-template <typename T>
-Capture& Capture::operator=(const T& input)
-{
-    mBuffer = input;
-    return *this;
-}
-
-/*************/
-template <typename T>
-T& Capture::operator=()()
-{
-    return mBuffer;
-}
+    private:
+        cv::Mat mBuffer;
+};
 
 #endif // CAPTURE_H

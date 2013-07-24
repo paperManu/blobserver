@@ -22,8 +22,8 @@
  * The Source_2D_OpenCV class.
  */
 
-#ifndef SOURCE_OPENCV_H
-#define SOURCE_OPENCV_H
+#ifndef SOURCE_2D_OPENCV_H
+#define SOURCE_2D_OPENCV_H
 
 #include "source_2d.h"
 
@@ -57,4 +57,4 @@ class Source_2D_OpenCV : public Source_2D
         void make(int pParam);
 };
 
-#endif // SOURCE_OPENCV_H
+#endif // SOURCE_2D_OPENCV_H

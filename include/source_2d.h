@@ -22,8 +22,8 @@
  * The Source_2D base class.
  */
 
-#ifndef SOURCE_H
-#define SOURCE_H
+#ifndef SOURCE_2D_H
+#define SOURCE_2D_H
 
 #include <atomic>
 #include <mutex>
@@ -34,6 +34,7 @@
 #include <lcms2.h>
 #include <atom/message.h>
 
+#include "capture.h"
 #include "helpers.h"
 #include "hdribuilder.h"
 
@@ -126,7 +127,7 @@ class Source_2D
         /**
          * \brief Retrieves the last frame grabbed by the source, corrected with the various available corrections if specified so
          */
-        cv::Mat retrieveModifiedFrame();
+        std::shared_ptr<Capture> retrieveModifiedFrame();
 
         /**
          * \brief Sets a parameter
@@ -277,4 +278,4 @@ class Source_2D
         void saveToFile(cv::Mat& pImg);
 };
 
-#endif // SOURCE_H
+#endif // SOURCE_2D_H

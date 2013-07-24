@@ -443,7 +443,12 @@ int App::loop()
             // This way, sync between frames is better
             for_each (mSources.begin(), mSources.end(), [&] (shared_ptr<Source_2D> source)
             {
-                cv::Mat frame = source->retrieveModifiedFrame();
+                shared_ptr<Capture_2D_Mat> capture = dynamic_pointer_cast<Capture_2D_Mat>(source->retrieveModifiedFrame());
+                cv::Mat frame;
+                if (capture.get() == NULL)
+                    frame = cv::Mat::zeros(480, 640, CV_8UC3);
+                else
+                    frame = capture->get();
 
                 lBuffers.push_back(frame);
 
@@ -484,7 +489,13 @@ int App::loop()
                         for (int i = 0; i < flow->sources.size(); ++i)
                         {
                             lock_guard<mutex> lock(lMutex);
-                            frames.push_back(flow->sources[i]->retrieveModifiedFrame());
+                            
+                            shared_ptr<Capture_2D_Mat> capture = dynamic_pointer_cast<Capture_2D_Mat>(flow->sources[i]->retrieveModifiedFrame());
+                            cv::Mat frame;
+                            if (capture.get() == NULL)
+                                frame = cv::Mat::zeros(480, 640, CV_8UC3);
+                            else
+                                frame = capture->get();
                         }
                     }
 

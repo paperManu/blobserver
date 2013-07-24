@@ -73,7 +73,7 @@ Source_2D::~Source_2D()
 }
 
 /************/
-cv::Mat Source_2D::retrieveModifiedFrame()
+shared_ptr<Capture> Source_2D::retrieveModifiedFrame()
 {
     if (mUpdated)
     {
@@ -110,13 +110,10 @@ cv::Mat Source_2D::retrieveModifiedFrame()
             saveToFile(buffer);
 
         mUpdated = false;
+    }
 
-        return mCorrectedBuffer;
-    }
-    else
-    {
-        return mCorrectedBuffer;
-    }
+    shared_ptr<Capture_2D_Mat> capture(new Capture_2D_Mat(mCorrectedBuffer));
+    return capture;
 }
 
 /************/

@@ -22,8 +22,8 @@
  * The Source_2D_Shmdata class.
  */
 
-#ifndef SOURCE_SHMDATA_H
-#define SOURCE_SHMDATA_H
+#ifndef SOURCE_2D_SHMDATA_H
+#define SOURCE_2D_SHMDATA_H
 
 #include "config.h"
 #if HAVE_SHMDATA
@@ -64,4 +64,4 @@ class Source_2D_Shmdata : public Source_2D
 };
 #endif // HAVE_SHMDATA
 
-#endif // SOURCE_SHMDATA_H
+#endif // SOURCE_2D_SHMDATA_H
