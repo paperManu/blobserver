@@ -42,7 +42,7 @@ class Detector_DepthTouch : public Detector
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(const std::vector<cv::Mat> pCaptures);
+        atom::Message detect(const std::vector< std::shared_ptr<Capture> > pCaptures);
         void setParameter(atom::Message pMessage);
 
     private:

@@ -105,17 +105,19 @@ void Detector_ObjOnAPlane::make()
 }
 
 /*****************/
-atom::Message Detector_ObjOnAPlane::detect(const std::vector<cv::Mat> pCaptures)
+atom::Message Detector_ObjOnAPlane::detect(const vector< shared_ptr<Capture> > pCaptures)
 {
+    vector<cv::Mat> captures = captureToMat(pCaptures);
+
     // If the spaces definition changed
     if (mMapsUpdated == false)
-        updateMaps(pCaptures);
+        updateMaps(captures);
 
     // Conversion of captures from their own space to a common space
     // Also, resizes them all to the same size, and converts them to HSV
     std::vector<cv::Mat> correctedCaptures;
-    correctedCaptures.resize(pCaptures.size());
-    cv::parallel_for_(cv::Range(0, pCaptures.size()), Parallel_Remap(&pCaptures, &mMaps, &correctedCaptures, mVerbose, pCaptures[0].size()));
+    correctedCaptures.resize(captures.size());
+    cv::parallel_for_(cv::Range(0, captures.size()), Parallel_Remap(&captures, &mMaps, &correctedCaptures, mVerbose, captures[0].size()));
     if (mVerbose)
     {
         for (int i = 0; i < correctedCaptures.size(); ++i)

@@ -32,6 +32,7 @@
 #include "opencv2/opencv.hpp"
 
 #include "blob.h"
+#include "capture.h"
 #include "helpers.h"
 #include "source_2d.h"
 
@@ -92,7 +93,7 @@ class Detector
          * The two first values in the message are the number of blob, and the size of each blob in the message
          * \param pCaptures A vector containing all captures. Their number should match mSourceNbr.
          */
-        virtual atom::Message detect(const std::vector<cv::Mat> pCaptures) {}
+        virtual atom::Message detect(const std::vector< std::shared_ptr<Capture> > pCaptures) {}
         
         /**
          * \brief Returns the message from the last call to detect()
@@ -151,6 +152,7 @@ class Detector
         // Methods
         cv::Mat getMask(cv::Mat pCapture, int pInterpolation = CV_INTER_NN);
         void setBaseParameter(const atom::Message pMessage);
+        std::vector<cv::Mat> captureToMat(std::vector< std::shared_ptr<Capture> > pCaptures);
 
     private:
         static std::string mClassName; //!< Class name, to be set in child class

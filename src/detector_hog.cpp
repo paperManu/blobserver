@@ -125,15 +125,17 @@ void Detector_Hog::make()
 }
 
 /*************/
-atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
+atom::Message Detector_Hog::detect(const vector< shared_ptr<Capture> > pCaptures)
 {
+    vector<cv::Mat> captures = captureToMat(pCaptures);
+
     unsigned long long timeStart = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch()).count();
 
-    if (pCaptures.size() == 0 || !mIsModelLoaded)
+    if (captures.size() == 0 || !mIsModelLoaded)
         return mLastMessage;
 
     // For simplicity...
-    cv::Mat input = pCaptures[0];
+    cv::Mat input = captures[0];
 
     // We get windows of interest, using BG subtraction
     // and previous blobs positions

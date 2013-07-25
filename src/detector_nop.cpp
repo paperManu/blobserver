@@ -31,12 +31,14 @@ void Detector_Nop::make()
 }
 
 /*************/
-atom::Message Detector_Nop::detect(vector<cv::Mat> pCaptures)
+atom::Message Detector_Nop::detect(vector< shared_ptr<Capture> > pCaptures)
 {
-    if (pCaptures.size() == 0)
+    vector<cv::Mat> captures = captureToMat(pCaptures);
+
+    if (captures.size() == 0)
         return mLastMessage;
 
-    mOutputBuffer = pCaptures[0].clone();
+    mOutputBuffer = captures[0].clone();
 
     mFrameNumber++;
     mLastMessage = atom::createMessage("iii", 1, 1, mFrameNumber);

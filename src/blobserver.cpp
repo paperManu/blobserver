@@ -484,21 +484,14 @@ int App::loop()
                     // Retrieve the frames from all sources in this flow
                     // There is no risk for sources to disappear here, so no
                     // need for a mutex (they are freed earlier)
-                    vector<cv::Mat> frames;
+                    vector< shared_ptr<Capture> > frames;
                     {
                         for (int i = 0; i < flow->sources.size(); ++i)
                         {
                             lock_guard<mutex> lock(lMutex);
-                            
-                            shared_ptr<Capture_2D_Mat> capture = dynamic_pointer_cast<Capture_2D_Mat>(flow->sources[i]->retrieveModifiedFrame());
-                            cv::Mat frame;
-                            if (capture.get() == NULL)
-                                frame = cv::Mat::zeros(480, 640, CV_8UC3);
-                            else
-                                frame = capture->get();
+                            frames.push_back(flow->sources[i]->retrieveModifiedFrame());
                         }
                     }
-
                     flow->detector->detect(frames);
                 } );
             }
