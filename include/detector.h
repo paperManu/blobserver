@@ -137,7 +137,7 @@ class Detector
         /**
          * \brief Gets the resulting image from the detector.
          */
-        cv::Mat getOutput() const {return mOutputBuffer.clone();}
+        std::shared_ptr<Capture> getOutput() const {return std::shared_ptr<Capture_2D_Mat>(new Capture_2D_Mat(mOutputBuffer.clone()));}
 
     protected:
         cv::Mat mOutputBuffer; //!< The output buffer, resulting from the detection
@@ -160,7 +160,6 @@ class Detector
         static unsigned int mSourceNbr; //!< Number of sources needed for the detector, to be set in child class
 
         cv::Mat mSourceMask, mMask;
-
 };
 
 /*************/

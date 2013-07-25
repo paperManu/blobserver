@@ -427,12 +427,12 @@ int App::loop()
         unsigned long long chronoStart;
         chronoStart = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
 
-        vector<cv::Mat> lBuffers;
+        vector< shared_ptr<Capture> > lBuffers;
         vector<string> lBufferNames;
 
         // First buffer is a black screen. No special reason, except we need
         // a first buffer
-        lBuffers.push_back(cv::Mat::zeros(480, 640, CV_8UC3));
+        lBuffers.push_back( shared_ptr<Capture_2D_Mat>(new Capture_2D_Mat(cv::Mat::zeros(480, 640, CV_8UC3))));
         lBufferNames.push_back(string("This is Blobserver"));
 
         // Retrieve the capture from all the sources
@@ -443,14 +443,15 @@ int App::loop()
             // This way, sync between frames is better
             for_each (mSources.begin(), mSources.end(), [&] (shared_ptr<Source_2D> source)
             {
-                shared_ptr<Capture_2D_Mat> capture = dynamic_pointer_cast<Capture_2D_Mat>(source->retrieveModifiedFrame());
-                cv::Mat frame;
-                if (capture.get() == NULL)
-                    frame = cv::Mat::zeros(480, 640, CV_8UC3);
-                else
-                    frame = capture->get();
+                //shared_ptr<Capture_2D_Mat> capture = dynamic_pointer_cast<Capture_2D_Mat>(source->retrieveModifiedFrame());
+                //cv::Mat frame;
+                //if (capture.get() == NULL)
+                //    frame = cv::Mat::zeros(480, 640, CV_8UC3);
+                //else
+                //    frame = capture->get();
 
-                lBuffers.push_back(frame);
+                //lBuffers.push_back(frame);
+                lBuffers.push_back(source->retrieveModifiedFrame());
 
                 atom::Message msg;
                 msg.push_back(atom::StringValue::create("id"));
@@ -510,11 +511,13 @@ int App::loop()
                 atom::Message message;
                 message = flow.detector->getLastMessage();
 
-                cv::Mat output = flow.detector->getOutput();
+                shared_ptr<Capture> output = flow.detector->getOutput();
                 lBuffers.push_back(output);
 
 #if HAVE_SHMDATA
-                flow.shm->setImage(output);
+                shared_ptr<Capture_2D_Mat> img = dynamic_pointer_cast<Capture_2D_Mat>(output);
+                if (img.get() != NULL)
+                    flow.shm->setImage(img->get());
 #endif
 
                 lBufferNames.push_back(flow.detector->getName());
@@ -560,10 +563,14 @@ int App::loop()
             if (lSourceNumber >= lBuffers.size())
                 lSourceNumber = 0;
 
-            cv::Mat displayMat = lBuffers[lSourceNumber].clone();
-            cv::putText(displayMat, lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
-                cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
-            cv::imshow("blobserver", displayMat);
+            shared_ptr<Capture_2D_Mat> img = dynamic_pointer_cast<Capture_2D_Mat>(lBuffers[lSourceNumber]);
+            if (img.get() != NULL)
+            {
+                cv::Mat displayMat = img->get();
+                cv::putText(displayMat, lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
+                    cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
+                cv::imshow("blobserver", displayMat);
+            }
         }
 
         char lKey = cv::waitKey(1);
