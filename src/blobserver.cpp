@@ -427,12 +427,12 @@ int App::loop()
         unsigned long long chronoStart;
         chronoStart = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
 
-        vector< shared_ptr<Capture> > lBuffers;
+        vector< Capture_Ptr > lBuffers;
         vector<string> lBufferNames;
 
         // First buffer is a black screen. No special reason, except we need
         // a first buffer
-        lBuffers.push_back( shared_ptr<Capture_2D_Mat>(new Capture_2D_Mat(cv::Mat::zeros(480, 640, CV_8UC3))));
+        lBuffers.push_back( Capture_2D_Mat_Ptr(new Capture_2D_Mat(cv::Mat::zeros(480, 640, CV_8UC3))));
         lBufferNames.push_back(string("This is Blobserver"));
 
         // Retrieve the capture from all the sources
@@ -443,7 +443,7 @@ int App::loop()
             // This way, sync between frames is better
             for_each (mSources.begin(), mSources.end(), [&] (shared_ptr<Source_2D> source)
             {
-                //shared_ptr<Capture_2D_Mat> capture = dynamic_pointer_cast<Capture_2D_Mat>(source->retrieveModifiedFrame());
+                //Capture_2D_Mat_Ptr capture = dynamic_pointer_cast<Capture_2D_Mat>(source->retrieveModifiedFrame());
                 //cv::Mat frame;
                 //if (capture.get() == NULL)
                 //    frame = cv::Mat::zeros(480, 640, CV_8UC3);
@@ -485,7 +485,7 @@ int App::loop()
                     // Retrieve the frames from all sources in this flow
                     // There is no risk for sources to disappear here, so no
                     // need for a mutex (they are freed earlier)
-                    vector< shared_ptr<Capture> > frames;
+                    vector< Capture_Ptr > frames;
                     {
                         for (int i = 0; i < flow->sources.size(); ++i)
                         {
@@ -511,11 +511,11 @@ int App::loop()
                 atom::Message message;
                 message = flow.detector->getLastMessage();
 
-                shared_ptr<Capture> output = flow.detector->getOutput();
+                Capture_Ptr output = flow.detector->getOutput();
                 lBuffers.push_back(output);
 
 #if HAVE_SHMDATA
-                shared_ptr<Capture_2D_Mat> img = dynamic_pointer_cast<Capture_2D_Mat>(output);
+                Capture_2D_Mat_Ptr img = dynamic_pointer_cast<Capture_2D_Mat>(output);
                 if (img.get() != NULL)
                     flow.shm->setImage(img->get());
 #endif
@@ -563,7 +563,7 @@ int App::loop()
             if (lSourceNumber >= lBuffers.size())
                 lSourceNumber = 0;
 
-            shared_ptr<Capture_2D_Mat> img = dynamic_pointer_cast<Capture_2D_Mat>(lBuffers[lSourceNumber]);
+            Capture_2D_Mat_Ptr img = dynamic_pointer_cast<Capture_2D_Mat>(lBuffers[lSourceNumber]);
             if (img.get() != NULL)
             {
                 cv::Mat displayMat = img->get();

@@ -25,6 +25,8 @@
 #ifndef CAPTURE_H
 #define CAPTURE_H
 
+#include <memory>
+
 #include <glib.h>
 #include <opencv2/opencv.hpp>
 
@@ -52,5 +54,8 @@ class Capture_2D_Mat : public Capture
     private:
         cv::Mat mBuffer;
 };
+
+typedef std::shared_ptr<Capture> Capture_Ptr;
+typedef std::shared_ptr<Capture_2D_Mat> Capture_2D_Mat_Ptr;
 
 #endif // CAPTURE_H

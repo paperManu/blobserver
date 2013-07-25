@@ -96,12 +96,12 @@ cv::Mat Detector::getMask(cv::Mat pCapture, int pInterpolation)
 }
 
 /**************/
-vector<cv::Mat> Detector::captureToMat(vector< shared_ptr<Capture> > pCaptures)
+vector<cv::Mat> Detector::captureToMat(vector< Capture_Ptr > pCaptures)
 {
     vector<cv::Mat> images;
-    for_each (pCaptures.begin(), pCaptures.end(), [&] (shared_ptr<Capture> capture)
+    for_each (pCaptures.begin(), pCaptures.end(), [&] (Capture_Ptr capture)
     {
-        shared_ptr<Capture_2D_Mat> capture2D = dynamic_pointer_cast<Capture_2D_Mat>(capture);
+        Capture_2D_Mat_Ptr capture2D = dynamic_pointer_cast<Capture_2D_Mat>(capture);
         if (capture2D.get() != NULL)
             images.push_back(capture2D->get());
     });

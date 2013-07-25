@@ -105,7 +105,7 @@ void Detector_ObjOnAPlane::make()
 }
 
 /*****************/
-atom::Message Detector_ObjOnAPlane::detect(const vector< shared_ptr<Capture> > pCaptures)
+atom::Message Detector_ObjOnAPlane::detect(const vector< Capture_Ptr > pCaptures)
 {
     vector<cv::Mat> captures = captureToMat(pCaptures);
 

@@ -46,9 +46,11 @@ void Detector_LightSpots::make()
 }
 
 /*************/
-atom::Message Detector_LightSpots::detect(const vector< shared_ptr<Capture> > pCaptures)
+atom::Message Detector_LightSpots::detect(const vector< Capture_Ptr > pCaptures)
 {
     vector<cv::Mat> captures = captureToMat(pCaptures);
+    if (captures.size() < mSourceNbr)
+        return mLastMessage;
 
     cv::Mat lMean, lStdDev;
     cv::Mat lOutlier, lLight;

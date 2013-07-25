@@ -38,7 +38,7 @@ class Detector_Nop : public Detector
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(std::vector< std::shared_ptr<Capture> > pCaptures);
+        atom::Message detect(std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
     private:

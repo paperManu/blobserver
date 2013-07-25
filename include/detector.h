@@ -93,7 +93,7 @@ class Detector
          * The two first values in the message are the number of blob, and the size of each blob in the message
          * \param pCaptures A vector containing all captures. Their number should match mSourceNbr.
          */
-        virtual atom::Message detect(const std::vector< std::shared_ptr<Capture> > pCaptures) {}
+        virtual atom::Message detect(const std::vector< Capture_Ptr > pCaptures) {}
         
         /**
          * \brief Returns the message from the last call to detect()
@@ -137,7 +137,7 @@ class Detector
         /**
          * \brief Gets the resulting image from the detector.
          */
-        std::shared_ptr<Capture> getOutput() const {return std::shared_ptr<Capture_2D_Mat>(new Capture_2D_Mat(mOutputBuffer.clone()));}
+        Capture_Ptr getOutput() const {return Capture_2D_Mat_Ptr(new Capture_2D_Mat(mOutputBuffer.clone()));}
 
     protected:
         cv::Mat mOutputBuffer; //!< The output buffer, resulting from the detection
@@ -152,7 +152,7 @@ class Detector
         // Methods
         cv::Mat getMask(cv::Mat pCapture, int pInterpolation = CV_INTER_NN);
         void setBaseParameter(const atom::Message pMessage);
-        std::vector<cv::Mat> captureToMat(std::vector< std::shared_ptr<Capture> > pCaptures);
+        std::vector<cv::Mat> captureToMat(std::vector< Capture_Ptr > pCaptures);
 
     private:
         static std::string mClassName; //!< Class name, to be set in child class

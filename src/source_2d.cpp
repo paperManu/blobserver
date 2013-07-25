@@ -73,7 +73,7 @@ Source_2D::~Source_2D()
 }
 
 /************/
-shared_ptr<Capture> Source_2D::retrieveModifiedFrame()
+Capture_Ptr Source_2D::retrieveModifiedFrame()
 {
     if (mUpdated)
     {
@@ -112,7 +112,7 @@ shared_ptr<Capture> Source_2D::retrieveModifiedFrame()
         mUpdated = false;
     }
 
-    shared_ptr<Capture_2D_Mat> capture(new Capture_2D_Mat(mCorrectedBuffer));
+    Capture_2D_Mat_Ptr capture(new Capture_2D_Mat(mCorrectedBuffer));
     return capture;
 }
 

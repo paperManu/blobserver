@@ -48,9 +48,11 @@ void Detector_BgSubtractor::make()
 }
 
 /*************/
-atom::Message Detector_BgSubtractor::detect(const vector< shared_ptr<Capture> > pCaptures)
+atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCaptures)
 {
     vector<cv::Mat> captures = captureToMat(pCaptures);
+    if (captures.size() < mSourceNbr)
+        return mLastMessage;
 
     // For simplicity...
     cv::Mat input = captures[0];

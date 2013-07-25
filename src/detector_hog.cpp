@@ -125,9 +125,11 @@ void Detector_Hog::make()
 }
 
 /*************/
-atom::Message Detector_Hog::detect(const vector< shared_ptr<Capture> > pCaptures)
+atom::Message Detector_Hog::detect(const vector< Capture_Ptr > pCaptures)
 {
     vector<cv::Mat> captures = captureToMat(pCaptures);
+    if (captures.size() < mSourceNbr)
+        return mLastMessage;
 
     unsigned long long timeStart = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch()).count();
 

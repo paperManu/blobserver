@@ -31,7 +31,7 @@ void Detector_Nop::make()
 }
 
 /*************/
-atom::Message Detector_Nop::detect(vector< shared_ptr<Capture> > pCaptures)
+atom::Message Detector_Nop::detect(vector< Capture_Ptr > pCaptures)
 {
     vector<cv::Mat> captures = captureToMat(pCaptures);
 

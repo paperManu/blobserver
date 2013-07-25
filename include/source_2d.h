@@ -127,7 +127,7 @@ class Source_2D
         /**
          * \brief Retrieves the last frame grabbed by the source, corrected with the various available corrections if specified so
          */
-        std::shared_ptr<Capture> retrieveModifiedFrame();
+        Capture_Ptr retrieveModifiedFrame();
 
         /**
          * \brief Sets a parameter

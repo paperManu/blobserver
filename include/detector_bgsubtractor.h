@@ -42,7 +42,7 @@ class Detector_BgSubtractor : public Detector
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(const std::vector< std::shared_ptr<Capture> > pCaptures);
+        atom::Message detect(const std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
     private:
