@@ -31,6 +31,7 @@
 #include "atom/message.h"
 #include "opencv2/opencv.hpp"
 
+#include "base_objects.h"
 #include "blob.h"
 #include "capture.h"
 #include "helpers.h"
@@ -138,6 +139,11 @@ class Detector
          * \brief Gets the resulting image from the detector.
          */
         Capture_Ptr getOutput() const {return Capture_2D_Mat_Ptr(new Capture_2D_Mat(mOutputBuffer.clone()));}
+
+        /**
+         * \brief Returns an object which is a shmwriter able to handle the output of the given detector
+         */
+        virtual std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new Shm());}
 
     protected:
         cv::Mat mOutputBuffer; //!< The output buffer, resulting from the detection

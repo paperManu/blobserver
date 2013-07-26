@@ -87,6 +87,20 @@ static GOptionEntry gEntries[] =
     {NULL}
 };
 
+/*************/
+// Struct to contain a complete flow, from capture to client
+struct Flow
+{
+    std::vector<std::shared_ptr<Source>> sources;
+    std::shared_ptr<Detector> detector;
+#if HAVE_SHMDATA
+    std::shared_ptr<Shm> shm;
+#endif
+    std::shared_ptr<OscClient> client;
+    unsigned int id;
+    bool run;
+};
+
 /*****************************/
 // Definition of the app class
 class App
@@ -114,13 +128,13 @@ class App
 
         // Factories
         factory::AbstractFactory<Detector, string, string, int> mDetectorFactory;
-        factory::AbstractFactory<Source_2D, string, string, int> mSourceFactory;
+        factory::AbstractFactory<Source, string, string, int> mSourceFactory;
 
         // liblo related
         lo_server_thread mOscServer;
 
         // detection related
-        vector<shared_ptr<Source_2D>> mSources;
+        vector<shared_ptr<Source>> mSources;
         map<string, shared_ptr<OscClient>> mClients;
         vector<Flow> mFlows;
         // A mutex to prevent unexpected changes in flows
@@ -439,7 +453,7 @@ int App::loop()
         {
             // First we grab, then we retrieve all frames
             // This way, sync between frames is better
-            for_each (mSources.begin(), mSources.end(), [&] (shared_ptr<Source_2D> source)
+            for_each (mSources.begin(), mSources.end(), [&] (shared_ptr<Source> source)
             {
                 lBuffers.push_back(source->retrieveFrame());
 
@@ -454,7 +468,7 @@ int App::loop()
         }
 
         if (gBench)
-            timeSince(chronoStart, string("1 - Retrieve corrected frames"));
+            timeSince(chronoStart, string("Retrieve corrected frames"));
 
         // Go through the flows
         {
@@ -490,7 +504,7 @@ int App::loop()
             mThreadPool->waitAllThreads(); 
 
             if (gBench)
-                timeSince(chronoStart, string("2.1 - Update detectors"));
+                timeSince(chronoStart, string("Update detectors"));
 
             for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
             {
@@ -505,9 +519,7 @@ int App::loop()
                 lBuffers.push_back(output);
 
 #if HAVE_SHMDATA
-                Capture_2D_Mat_Ptr img = dynamic_pointer_cast<Capture_2D_Mat>(output);
-                if (img.get() != NULL)
-                    flow.shm->setImage(img->get());
+                flow.shm->setCapture(output);
 #endif
 
                 lBufferNames.push_back(flow.detector->getName());
@@ -544,7 +556,7 @@ int App::loop()
             } );
 
             if (gBench)
-                timeSince(chronoStart, string("2.2 - Update buffers"));
+                timeSince(chronoStart, string("Update buffers"));
         }
 
         if (lShowCamera)
@@ -610,12 +622,12 @@ void App::updateSources()
         {
             lock_guard<mutex> lock(theApp->mSourceMutex);
             
-            vector<shared_ptr<Source_2D>>::iterator iter;
+            vector<shared_ptr<Source>>::iterator iter;
             // First we grab, then we retrieve all frames
             // This way, sync between frames is better
             for (iter = theApp->mSources.begin(); iter != theApp->mSources.end(); ++iter)
             {
-                shared_ptr<Source_2D> source = (*iter);
+                shared_ptr<Source> source = (*iter);
                 source->grabFrame();
             
                 // We also check if this source is still used
@@ -936,7 +948,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     unsigned int sourceNbr = detector->getSourceNbr();
     
     // Allocate all the sources
-    vector<shared_ptr<Source_2D>> sources;
+    vector<shared_ptr<Source>> sources;
     atom::Message::const_iterator iter;
     for (iter = message.begin()+2; iter != message.end(); iter+=2)
     {
@@ -961,7 +973,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 
         // Check if this source is not already connected
         bool alreadyConnected = false;
-        vector<shared_ptr<Source_2D>>::const_iterator iterSource;
+        vector<shared_ptr<Source>>::const_iterator iterSource;
         for (iterSource = theApp->mSources.begin(); iterSource != theApp->mSources.end(); ++iterSource)
         {
             if (iterSource->get()->getName() == sourceName && iterSource->get()->getSubsourceNbr() == (unsigned int)sourceIndex)
@@ -973,7 +985,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 
         if (!alreadyConnected)
         {
-            shared_ptr<Source_2D> source;
+            shared_ptr<Source> source;
             if (theApp->mSourceFactory.key_exists(sourceName))
                 source = theApp->mSourceFactory.create(sourceName, sourceIndex);
             else
@@ -1014,10 +1026,10 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         sprintf(shmFile, "/tmp/blobserver_output_%i", flow.id);
 
 #if HAVE_SHMDATA
-        flow.shm.reset(new ShmImage(shmFile));
+        flow.shm = detector->getShmObject(shmFile);
 #endif
 
-        vector<shared_ptr<Source_2D>>::const_iterator source;
+        vector<shared_ptr<Source>>::const_iterator source;
         for (source = sources.begin(); source != sources.end(); ++source)
         {
             flow.sources.push_back(*source);
@@ -1025,7 +1037,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             // Add the sources to the mSources vector
             // (if they are not already there)
             bool isInSources = false;
-            vector<shared_ptr<Source_2D>>::const_iterator iter;
+            vector<shared_ptr<Source>>::const_iterator iter;
             for (iter = theApp->mSources.begin(); iter != theApp->mSources.end(); ++iter)
             {
                 if (iter->get()->getName() == source->get()->getName() && iter->get()->getSubsourceNbr() == source->get()->getSubsourceNbr())
@@ -1420,7 +1432,7 @@ int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv
         }
 
         // We try to create the named source
-        shared_ptr<Source_2D> source;
+        shared_ptr<Source> source;
         if (theApp->mSourceFactory.key_exists(sourceName))
             source = theApp->mSourceFactory.create(sourceName, -1);
         else

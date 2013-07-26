@@ -28,12 +28,11 @@
 #include <opencv2/opencv.hpp>
 #include <lo/lo.h>
 
+#include "capture.h"
 #include "config.h"
 #if HAVE_SHMDATA
 #include <shmdata/any-data-writer.h>
 #endif
-#include "source_2d.h"
-#include "detector.h"
 
 /*************/
 // lo_address in an object
@@ -56,13 +55,26 @@ class OscClient
 
 #if HAVE_SHMDATA
 /*************/
+// Generic Shmdata writer class
+class Shm
+{
+    public:
+        virtual void setCapture(Capture_Ptr& capture, const unsigned long long timestamp = 0) {};
+
+    private:
+        shmdata_any_writer_t* _writer;
+        std::string _filename;
+};
+
+/*************/
 // Simple class to send image through shm
-class ShmImage
+class ShmImage : public Shm
 {
     public:
         ShmImage(const char* filename);
         ~ShmImage();
-        void setImage(cv::Mat& image, const unsigned long long timestamp = 0);
+        //void setImage(cv::Mat& image, const unsigned long long timestamp = 0);
+        void setCapture(Capture_Ptr& capture, const unsigned long long timestamp = 0);
 
     private:
         shmdata_any_writer_t* _writer;
@@ -74,19 +86,5 @@ class ShmImage
         bool init(const unsigned int width, const unsigned int height, int type);
 };
 #endif // HAVE_SHMDATA
-
-/*************/
-// Struct to contain a complete flow, from capture to client
-struct Flow
-{
-    std::vector<std::shared_ptr<Source_2D>> sources;
-    std::shared_ptr<Detector> detector;
-#if HAVE_SHMDATA
-    std::shared_ptr<ShmImage> shm;
-#endif
-    std::shared_ptr<OscClient> client;
-    unsigned int id;
-    bool run;
-};
 
 #endif // BASE_OBJECTS_H
