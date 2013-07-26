@@ -432,26 +432,16 @@ int App::loop()
 
         // First buffer is a black screen. No special reason, except we need
         // a first buffer
-        lBuffers.push_back( Capture_2D_Mat_Ptr(new Capture_2D_Mat(cv::Mat::zeros(480, 640, CV_8UC3))));
+        lBuffers.push_back(Capture_2D_Mat_Ptr(new Capture_2D_Mat(cv::Mat::zeros(480, 640, CV_8UC3))));
         lBufferNames.push_back(string("This is Blobserver"));
 
         // Retrieve the capture from all the sources
         {
-            //lock_guard<mutex> lock(mSourceMutex);
-
             // First we grab, then we retrieve all frames
             // This way, sync between frames is better
             for_each (mSources.begin(), mSources.end(), [&] (shared_ptr<Source_2D> source)
             {
-                //Capture_2D_Mat_Ptr capture = dynamic_pointer_cast<Capture_2D_Mat>(source->retrieveModifiedFrame());
-                //cv::Mat frame;
-                //if (capture.get() == NULL)
-                //    frame = cv::Mat::zeros(480, 640, CV_8UC3);
-                //else
-                //    frame = capture->get();
-
-                //lBuffers.push_back(frame);
-                lBuffers.push_back(source->retrieveModifiedFrame());
+                lBuffers.push_back(source->retrieveFrame());
 
                 atom::Message msg;
                 msg.push_back(atom::StringValue::create("id"));
@@ -490,7 +480,7 @@ int App::loop()
                         for (int i = 0; i < flow->sources.size(); ++i)
                         {
                             lock_guard<mutex> lock(lMutex);
-                            frames.push_back(flow->sources[i]->retrieveModifiedFrame());
+                            frames.push_back(flow->sources[i]->retrieveFrame());
                         }
                     }
                     flow->detector->detect(frames);

@@ -81,7 +81,7 @@ void Detector::setBaseParameter(const atom::Message pMessage)
 }
 
 /**************/
-void Detector::addSource(shared_ptr<Source_2D> source)
+void Detector::addSource(shared_ptr<Source> source)
 {
     mSources.push_back(source);
 }

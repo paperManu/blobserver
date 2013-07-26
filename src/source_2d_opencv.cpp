@@ -80,7 +80,7 @@ bool Source_2D_OpenCV::grabFrame()
 }
 
 /*************/
-cv::Mat Source_2D_OpenCV::retrieveFrame()
+cv::Mat Source_2D_OpenCV::retrieveRawFrame()
 {
     cv::Mat buffer;
     mCamera.retrieve(buffer);

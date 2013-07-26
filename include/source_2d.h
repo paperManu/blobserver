@@ -37,6 +37,7 @@
 #include "capture.h"
 #include "helpers.h"
 #include "hdribuilder.h"
+#include "source.h"
 
 /*************/
 //! A simple buffer of cv::Mat
@@ -68,7 +69,7 @@ class MatBuffer
 
 /*************/
 //! Base Source_2D class, from which all Source_2D classes derive
-class Source_2D
+class Source_2D : public Source
 {
     public:
         /**
@@ -122,12 +123,12 @@ class Source_2D
         /**
          * \brief Retrieves the last frame grabbed by the source with grabFrame()
          */
-        virtual cv::Mat retrieveFrame() {return mBuffer.get();}
+        virtual cv::Mat retrieveRawFrame() {return mBuffer.get();}
 
         /**
          * \brief Retrieves the last frame grabbed by the source, corrected with the various available corrections if specified so
          */
-        Capture_Ptr retrieveModifiedFrame();
+        Capture_Ptr retrieveFrame();
 
         /**
          * \brief Sets a parameter

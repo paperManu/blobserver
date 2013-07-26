@@ -47,7 +47,7 @@ class Source_2D_Shmdata : public Source_2D
         bool connect();
         bool disconnect();
         bool grabFrame();
-        cv::Mat retrieveFrame();
+        cv::Mat retrieveRawFrame();
 
         void setParameter(atom::Message pParam);
         atom::Message getParameter(atom::Message pParam) const;

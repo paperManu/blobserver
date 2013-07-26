@@ -1,5 +1,7 @@
 #include "base_objects.h"
 
+#include <chrono>
+
 using namespace std;
 
 #if HAVE_SHMDATA

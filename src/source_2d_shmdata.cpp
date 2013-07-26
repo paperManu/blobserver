@@ -58,7 +58,7 @@ bool Source_2D_Shmdata::grabFrame()
 }
 
 /*************/
-cv::Mat Source_2D_Shmdata::retrieveFrame()
+cv::Mat Source_2D_Shmdata::retrieveRawFrame()
 {
     lock_guard<mutex> lock(mMutex);
     return mBuffer.get();

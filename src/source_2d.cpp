@@ -73,11 +73,11 @@ Source_2D::~Source_2D()
 }
 
 /************/
-Capture_Ptr Source_2D::retrieveModifiedFrame()
+Capture_Ptr Source_2D::retrieveFrame()
 {
     if (mUpdated)
     {
-        cv::Mat buffer = retrieveFrame();
+        cv::Mat buffer = retrieveRawFrame();
         
         if (mAutoExposureRoi.width != 0 && mAutoExposureRoi.height != 0)
             applyAutoExposure(buffer);
