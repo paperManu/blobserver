@@ -60,6 +60,22 @@ atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
     // We get windows of interest, using BG subtraction
     // and previous blobs positions
     mBgSubtractor(input, mBgSubtractorBuffer, mLearningRate);
+
+    // Info when learning should be done
+    static int learnTimeElapsed = 0;
+    if (learnTimeElapsed == 0)
+    {
+        learnTimeElapsed++;
+        g_log(NULL, G_LOG_LEVEL_INFO, "%s: Background learning started", mClassName.c_str());
+    }
+    else if (learnTimeElapsed < mLearningTime)
+        learnTimeElapsed++;
+    else if (learnTimeElapsed == mLearningTime)
+    {
+        learnTimeElapsed++;
+        g_log(NULL, G_LOG_LEVEL_INFO, "%s: Background learning done", mClassName.c_str());
+    }
+
     // Erode and dilate to suppress noise
     cv::Mat lEroded;
     cv::erode(mBgSubtractorBuffer, lEroded, cv::Mat(), cv::Point(-1, -1), mFilterSize);
@@ -193,6 +209,7 @@ void Detector_BgSubtractor::setParameter(atom::Message pMessage)
             float rate = 1.f/time * log(0.9);
             rate = 1.f - exp(rate);
             mLearningRate = min(1.0, (double)rate);
+            mLearningTime = int(time);
         }
     }
     else if (cmd == "area")
