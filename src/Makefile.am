@@ -62,6 +62,7 @@ blobserver_CXXFLAGS = \
     $(LIBLO_CFLAGS) \
     $(LIBATOM_CFLAGS) \
     $(LCMS_CFLAGS) \
+    $(PCL_CFLAGS) \
     $(SHMDATA_CFLAGS) \
     $(XML2_CFLAGS)
 
@@ -71,6 +72,7 @@ blobserver_LDADD = \
     $(LIBLO_LIBS) \
     $(LIBATOM_LIBS) \
     $(LCMS_LIBS) \
+    $(PCL_LIBS) \
     $(SHMDATA_LIBS) \
     $(XML2_LIBS)
 
@@ -85,6 +87,7 @@ blobcontroller_CXXFLAGS = \
     $(OPENCV_CFLAGS) \
     $(LIBLO_CFLAGS) \
     $(LIBATOM_CFLAGS) \
+    $(PCL_CFLAGS) \
     $(SHMDATA_CFLAGS) \
     $(XML2_CFLAGS)
 
@@ -93,6 +96,7 @@ blobcontroller_LDADD = \
     $(OPENCV_LIBS) \
     $(LIBLO_LIBS) \
     $(LIBATOM_LIBS) \
+    $(PCL_LIBS) \
     $(SHMDATA_LIBS) \
     $(XML2_LIBS)
 
