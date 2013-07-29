@@ -311,7 +311,7 @@ void Source::setBaseParameter(atom::Message pParam)
             mBaseFilename = filename;
             index = 0;
             phase = 0;
-            cout << "Save output to" << mBaseFilename << endl;
+            cout << "Save output to " << mBaseFilename << endl;
         }
         else
         {
@@ -646,7 +646,6 @@ void Source::createHdri(cv::Mat& pImg)
 /*************/
 void Source::saveToFile(cv::Mat& pImg)
 {
-    cout << "savetofile " << phase << endl;
     if (phase == 0)
     {
         char buffer[16];
@@ -655,10 +654,9 @@ void Source::saveToFile(cv::Mat& pImg)
 
         if (pImg.depth() == CV_8U || pImg.depth() == CV_16U)
         {
-            
             filename += string(".png");
-            cout << "file output " << filename << end;
             cv::imwrite(filename, pImg);
+            // cout << "file output " << filename << endl;
         }
 
         index++;
