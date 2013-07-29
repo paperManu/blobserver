@@ -278,7 +278,7 @@ atom::Message Detector_Hog::detect(const vector< Capture_Ptr > pCaptures)
         mBlobs[i].setParameter("measurementNoiseCov", mMeasurementNoiseCov);
     }
 
-    cv::Mat resultMat = cv::Mat::zeros(input.rows, input.cols, CV_8UC3);
+    cv::Mat resultMat = cv::Mat::zeros(input.rows, input.cols, input.type());
     for_each (mBlobs.begin(), mBlobs.end(), [&] (Blob2D blob)
     {
         Blob::properties props = blob.getBlob();
