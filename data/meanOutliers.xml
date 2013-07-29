@@ -12,7 +12,7 @@
             </Param>
         </Detector>
         <Source>
-            <Type>Source_OpenCV</Type>
+            <Type>Source_2D_OpenCV</Type>
             <Subsource>300</Subsource>
             <Param>
                 <Name>framerate</Name>

@@ -49,13 +49,17 @@ void Detector_DepthTouch::make()
 }
 
 /*************/
-atom::Message Detector_DepthTouch::detect(const vector<cv::Mat> pCaptures)
+atom::Message Detector_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
 {
-    if (pCaptures[0].channels() != 1)
+    vector<cv::Mat> captures = captureToMat(pCaptures);
+    if (captures.size() < mSourceNbr)
+        return mLastMessage;
+
+    if (captures[0].channels() != 1)
         return mLastMessage;
 
     cv::Mat input;
-    pCaptures[0].convertTo(input, CV_32F);
+    captures[0].convertTo(input, CV_32F);
 
     if (mBackgroundMean.total() != input.total())
     {

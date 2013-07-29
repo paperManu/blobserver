@@ -48,10 +48,14 @@ void Detector_BgSubtractor::make()
 }
 
 /*************/
-atom::Message Detector_BgSubtractor::detect(const vector<cv::Mat> pCaptures)
+atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCaptures)
 {
+    vector<cv::Mat> captures = captureToMat(pCaptures);
+    if (captures.size() < mSourceNbr)
+        return mLastMessage;
+
     // For simplicity...
-    cv::Mat input = pCaptures[0];
+    cv::Mat input = captures[0];
 
     // We get windows of interest, using BG subtraction
     // and previous blobs positions

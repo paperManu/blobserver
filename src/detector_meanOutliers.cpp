@@ -34,18 +34,22 @@ void Detector_MeanOutliers::make()
 }
 
 /*************/
-atom::Message Detector_MeanOutliers::detect(const std::vector<cv::Mat> pCaptures)
+atom::Message Detector_MeanOutliers::detect(const vector< Capture_Ptr > pCaptures)
 {
+    vector<cv::Mat> captures = captureToMat(pCaptures);
+    if (captures.size() < mSourceNbr)
+        return mLastMessage;
+
     cv::Mat lMean, lStdDev;
     cv::Mat lOutlier, lEroded, lFiltered;
 
     // Eliminate the outliers : calculate the mean and std dev
-    lOutlier = cv::Mat::zeros(pCaptures[0].size[0], pCaptures[0].size[1], CV_8U);
+    lOutlier = cv::Mat::zeros(captures[0].size[0], captures[0].size[1], CV_8U);
     lEroded = lOutlier.clone();
     lFiltered = lOutlier.clone();
-    cv::cvtColor(pCaptures[0], lOutlier, CV_RGB2GRAY);
+    cv::cvtColor(captures[0], lOutlier, CV_RGB2GRAY);
 
-    cv::meanStdDev(pCaptures[0], lMean, lStdDev);
+    cv::meanStdDev(captures[0], lMean, lStdDev);
     cv::absdiff(lOutlier, lMean.at<double>(0), lOutlier);
 
     // Detect pixels far from the mean (> 2*stddev)

@@ -1,24 +1,24 @@
-#include "source_opencv.h"
+#include "source_2d_opencv.h"
 
 using namespace std;
 
-string Source_OpenCV::mClassName = "Source_OpenCV";
-string Source_OpenCV::mDocumentation = "N/A";
+string Source_2D_OpenCV::mClassName = "Source_2D_OpenCV";
+string Source_2D_OpenCV::mDocumentation = "N/A";
 
 /*************/
-Source_OpenCV::Source_OpenCV()
+Source_2D_OpenCV::Source_2D_OpenCV()
 {
     make(0);
 }
 
 /*************/
-Source_OpenCV::Source_OpenCV(int pParam)
+Source_2D_OpenCV::Source_2D_OpenCV(int pParam)
 {
     make(pParam);
 }
 
 /*************/
-void Source_OpenCV::make(int pParam)
+void Source_2D_OpenCV::make(int pParam)
 {
     mName = mClassName;
     mSubsourceNbr = pParam;
@@ -27,13 +27,13 @@ void Source_OpenCV::make(int pParam)
 }
 
 /*************/
-Source_OpenCV::~Source_OpenCV()
+Source_2D_OpenCV::~Source_2D_OpenCV()
 {
     disconnect();
 }
 
 /*************/
-bool Source_OpenCV::connect()
+bool Source_2D_OpenCV::connect()
 {
     if (mSubsourceNbr == 0)
         return true;
@@ -62,14 +62,14 @@ bool Source_OpenCV::connect()
 }
 
 /*************/
-bool Source_OpenCV::disconnect()
+bool Source_2D_OpenCV::disconnect()
 {
     mCamera.release();
     return true;
 }
 
 /*************/
-bool Source_OpenCV::grabFrame()
+bool Source_2D_OpenCV::grabFrame()
 {
     if (!mCamera.isOpened())
         return false;
@@ -80,7 +80,7 @@ bool Source_OpenCV::grabFrame()
 }
 
 /*************/
-cv::Mat Source_OpenCV::retrieveFrame()
+cv::Mat Source_2D_OpenCV::retrieveRawFrame()
 {
     cv::Mat buffer;
     mCamera.retrieve(buffer);
@@ -90,7 +90,7 @@ cv::Mat Source_OpenCV::retrieveFrame()
 }
 
 /*************/
-void Source_OpenCV::setParameter(atom::Message pParam)
+void Source_2D_OpenCV::setParameter(atom::Message pParam)
 {
     string paramName;
     float paramValue;
@@ -173,7 +173,7 @@ void Source_OpenCV::setParameter(atom::Message pParam)
 }
 
 /*************/
-atom::Message Source_OpenCV::getParameter(atom::Message pParam) const
+atom::Message Source_2D_OpenCV::getParameter(atom::Message pParam) const
 {
     atom::Message msg;
 
@@ -208,7 +208,7 @@ atom::Message Source_OpenCV::getParameter(atom::Message pParam) const
 }
 
 /*************/
-atom::Message Source_OpenCV::getSubsources() const
+atom::Message Source_2D_OpenCV::getSubsources() const
 {
     atom::Message message;
 

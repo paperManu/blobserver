@@ -38,8 +38,10 @@ class Detector_Nop : public Detector
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(std::vector<cv::Mat> pCaptures);
+        atom::Message detect(std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
+
+        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
 
     private:
         static std::string mClassName;

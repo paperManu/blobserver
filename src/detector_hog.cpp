@@ -125,15 +125,22 @@ void Detector_Hog::make()
 }
 
 /*************/
-atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
+atom::Message Detector_Hog::detect(const vector< Capture_Ptr > pCaptures)
 {
+    vector<cv::Mat> captures = captureToMat(pCaptures);
+    if (captures.size() < mSourceNbr)
+    {
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s: Not enough valid sources to process", mClassName.c_str());
+        return mLastMessage;
+    }
+
     unsigned long long timeStart = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch()).count();
 
-    if (pCaptures.size() == 0 || !mIsModelLoaded)
+    if (captures.size() == 0 || !mIsModelLoaded)
         return mLastMessage;
 
     // For simplicity...
-    cv::Mat input = pCaptures[0];
+    cv::Mat input = captures[0];
 
     // We get windows of interest, using BG subtraction
     // and previous blobs positions
@@ -271,7 +278,7 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
         mBlobs[i].setParameter("measurementNoiseCov", mMeasurementNoiseCov);
     }
 
-    cv::Mat resultMat = cv::Mat::zeros(input.rows, input.cols, CV_8UC3);
+    cv::Mat resultMat = cv::Mat::zeros(input.rows, input.cols, input.type());
     for_each (mBlobs.begin(), mBlobs.end(), [&] (Blob2D blob)
     {
         Blob::properties props = blob.getBlob();
