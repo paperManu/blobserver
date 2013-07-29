@@ -144,10 +144,6 @@ class Source_2D : public Source
         virtual atom::Message getParameter(atom::Message pParam) const {}
 
         /**
-         * \brief Gets the name of the source
-         */
-        std::string getName() const {return mName;}
-        /**
          * \brief Gets the width of the source
          */
         unsigned int getWidth() const {return mWidth;}
@@ -176,7 +172,6 @@ class Source_2D : public Source
         mutable std::mutex mMutex; //!< Mutex to prevent concurrent read/write of mBuffer
 
         // Base caracteristics of the source
-        std::string mName;
         unsigned int mWidth, mHeight;
         unsigned int mChannels;
         unsigned int mFramerate;
