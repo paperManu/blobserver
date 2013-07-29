@@ -93,6 +93,8 @@ void Source_2D_Shmdata::setParameter(atom::Message pParam)
         shmdata_any_reader_set_on_data_handler(mReader, Source_2D_Shmdata::onData, this);
         //shmdata_any_reader_set_debug(mReader, SHMDATA_TRUE);
         shmdata_any_reader_start(mReader, location.c_str());
+
+        g_log(NULL, G_LOG_LEVEL_INFO, "%s: Connected to shmdata %s", mClassName.c_str(), location.c_str());
     }
     else if (paramName == "cameraNumber")
     {
