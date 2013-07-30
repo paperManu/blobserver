@@ -601,6 +601,8 @@ void Source_2D::applyAutoExposure(cv::Mat& pImg)
     message.push_back(atom::FloatValue::create(exposure));
     setParameter(message);
 
+    g_log(NULL, G_LOG_LEVEL_DEBUG, "%s %i %i: exposureTime  %f", mName.c_str(), mSubsourceNbr, mId, exposure);
+
     // Lastly, we log-broadcast the changes
     g_log(LOG_BROADCAST, G_LOG_LEVEL_INFO, "exposureTime %s %i %i %f", mName.c_str(), mSubsourceNbr, mId, exposure);
 }

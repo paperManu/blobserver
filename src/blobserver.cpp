@@ -333,21 +333,23 @@ void App::logHandler(const gchar* log_domain, GLogLevelFlags log_level, const gc
 
     if (log_domain == NULL)
     {
-        cout << chrNow << " ";
         switch (log_level)
         {
         case G_LOG_LEVEL_ERROR:
         {
+            cout << chrNow << " ";
             cout << "[ERROR] ";
             break;
         }
         case G_LOG_LEVEL_WARNING:
         {
+            cout << chrNow << " ";
             cout << "[WARNING] ";
             break;
         }
         case G_LOG_LEVEL_INFO:
         {
+            cout << chrNow << " ";
             cout << "[INFO] ";
             break;
         }
@@ -356,6 +358,7 @@ void App::logHandler(const gchar* log_domain, GLogLevelFlags log_level, const gc
             if (!gDebug)
                 return;
 
+            cout << chrNow << " ";
             cout << "[DEBUG] ";
             break;
         }

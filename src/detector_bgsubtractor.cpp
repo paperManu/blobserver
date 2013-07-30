@@ -128,11 +128,11 @@ atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
     // Constructing the message
     mLastMessage.clear();
     mLastMessage.push_back(atom::IntValue::create((int)mBlobs.size()));
-    mLastMessage.push_back(atom::IntValue::create(6));
+    mLastMessage.push_back(atom::IntValue::create(7));
 
     for(int i = 0; i < mBlobs.size(); ++i)
     {
-        int lX, lY, lSize, lId;
+        int lX, lY, lSize, lId, lAge;
         float ldX, ldY;
         Blob::properties properties = mBlobs[i].getBlob();
         lX = (int)(properties.position.x);
@@ -141,6 +141,7 @@ atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
         ldX = properties.speed.x;
         ldY = properties.speed.y;
         lId = (int)mBlobs[i].getId();
+        lAge = (int)mBlobs[i].getAge();
 
         // Print the blob number on the blob
         if (mVerbose)
@@ -157,6 +158,7 @@ atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
         mLastMessage.push_back(atom::FloatValue::create(ldX));
         mLastMessage.push_back(atom::FloatValue::create(ldY));
         mLastMessage.push_back(atom::IntValue::create(lId));
+        mLastMessage.push_back(atom::IntValue::create(lAge));
     }
 
     mOutputBuffer = resultMat.clone();
