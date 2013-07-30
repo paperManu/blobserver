@@ -41,6 +41,7 @@
 #include <atom/osc.h>
 
 #include "config.h"
+#include "constants.h"
 #include "abstract-factory.h"
 #include "base_objects.h"
 #include "blob_2D.h"
@@ -183,6 +184,9 @@ class App
         static int oscHandlerGetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerGetDetectors(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerGetSources(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
+
+        // OSC related, client side
+        void sendToAllClients(const char* path, atom::Message& message);
 };
 
 shared_ptr<App> App::mInstance(nullptr);
@@ -229,6 +233,8 @@ int App::init(int argc, char** argv)
 
     // Initialize the logger
     g_log_set_handler(NULL, (GLogLevelFlags)(G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_WARNING | G_LOG_LEVEL_ERROR | G_LOG_FLAG_FATAL),
+                      logHandler, this);
+    g_log_set_handler(LOG_BROADCAST, (GLogLevelFlags)(G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_WARNING | G_LOG_LEVEL_ERROR | G_LOG_FLAG_FATAL),
                       logHandler, this);
 
     // Register source and detector classes
@@ -325,36 +331,56 @@ void App::logHandler(const gchar* log_domain, GLogLevelFlags log_level, const gc
     char chrNow[100];
     strftime(chrNow, 100, "%T", localtime(&now));
 
-    cout << chrNow << " ";
-    switch (log_level)
+    if (log_domain == NULL)
     {
-    case G_LOG_LEVEL_ERROR:
-    {
-        cout << "[ERROR] ";
-        break;
-    }
-    case G_LOG_LEVEL_WARNING:
-    {
-        cout << "[WARNING] ";
-        break;
-    }
-    case G_LOG_LEVEL_INFO:
-    {
-        cout << "[INFO] ";
-        break;
-    }
-    case G_LOG_LEVEL_DEBUG:
-    {
-        if (!gDebug)
-            return;
+        cout << chrNow << " ";
+        switch (log_level)
+        {
+        case G_LOG_LEVEL_ERROR:
+        {
+            cout << "[ERROR] ";
+            break;
+        }
+        case G_LOG_LEVEL_WARNING:
+        {
+            cout << "[WARNING] ";
+            break;
+        }
+        case G_LOG_LEVEL_INFO:
+        {
+            cout << "[INFO] ";
+            break;
+        }
+        case G_LOG_LEVEL_DEBUG:
+        {
+            if (!gDebug)
+                return;
 
-        cout << "[DEBUG] ";
-        break;
+            cout << "[DEBUG] ";
+            break;
+        }
+        default:
+            break;
+        }
+        cout << message << endl;
     }
-    default:
-        break;
+    else if (strcmp(log_domain, LOG_BROADCAST) == 0)
+    {
+        atom::Message msg;
+        char tmpMessage[255];
+        strncpy(tmpMessage, message, strlen(message));
+        char* token = strtok(tmpMessage, " ");
+        while (token != NULL)
+        {
+            msg.push_back(atom::StringValue::create(token));
+            token = strtok(NULL, " ");
+        }
+
+        if (log_level == G_LOG_LEVEL_INFO)
+        {
+            theApp->sendToAllClients("/blobserver/broadcast", msg);
+        }
     }
-    cout << message << endl;
 }
 
 /*****************/
@@ -1456,7 +1482,21 @@ int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv
     atom::message_build_to_lo_message(outMessage, oscMsg);
     lo_send_message(address->get(), "/blobserver/sources", oscMsg);
 }
-/*****************/
+
+/*************/
+void App::sendToAllClients(const char* path, atom::Message& message)
+{
+    for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
+    {
+        // Currently, only sends OSC messages, but will change when more
+        // connection types are supported
+        lo_message oscMsg = lo_message_new();
+        atom::message_build_to_lo_message(message, oscMsg);
+        lo_send_message(flow.client->get(), path, oscMsg);
+    });
+}
+
+/*************/
 int main(int argc, char** argv)
 {
     shared_ptr<App> theApp = App::getInstance();

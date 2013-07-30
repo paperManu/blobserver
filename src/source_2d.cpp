@@ -591,7 +591,7 @@ void Source_2D::applyAutoExposure(cv::Mat& pImg)
     if (abs(luminance - mAutoExposureTarget) < mAutoExposureThreshold)
         return;
 
-    // We set the exposure 5% higher. No need to go too fast...
+    // We set the exposure "mAutoExposureStep" higher.
     float exposure = mExposureTime * (1.f + mAutoExposureStep * (mAutoExposureTarget - luminance) / abs(luminance - mAutoExposureTarget)); 
     if (exposure == 0.f) // We don't want to be stuck at the lowest value
         return;
@@ -600,6 +600,9 @@ void Source_2D::applyAutoExposure(cv::Mat& pImg)
     message.push_back(atom::StringValue::create("exposureTime"));
     message.push_back(atom::FloatValue::create(exposure));
     setParameter(message);
+
+    // Lastly, we log-broadcast the changes
+    g_log(LOG_BROADCAST, G_LOG_LEVEL_INFO, "exposureTime %s %i %i %f", mName.c_str(), mSubsourceNbr, mId, exposure);
 }
 
 /*************/

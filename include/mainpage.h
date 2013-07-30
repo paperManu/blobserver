@@ -43,7 +43,7 @@
  *
  * Some parameters are available for all kind of sources, none if these transformations are activated by default:
  * - mask (string): file path to the image file to use as a mask
- * - autoExposure (int[6]): parameters for auto exposure, measured in a specified area. Parameters are: [x] [y] [width] [height] [target] [margin].
+ * - autoExposure (int[7]): parameters for auto exposure, measured in a specified area. Parameters are: [x] [y] [width] [height] [target] [margin] [updateStep%].
  * - scale (float, default 1.0): apply scaling on the image
  * - rotation (float): apply rotation on the image, in degrees
  * - noiseFiltering (int, default 0): set to 1 to activate noise filtering

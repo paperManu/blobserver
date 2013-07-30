@@ -27,6 +27,10 @@
                 <Value>500</Value>
             </Param>
             <Param>
+                <Name>autoExposure</Name>
+                <Value>300 200 80 40 127 32 0.05</Value>
+            </Param>
+            <Param>
                 <Name>whiteBalanceRed</Name>
                 <Value>512</Value>
             </Param>

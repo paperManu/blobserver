@@ -34,6 +34,8 @@
 #include <lcms2.h>
 #include <atom/message.h>
 
+#include "config.h"
+#include "constants.h"
 #include "capture.h"
 #include "helpers.h"
 #include "hdribuilder.h"
