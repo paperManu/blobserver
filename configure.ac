@@ -26,6 +26,8 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ ], [ ])], [
   AC_MSG_ERROR([compiler does not understand -std=c++0x])
 ])
 
+export PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
+
 case "$host" in *-darwin* | *-macos10*)
   LIBTOOL="glibtool"
   CXXFLAGS+=" -D__Darwin"
@@ -39,7 +41,7 @@ case "$host" in *-darwin* | *-macos10*)
   fi
   # OSX does not include /usr/local/lib/pkgconfig path, so we need to
   # add it. 
-  PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/Library/Frameworks/GStreamer.framework/Libraries/pkgconfig:$PKG_CONFIG_PATH
+  PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/Library/Frameworks/GStreamer.framework/Libraries/pkgconfig:$PKG_CONFIG_PATH
   export PKG_CONFIG_PATH
   LDFLAGS+=" -fPIC -L/usr/local/lib -L/usr/local/lib64"
   ;;
@@ -64,6 +66,11 @@ fi
 PKG_CHECK_MODULES([SHMDATA], [shmdata-0.8 shmdata-any-0.8],
     AC_DEFINE([HAVE_SHMDATA], [1], [Defined to 1 if libshmdata is detected]),
     AC_DEFINE([HAVE_SHMDATA], [0], [Defined to 1 if libshmdata is detected]))
+
+# PCL
+PKG_CHECK_MODULES([PCL], [pcl_filters-1.7 pcl_common-1.7 pcl_octree-1.7 pcl_sample_consensus-1.7 pcl_search-1.7 pcl_kdtree-1.7 pcl_surface-1.7 pcl_features-1.7 pcl_visualization-1.7 pcl_segmentation-1.7],
+    AC_DEFINE([HAVE_PCL], [1], [Defined to 1 if pcl-1.7 is detected]),
+    AC_DEFINE([HAVE_PCL], [0], [Defined to 1 if pcl-1.7 is detected]))
 
 # Liblo
 PKG_CHECK_MODULES([LIBLO], [liblo >= 0.26])

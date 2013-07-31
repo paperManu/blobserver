@@ -43,7 +43,7 @@
  *
  * Some parameters are available for all kind of sources, none if these transformations are activated by default:
  * - mask (string): file path to the image file to use as a mask
- * - autoExposure (int[6]): parameters for auto exposure, measured in a specified area. Parameters are: [x] [y] [width] [height] [target] [margin].
+ * - autoExposure (int[7]): parameters for auto exposure, measured in a specified area. Parameters are: [x] [y] [width] [height] [target] [margin] [updateStep%].
  * - scale (float, default 1.0): apply scaling on the image
  * - rotation (float): apply rotation on the image, in degrees
  * - noiseFiltering (int, default 0): set to 1 to activate noise filtering
@@ -89,13 +89,14 @@
  * - filterSize (int, default 3): size of the morphologicial filter used to filter noise.
  * - learningTime (int, default 300): number of frames for a pixel to be considered background
  * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
+ * - keepOldBlobs (int[2], default [0]): parameters to not delete blobs which have disappeared. Parameters are: [minAgeToKeep] [maxTimeToKeep]
  * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
  * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
  * - area (int[2], default 0 65535): minimum and maximum areas of the detected objects.
  *
  * OSC output:
  * - name: bgsubtractor
- * - values: X(int) Y(int) Size(int) dX(float) dY(float) Id(int)
+ * - values: X(int) Y(int) Size(int) dX(float) dY(float) Id(int) Age(int)
  *
  * \subsection detector_depthtouch_sec Adding touch interaction to surfaces using depth map (Detector_DepthTouch)
  *
@@ -135,6 +136,7 @@
  * - bins (int, default 9): number of orientations to consider
  * - margin (float, default 0.0): margin to the hyperplane to add to the detection (higher = less false positives and less hit rate)
  * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
+ * - keepOldBlobs (int[2], default [0]): parameters to not delete blobs which have disappeared. Parameters are: [minAgeToKeep] [maxTimeToKeep]
  * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
  * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
  * - saveSamples (int, default 0): if set to 1, saves detected samples older than saveSamplesAge
@@ -142,7 +144,7 @@
  *
  * OSC output:
  * - name: hog
- * - values: X(int) Y(int) dX(int) dY(int) Id(int)
+ * - values: X(int) Y(int) dX(int) dY(int) Id(int) Age(int)
  * 
  * \subsection detector_lightspot_sec Light spots (Detector_LightSpots)
  * 

@@ -102,6 +102,8 @@ void Detector_Hog::make()
     mFilterDilateCoeff = 3;
 
     mBlobLifetime = 30;
+    mKeepOldBlobs = 0;
+    mKeepMaxTime = 0;
     mProcessNoiseCov = 1e-6;
     mMeasurementNoiseCov = 1e-4;
 
@@ -125,15 +127,22 @@ void Detector_Hog::make()
 }
 
 /*************/
-atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
+atom::Message Detector_Hog::detect(const vector< Capture_Ptr > pCaptures)
 {
+    vector<cv::Mat> captures = captureToMat(pCaptures);
+    if (captures.size() < mSourceNbr)
+    {
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s: Not enough valid sources to process", mClassName.c_str());
+        return mLastMessage;
+    }
+
     unsigned long long timeStart = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch()).count();
 
-    if (pCaptures.size() == 0 || !mIsModelLoaded)
+    if (captures.size() == 0 || !mIsModelLoaded)
         return mLastMessage;
 
     // For simplicity...
-    cv::Mat input = pCaptures[0];
+    cv::Mat input = captures[0];
 
     // We get windows of interest, using BG subtraction
     // and previous blobs positions
@@ -262,7 +271,7 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
     }
 
     // We want to track them
-    trackBlobs<Blob2D>(properties, mBlobs, mBlobLifetime);
+    trackBlobs<Blob2D>(properties, mBlobs, mBlobLifetime, mKeepOldBlobs, mKeepMaxTime);
 
     // We make sure that the filtering parameters are set
     for (int i = 0; i < mBlobs.size(); ++i)
@@ -271,7 +280,18 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
         mBlobs[i].setParameter("measurementNoiseCov", mMeasurementNoiseCov);
     }
 
-    cv::Mat resultMat = cv::Mat::zeros(input.rows, input.cols, CV_8UC3);
+    // We delete blobs which are outside the frame
+    for (int i = 0; i < mBlobs.size();)
+    {
+        Blob::properties prop = mBlobs[i].getBlob();
+        if (prop.position.x + prop.size/2 > input.cols || prop.position.x + prop.size/2 < 0
+            || prop.position.y + prop.size/2 > input.rows || prop.position.y + prop.size/2 < 0)
+            mBlobs.erase(mBlobs.begin() + i);
+        else
+            i++;
+    }
+
+    cv::Mat resultMat = cv::Mat::zeros(input.rows, input.cols, input.type());
     for_each (mBlobs.begin(), mBlobs.end(), [&] (Blob2D blob)
     {
         Blob::properties props = blob.getBlob();
@@ -297,11 +317,11 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
     // Constructing the message
     mLastMessage.clear();
     mLastMessage.push_back(atom::IntValue::create((int)mBlobs.size()));
-    mLastMessage.push_back(atom::IntValue::create(5));
+    mLastMessage.push_back(atom::IntValue::create(7));
 
     for(int i = 0; i < mBlobs.size(); ++i)
     {
-        int lX, lY, lSize, lId;
+        int lX, lY, lSize, lId, lAge, lLost;
         float ldX, ldY;
         Blob::properties properties = mBlobs[i].getBlob();
         lX = (int)(properties.position.x);
@@ -309,6 +329,8 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
         ldX = properties.speed.x;
         ldY = properties.speed.y;
         lId = (int)mBlobs[i].getId();
+        lAge = (int)mBlobs[i].getAge();
+        lLost = (int)mBlobs[i].getLostDuration();
 
         // Print the blob number on the blob
         if (mVerbose)
@@ -324,6 +346,8 @@ atom::Message Detector_Hog::detect(const vector<cv::Mat> pCaptures)
         mLastMessage.push_back(atom::FloatValue::create(ldX));
         mLastMessage.push_back(atom::FloatValue::create(ldY));
         mLastMessage.push_back(atom::IntValue::create(lId));
+        mLastMessage.push_back(atom::IntValue::create(lAge));
+        mLastMessage.push_back(atom::IntValue::create(lLost));
     }
 
     mOutputBuffer = resultMat.clone();
@@ -451,6 +475,14 @@ void Detector_Hog::setParameter(atom::Message pMessage)
         float lifetime;
         if (readParam(pMessage, lifetime))
             mBlobLifetime = lifetime;
+    }
+    else if (cmd == "keepOldBlobs")
+    {
+        float keep;
+        if (readParam(pMessage, keep, 1))
+            mKeepOldBlobs = (int)keep;
+        if (readParam(pMessage, keep, 2))
+            mKeepMaxTime = (int)keep;
     }
     else if (cmd == "processNoiseCov")
     {

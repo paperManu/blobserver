@@ -1,27 +1,27 @@
-#include "source_shmdata.h"
+#include "source_2d_shmdata.h"
 
 using namespace std;
 
 #if HAVE_SHMDATA
 #include <regex>
 
-string Source_Shmdata::mClassName = "Source_Shmdata";
-string Source_Shmdata::mDocumentation = "N/A";
+string Source_2D_Shmdata::mClassName = "Source_2D_Shmdata";
+string Source_2D_Shmdata::mDocumentation = "N/A";
 
 /*************/
-Source_Shmdata::Source_Shmdata()
+Source_2D_Shmdata::Source_2D_Shmdata()
 {
     make(0);
 }
 
 /*************/
-Source_Shmdata::Source_Shmdata(int pParam)
+Source_2D_Shmdata::Source_2D_Shmdata(int pParam)
 {
     make(pParam);
 }
 
 /*************/
-void Source_Shmdata::make(int pParam)
+void Source_2D_Shmdata::make(int pParam)
 {
     mReader = NULL;
 
@@ -31,19 +31,19 @@ void Source_Shmdata::make(int pParam)
 }
 
 /*************/
-Source_Shmdata::~Source_Shmdata()
+Source_2D_Shmdata::~Source_2D_Shmdata()
 {
     disconnect();
 }
 
 /*************/
-bool Source_Shmdata::connect()
+bool Source_2D_Shmdata::connect()
 {
     return true;    
 }
 
 /*************/
-bool Source_Shmdata::disconnect()
+bool Source_2D_Shmdata::disconnect()
 {
     if (mReader != NULL)
         shmdata_any_reader_close(mReader);
@@ -52,20 +52,20 @@ bool Source_Shmdata::disconnect()
 }
 
 /*************/
-bool Source_Shmdata::grabFrame()
+bool Source_2D_Shmdata::grabFrame()
 {
     return true;
 }
 
 /*************/
-cv::Mat Source_Shmdata::retrieveFrame()
+cv::Mat Source_2D_Shmdata::retrieveRawFrame()
 {
     lock_guard<mutex> lock(mMutex);
     return mBuffer.get();
 }
 
 /*************/
-void Source_Shmdata::setParameter(atom::Message pParam)
+void Source_2D_Shmdata::setParameter(atom::Message pParam)
 {
     string paramName;
     float paramValue;
@@ -90,9 +90,11 @@ void Source_Shmdata::setParameter(atom::Message pParam)
 
         mReader = shmdata_any_reader_init();
         shmdata_any_reader_run_gmainloop(mReader, SHMDATA_FALSE);
-        shmdata_any_reader_set_on_data_handler(mReader, Source_Shmdata::onData, this);
+        shmdata_any_reader_set_on_data_handler(mReader, Source_2D_Shmdata::onData, this);
         //shmdata_any_reader_set_debug(mReader, SHMDATA_TRUE);
         shmdata_any_reader_start(mReader, location.c_str());
+
+        g_log(NULL, G_LOG_LEVEL_INFO, "%s: Connected to shmdata %s", mClassName.c_str(), location.c_str());
     }
     else if (paramName == "cameraNumber")
     {
@@ -104,7 +106,7 @@ void Source_Shmdata::setParameter(atom::Message pParam)
 }
 
 /*************/
-atom::Message Source_Shmdata::getParameter(atom::Message pParam) const
+atom::Message Source_2D_Shmdata::getParameter(atom::Message pParam) const
 {
     atom::Message msg;
 
@@ -137,7 +139,7 @@ atom::Message Source_Shmdata::getParameter(atom::Message pParam) const
 }
 
 /*************/
-atom::Message Source_Shmdata::getSubsources() const
+atom::Message Source_2D_Shmdata::getSubsources() const
 {
     atom::Message message;
 
@@ -145,10 +147,10 @@ atom::Message Source_Shmdata::getSubsources() const
 }
 
 /*************/
-void Source_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,
+void Source_2D_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,
     const char* type_description, void* user_data)
 {
-    Source_Shmdata* context = static_cast<Source_Shmdata*>(user_data);
+    Source_2D_Shmdata* context = static_cast<Source_2D_Shmdata*>(user_data);
     lock_guard<mutex> lock(context->mMutex);
 
     string dataType(type_description);

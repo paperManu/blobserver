@@ -39,6 +39,8 @@ void Detector_BgSubtractor::make()
     mFilterDilateCoeff = 2;
 
     mBlobLifetime = 30;
+    mKeepOldBlobs = 0;
+    mKeepMaxTime = 0;
     mProcessNoiseCov = 1e-6;
     mMeasurementNoiseCov = 1e-4;
 
@@ -48,14 +50,34 @@ void Detector_BgSubtractor::make()
 }
 
 /*************/
-atom::Message Detector_BgSubtractor::detect(const vector<cv::Mat> pCaptures)
+atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCaptures)
 {
+    vector<cv::Mat> captures = captureToMat(pCaptures);
+    if (captures.size() < mSourceNbr)
+        return mLastMessage;
+
     // For simplicity...
-    cv::Mat input = pCaptures[0];
+    cv::Mat input = captures[0];
 
     // We get windows of interest, using BG subtraction
     // and previous blobs positions
     mBgSubtractor(input, mBgSubtractorBuffer, mLearningRate);
+
+    // Info when learning should be done
+    static int learnTimeElapsed = 0;
+    if (learnTimeElapsed == 0)
+    {
+        learnTimeElapsed++;
+        g_log(NULL, G_LOG_LEVEL_INFO, "%s: Background learning started", mClassName.c_str());
+    }
+    else if (learnTimeElapsed < mLearningTime)
+        learnTimeElapsed++;
+    else if (learnTimeElapsed == mLearningTime)
+    {
+        learnTimeElapsed++;
+        g_log(NULL, G_LOG_LEVEL_INFO, "%s: Background learning done", mClassName.c_str());
+    }
+
     // Erode and dilate to suppress noise
     cv::Mat lEroded;
     cv::erode(mBgSubtractorBuffer, lEroded, cv::Mat(), cv::Point(-1, -1), mFilterSize);
@@ -86,13 +108,24 @@ atom::Message Detector_BgSubtractor::detect(const vector<cv::Mat> pCaptures)
     }
 
     // We want to track them
-    trackBlobs<Blob2D>(properties, mBlobs, mBlobLifetime);
+    trackBlobs<Blob2D>(properties, mBlobs, mBlobLifetime, mKeepOldBlobs, mKeepMaxTime);
 
     // We make sure that the filtering parameters are set
     for (int i = 0; i < mBlobs.size(); ++i)
     {
         mBlobs[i].setParameter("processNoiseCov", mProcessNoiseCov);
         mBlobs[i].setParameter("measurementNoiseCov", mMeasurementNoiseCov);
+    }
+
+    // We delete blobs which are outside the frame
+    for (int i = 0; i < mBlobs.size();)
+    {
+        Blob::properties prop = mBlobs[i].getBlob();
+        if (prop.position.x + prop.size/2 > input.cols || prop.position.x + prop.size/2 < 0
+            || prop.position.y + prop.size/2 > input.rows || prop.position.y + prop.size/2 < 0)
+            mBlobs.erase(mBlobs.begin() + i);
+        else
+            i++;
     }
 
     cv::Mat resultMat = cv::Mat::zeros(input.rows, input.cols, CV_8UC3);
@@ -108,11 +141,11 @@ atom::Message Detector_BgSubtractor::detect(const vector<cv::Mat> pCaptures)
     // Constructing the message
     mLastMessage.clear();
     mLastMessage.push_back(atom::IntValue::create((int)mBlobs.size()));
-    mLastMessage.push_back(atom::IntValue::create(6));
+    mLastMessage.push_back(atom::IntValue::create(8));
 
     for(int i = 0; i < mBlobs.size(); ++i)
     {
-        int lX, lY, lSize, lId;
+        int lX, lY, lSize, lId, lAge, lLost;
         float ldX, ldY;
         Blob::properties properties = mBlobs[i].getBlob();
         lX = (int)(properties.position.x);
@@ -121,6 +154,8 @@ atom::Message Detector_BgSubtractor::detect(const vector<cv::Mat> pCaptures)
         ldX = properties.speed.x;
         ldY = properties.speed.y;
         lId = (int)mBlobs[i].getId();
+        lAge = (int)mBlobs[i].getAge();
+        lLost = (int)mBlobs[i].getLostDuration();
 
         // Print the blob number on the blob
         if (mVerbose)
@@ -137,6 +172,8 @@ atom::Message Detector_BgSubtractor::detect(const vector<cv::Mat> pCaptures)
         mLastMessage.push_back(atom::FloatValue::create(ldX));
         mLastMessage.push_back(atom::FloatValue::create(ldY));
         mLastMessage.push_back(atom::IntValue::create(lId));
+        mLastMessage.push_back(atom::IntValue::create(lAge));
+        mLastMessage.push_back(atom::IntValue::create(lLost));
     }
 
     mOutputBuffer = resultMat.clone();
@@ -169,6 +206,14 @@ void Detector_BgSubtractor::setParameter(atom::Message pMessage)
         if (readParam(pMessage, lifetime))
             mBlobLifetime = lifetime;
     }
+    else if (cmd == "keepOldBlobs")
+    {
+        float keep;
+        if (readParam(pMessage, keep, 1))
+            mKeepOldBlobs = (int)keep;
+        if (readParam(pMessage, keep, 2))
+            mKeepMaxTime = (int)keep;
+    }
     else if (cmd == "processNoiseCov")
     {
         float cov;
@@ -189,6 +234,7 @@ void Detector_BgSubtractor::setParameter(atom::Message pMessage)
             float rate = 1.f/time * log(0.9);
             rate = 1.f - exp(rate);
             mLearningRate = min(1.0, (double)rate);
+            mLearningTime = int(time);
         }
     }
     else if (cmd == "area")

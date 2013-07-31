@@ -42,8 +42,10 @@ class Detector_BgSubtractor : public Detector
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(const std::vector<cv::Mat> pCaptures);
+        atom::Message detect(const std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
+
+        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
 
     private:
         static std::string mClassName;
@@ -58,6 +60,7 @@ class Detector_BgSubtractor : public Detector
 
         // Tracking and movement filtering parameters
         int mBlobLifetime;
+        int mKeepOldBlobs, mKeepMaxTime; // Parameters to set when we need blobs to be kept even when not detected anymore
         float mProcessNoiseCov, mMeasurementNoiseCov;
 
         // Background subtractor, used to select window of interest
@@ -66,7 +69,7 @@ class Detector_BgSubtractor : public Detector
 
         // Various variables
         cv::Mat mBgSubtractorBuffer;
-        float mLearningRate;
+        float mLearningRate, mLearningTime;
         float mMinArea, mMaxArea;
 
         // Methods

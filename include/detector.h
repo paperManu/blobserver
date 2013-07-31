@@ -31,7 +31,9 @@
 #include "atom/message.h"
 #include "opencv2/opencv.hpp"
 
+#include "base_objects.h"
 #include "blob.h"
+#include "capture.h"
 #include "helpers.h"
 #include "source.h"
 
@@ -92,7 +94,7 @@ class Detector
          * The two first values in the message are the number of blob, and the size of each blob in the message
          * \param pCaptures A vector containing all captures. Their number should match mSourceNbr.
          */
-        virtual atom::Message detect(const std::vector<cv::Mat> pCaptures) {}
+        virtual atom::Message detect(const std::vector< Capture_Ptr > pCaptures) {}
         
         /**
          * \brief Returns the message from the last call to detect()
@@ -136,7 +138,12 @@ class Detector
         /**
          * \brief Gets the resulting image from the detector.
          */
-        cv::Mat getOutput() const {return mOutputBuffer.clone();}
+        Capture_Ptr getOutput() const {return Capture_2D_Mat_Ptr(new Capture_2D_Mat(mOutputBuffer.clone()));}
+
+        /**
+         * \brief Returns an object which is a shmwriter able to handle the output of the given detector
+         */
+        virtual std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new Shm());}
 
     protected:
         cv::Mat mOutputBuffer; //!< The output buffer, resulting from the detection
@@ -151,6 +158,7 @@ class Detector
         // Methods
         cv::Mat getMask(cv::Mat pCapture, int pInterpolation = CV_INTER_NN);
         void setBaseParameter(const atom::Message pMessage);
+        std::vector<cv::Mat> captureToMat(std::vector< Capture_Ptr > pCaptures);
 
     private:
         static std::string mClassName; //!< Class name, to be set in child class
@@ -158,7 +166,6 @@ class Detector
         static unsigned int mSourceNbr; //!< Number of sources needed for the detector, to be set in child class
 
         cv::Mat mSourceMask, mMask;
-
 };
 
 /*************/
@@ -196,12 +203,13 @@ class BlobPair
 
 /*************/
 template<class T>
-void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs, int pLifetime = 30)
+void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs, int pLifetime = 30, int pKeepOldBlobs = 0, int pKeepMaxTime = 0)
 {
     // First we update all the previous blobs we detected,
     // and keep their predicted new position
     for(int i = 0; i < pBlobs.size(); ++i)
-        pBlobs[i].predict();
+        if (pBlobs[i].getLifetime() > 0)
+            pBlobs[i].predict();
     
     // Then we compare all these prediction with real measures and
     // associate them together
@@ -251,6 +259,7 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
         lPairs[i].getCurrent()->renewLifetime();
     }
     // We delete the blobs we were not able to track
+    // (unless we want to keep all blobs)
     for (int i = 0; i < pBlobs.size();)
     {
         bool isIn = false;
@@ -260,12 +269,14 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
                 isIn = true;
         }
 
-        pBlobs[i].getOlder();
+        if (pBlobs[i].getLifetime() > 0)
+            pBlobs[i].getOlder();
 
         if (!isIn)
         {
             pBlobs[i].reduceLifetime();
-            if (pBlobs[i].getLifetime() < 0)
+            if (pBlobs[i].getLifetime() < 0 && (pBlobs[i].getAge() < pKeepOldBlobs || pKeepOldBlobs == 0)
+                || pBlobs[i].getLostDuration() > pKeepMaxTime && pKeepMaxTime > 0)
             {
                 pBlobs.erase(pBlobs.begin() + i);
             }

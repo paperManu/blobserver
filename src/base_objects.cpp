@@ -1,9 +1,12 @@
 #include "base_objects.h"
 
+#include <chrono>
+
 using namespace std;
 
 #if HAVE_SHMDATA
 /*************/
+// ShmImage
 ShmImage::ShmImage(const char* filename):
     _writer(NULL),
     _startTime(0)
@@ -21,8 +24,16 @@ ShmImage::~ShmImage()
 }
 
 /*************/
-void ShmImage::setImage(cv::Mat& image, const unsigned long long timestamp)
+void ShmImage::setCapture(Capture_Ptr& capture, const unsigned long long timestamp)
 {
+    Capture_2D_Mat_Ptr capture2D = dynamic_pointer_cast<Capture_2D_Mat>(capture);
+    if (capture2D.get() == NULL)
+    {
+        g_log(NULL, G_LOG_LEVEL_WARNING, "ShmImage: Wrong type of Capture received");
+        return;
+    }
+    cv::Mat image = capture2D->get();
+
     if (_width != image.cols || _height != image.rows || _type != image.type())
         if (!init(image.cols, image.rows, image.type()))
             return;

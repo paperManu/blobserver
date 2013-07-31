@@ -18,26 +18,21 @@
  */
 
 /*
- * @source_shmdata.h
- * The Source_Shmdata class.
+ * @source_2d_opencv.h
+ * The Source_2D_OpenCV class.
  */
 
-#ifndef SOURCE_SHMDATA_H
-#define SOURCE_SHMDATA_H
+#ifndef SOURCE_2D_OPENCV_H
+#define SOURCE_2D_OPENCV_H
 
-#include "config.h"
-#if HAVE_SHMDATA
-#include <mutex>
-#include <shmdata/any-data-reader.h>
+#include "source_2d.h"
 
-#include "source.h"
-
-class Source_Shmdata : public Source
+class Source_2D_OpenCV : public Source_2D
 {
     public:
-        Source_Shmdata();
-        Source_Shmdata(int pParam);
-        ~Source_Shmdata();
+        Source_2D_OpenCV();
+        Source_2D_OpenCV(int pParam);
+        ~Source_2D_OpenCV();
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -47,7 +42,7 @@ class Source_Shmdata : public Source
         bool connect();
         bool disconnect();
         bool grabFrame();
-        cv::Mat retrieveFrame();
+        cv::Mat retrieveRawFrame();
 
         void setParameter(atom::Message pParam);
         atom::Message getParameter(atom::Message pParam) const;
@@ -56,12 +51,10 @@ class Source_Shmdata : public Source
         static std::string mClassName;
         static std::string mDocumentation;
 
-        shmdata_any_reader_t* mReader;
+        cv::VideoCapture mCamera;
+        std::string mVideoUrl;
 
         void make(int pParam);
-        static void onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,
-            const char* type_description, void* user_data);
 };
-#endif // HAVE_SHMDATA
 
-#endif // SOURCE_SHMDATA_H
+#endif // SOURCE_2D_OPENCV_H

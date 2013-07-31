@@ -41,15 +41,16 @@
 #include <atom/osc.h>
 
 #include "config.h"
+#include "constants.h"
 #include "abstract-factory.h"
 #include "base_objects.h"
 #include "blob_2D.h"
 #include "configurator.h"
 #include "threadPool.h"
 
-#include "source_opencv.h"
+#include "source_2d_opencv.h"
 #if HAVE_SHMDATA
-#include "source_shmdata.h"
+#include "source_2d_shmdata.h"
 #endif
 #include "detector_bgsubtractor.h"
 #include "detector_depthtouch.h"
@@ -86,6 +87,20 @@ static GOptionEntry gEntries[] =
     {"bench", 'B', 0, G_OPTION_ARG_NONE, &gBench, "Enables printing timings of main loop, for debug purpose", NULL},
     {"debug", 'd', 0, G_OPTION_ARG_NONE, &gDebug, "Enables printing of debug messages", NULL},
     {NULL}
+};
+
+/*************/
+// Struct to contain a complete flow, from capture to client
+struct Flow
+{
+    std::vector<std::shared_ptr<Source>> sources;
+    std::shared_ptr<Detector> detector;
+#if HAVE_SHMDATA
+    std::shared_ptr<Shm> shm;
+#endif
+    std::shared_ptr<OscClient> client;
+    unsigned int id;
+    bool run;
 };
 
 /*****************************/
@@ -170,6 +185,9 @@ class App
         static int oscHandlerGetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerGetDetectors(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerGetSources(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
+
+        // OSC related, client side
+        void sendToAllClients(const char* path, atom::Message& message);
 };
 
 shared_ptr<App> App::mInstance(nullptr);
@@ -216,6 +234,8 @@ int App::init(int argc, char** argv)
 
     // Initialize the logger
     g_log_set_handler(NULL, (GLogLevelFlags)(G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_WARNING | G_LOG_LEVEL_ERROR | G_LOG_FLAG_FATAL),
+                      logHandler, this);
+    g_log_set_handler(LOG_BROADCAST, (GLogLevelFlags)(G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_WARNING | G_LOG_LEVEL_ERROR | G_LOG_FLAG_FATAL),
                       logHandler, this);
 
     // Register source and detector classes
@@ -312,36 +332,59 @@ void App::logHandler(const gchar* log_domain, GLogLevelFlags log_level, const gc
     char chrNow[100];
     strftime(chrNow, 100, "%T", localtime(&now));
 
-    cout << chrNow << " ";
-    switch (log_level)
+    if (log_domain == NULL)
     {
-    case G_LOG_LEVEL_ERROR:
-    {
-        cout << "[ERROR] ";
-        break;
-    }
-    case G_LOG_LEVEL_WARNING:
-    {
-        cout << "[WARNING] ";
-        break;
-    }
-    case G_LOG_LEVEL_INFO:
-    {
-        cout << "[INFO] ";
-        break;
-    }
-    case G_LOG_LEVEL_DEBUG:
-    {
-        if (!gDebug)
-            return;
+        switch (log_level)
+        {
+        case G_LOG_LEVEL_ERROR:
+        {
+            cout << chrNow << " ";
+            cout << "[ERROR] ";
+            break;
+        }
+        case G_LOG_LEVEL_WARNING:
+        {
+            cout << chrNow << " ";
+            cout << "[WARNING] ";
+            break;
+        }
+        case G_LOG_LEVEL_INFO:
+        {
+            cout << chrNow << " ";
+            cout << "[INFO] ";
+            break;
+        }
+        case G_LOG_LEVEL_DEBUG:
+        {
+            if (!gDebug)
+                return;
 
-        cout << "[DEBUG] ";
-        break;
+            cout << chrNow << " ";
+            cout << "[DEBUG] ";
+            break;
+        }
+        default:
+            break;
+        }
+        cout << message << endl;
     }
-    default:
-        break;
+    else if (strcmp(log_domain, LOG_BROADCAST) == 0)
+    {
+        atom::Message msg;
+        char tmpMessage[255];
+        strncpy(tmpMessage, message, strlen(message));
+        char* token = strtok(tmpMessage, " ");
+        while (token != NULL)
+        {
+            msg.push_back(atom::StringValue::create(token));
+            token = strtok(NULL, " ");
+        }
+
+        if (log_level == G_LOG_LEVEL_INFO)
+        {
+            theApp->sendToAllClients("/blobserver/broadcast", msg);
+        }
     }
-    cout << message << endl;
 }
 
 /*****************/
@@ -397,11 +440,11 @@ void App::registerClasses()
         Detector_Stitch::getDocumentation());
 
     // Register sources
-    mSourceFactory.register_class<Source_OpenCV>(Source_OpenCV::getClassName(),
-        Source_OpenCV::getDocumentation());
+    mSourceFactory.register_class<Source_2D_OpenCV>(Source_2D_OpenCV::getClassName(),
+        Source_2D_OpenCV::getDocumentation());
 #if HAVE_SHMDATA
-    mSourceFactory.register_class<Source_Shmdata>(Source_Shmdata::getClassName(),
-        Source_Shmdata::getDocumentation());
+    mSourceFactory.register_class<Source_2D_Shmdata>(Source_2D_Shmdata::getClassName(),
+        Source_2D_Shmdata::getDocumentation());
 #endif // HAVE_SHMDATA
 }
 
@@ -430,25 +473,21 @@ int App::loop()
         unsigned long long chronoStart;
         chronoStart = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
 
-        vector<cv::Mat> lBuffers;
+        vector< Capture_Ptr > lBuffers;
         vector<string> lBufferNames;
 
         // First buffer is a black screen. No special reason, except we need
         // a first buffer
-        lBuffers.push_back(cv::Mat::zeros(480, 640, CV_8UC3));
+        lBuffers.push_back(Capture_2D_Mat_Ptr(new Capture_2D_Mat(cv::Mat::zeros(480, 640, CV_8UC3))));
         lBufferNames.push_back(string("This is Blobserver"));
 
         // Retrieve the capture from all the sources
         {
-            //lock_guard<mutex> lock(mSourceMutex);
-
             // First we grab, then we retrieve all frames
             // This way, sync between frames is better
             for_each (mSources.begin(), mSources.end(), [&] (shared_ptr<Source> source)
             {
-                cv::Mat frame = source->retrieveModifiedFrame();
-
-                lBuffers.push_back(frame);
+                lBuffers.push_back(source->retrieveFrame());
 
                 atom::Message msg;
                 msg.push_back(atom::StringValue::create("id"));
@@ -461,7 +500,7 @@ int App::loop()
         }
 
         if (gBench)
-            timeSince(chronoStart, string("1 - Retrieve corrected frames"));
+            timeSince(chronoStart, string("Retrieve corrected frames"));
 
         // Go through the flows
         {
@@ -482,15 +521,14 @@ int App::loop()
                     // Retrieve the frames from all sources in this flow
                     // There is no risk for sources to disappear here, so no
                     // need for a mutex (they are freed earlier)
-                    vector<cv::Mat> frames;
+                    vector< Capture_Ptr > frames;
                     {
                         for (int i = 0; i < flow->sources.size(); ++i)
                         {
                             lock_guard<mutex> lock(lMutex);
-                            frames.push_back(flow->sources[i]->retrieveModifiedFrame());
+                            frames.push_back(flow->sources[i]->retrieveFrame());
                         }
                     }
-
                     flow->detector->detect(frames);
                 } );
             }
@@ -498,7 +536,7 @@ int App::loop()
             mThreadPool->waitAllThreads(); 
 
             if (gBench)
-                timeSince(chronoStart, string("2.1 - Update detectors"));
+                timeSince(chronoStart, string("Update detectors"));
 
             for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
             {
@@ -509,11 +547,11 @@ int App::loop()
                 atom::Message message;
                 message = flow.detector->getLastMessage();
 
-                cv::Mat output = flow.detector->getOutput();
+                Capture_Ptr output = flow.detector->getOutput();
                 lBuffers.push_back(output);
 
 #if HAVE_SHMDATA
-                flow.shm->setImage(output);
+                flow.shm->setCapture(output);
 #endif
 
                 lBufferNames.push_back(flow.detector->getName());
@@ -550,7 +588,7 @@ int App::loop()
             } );
 
             if (gBench)
-                timeSince(chronoStart, string("2.2 - Update buffers"));
+                timeSince(chronoStart, string("Update buffers"));
         }
 
         if (lShowCamera)
@@ -559,10 +597,14 @@ int App::loop()
             if (lSourceNumber >= lBuffers.size())
                 lSourceNumber = 0;
 
-            cv::Mat displayMat = lBuffers[lSourceNumber].clone();
-            cv::putText(displayMat, lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
-                cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
-            cv::imshow("blobserver", displayMat);
+            Capture_2D_Mat_Ptr img = dynamic_pointer_cast<Capture_2D_Mat>(lBuffers[lSourceNumber]);
+            if (img.get() != NULL)
+            {
+                cv::Mat displayMat = img->get();
+                cv::putText(displayMat, lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
+                    cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
+                cv::imshow("blobserver", displayMat);
+            }
         }
 
         char lKey = cv::waitKey(1);
@@ -1016,7 +1058,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         sprintf(shmFile, "/tmp/blobserver_output_%i", flow.id);
 
 #if HAVE_SHMDATA
-        flow.shm.reset(new ShmImage(shmFile));
+        flow.shm = detector->getShmObject(shmFile);
 #endif
 
         vector<shared_ptr<Source>>::const_iterator source;
@@ -1446,7 +1488,21 @@ int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv
     atom::message_build_to_lo_message(outMessage, oscMsg);
     lo_send_message(address->get(), "/blobserver/sources", oscMsg);
 }
-/*****************/
+
+/*************/
+void App::sendToAllClients(const char* path, atom::Message& message)
+{
+    for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
+    {
+        // Currently, only sends OSC messages, but will change when more
+        // connection types are supported
+        lo_message oscMsg = lo_message_new();
+        atom::message_build_to_lo_message(message, oscMsg);
+        lo_send_message(flow.client->get(), path, oscMsg);
+    });
+}
+
+/*************/
 int main(int argc, char** argv)
 {
     shared_ptr<App> theApp = App::getInstance();

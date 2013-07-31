@@ -6,7 +6,7 @@ std::string Detector::mClassName = "Detector";
 std::string Detector::mDocumentation = "N/A";
 unsigned int Detector::mSourceNbr = 1;
 
-/*************/
+/**************/
 Detector::Detector()
 {
     mName = mClassName;
@@ -19,20 +19,20 @@ Detector::Detector()
     mSourceMask = cv::Mat::ones(1, 1, CV_8U);
 }
 
-/*****************/
+/**************/
 Detector::Detector(int pParam)
 {
     Detector();
 }
 
-/*****************/
+/**************/
 void Detector::setMask(cv::Mat pMask)
 {
     mSourceMask = pMask.clone();
     mMask = pMask.clone();
 }
 
-/*****************/
+/**************/
 atom::Message Detector::getParameter(atom::Message pParam) const
 {
     atom::Message message;
@@ -59,7 +59,7 @@ atom::Message Detector::getParameter(atom::Message pParam) const
     return message;
 }
 
-/*****************/
+/**************/
 void Detector::setBaseParameter(const atom::Message pMessage)
 {
     std::string cmd;
@@ -80,17 +80,31 @@ void Detector::setBaseParameter(const atom::Message pMessage)
     }
 }
 
-/*****************/
+/**************/
 void Detector::addSource(shared_ptr<Source> source)
 {
     mSources.push_back(source);
 }
 
-/*****************/
+/**************/
 cv::Mat Detector::getMask(cv::Mat pCapture, int pInterpolation)
 {
     if (pCapture.rows != mMask.rows || pCapture.cols != mMask.cols)
         cv::resize(mSourceMask, mMask, pCapture.size(), 0, 0, pInterpolation);
 
     return mMask;
+}
+
+/**************/
+vector<cv::Mat> Detector::captureToMat(vector< Capture_Ptr > pCaptures)
+{
+    vector<cv::Mat> images;
+    for_each (pCaptures.begin(), pCaptures.end(), [&] (Capture_Ptr capture)
+    {
+        Capture_2D_Mat_Ptr capture2D = dynamic_pointer_cast<Capture_2D_Mat>(capture);
+        if (capture2D.get() != NULL)
+            images.push_back(capture2D->get());
+    });
+
+    return images;
 }
