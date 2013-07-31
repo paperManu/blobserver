@@ -96,7 +96,7 @@
  *
  * OSC output:
  * - name: bgsubtractor
- * - values: X(int) Y(int) Size(int) dX(float) dY(float) Id(int) Age(int)
+ * - values: X(int) Y(int) Size(int) dX(float) dY(float) Id(int) Age(int) lostDuration(int)
  *
  * \subsection detector_depthtouch_sec Adding touch interaction to surfaces using depth map (Detector_DepthTouch)
  *
@@ -144,7 +144,7 @@
  *
  * OSC output:
  * - name: hog
- * - values: X(int) Y(int) dX(int) dY(int) Id(int) Age(int)
+ * - values: X(int) Y(int) dX(int) dY(int) Id(int) Age(int) lostDuration(int)
  * 
  * \subsection detector_lightspot_sec Light spots (Detector_LightSpots)
  * 
