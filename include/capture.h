@@ -80,5 +80,8 @@ class Capture_3D_PclRgba : public Capture
 
 typedef std::shared_ptr<Capture> Capture_Ptr;
 typedef std::shared_ptr<Capture_2D_Mat> Capture_2D_Mat_Ptr;
+#if HAVE_PCL
+typedef std::shared_ptr<Capture_3D_PclRgba> Capture_3D_PclRgba_Ptr;
+#endif
 
 #endif // CAPTURE_H

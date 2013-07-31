@@ -33,6 +33,9 @@
 #if HAVE_SHMDATA
 #include <shmdata/any-data-writer.h>
 #endif
+#if HAVE_PCL
+#include "shmpointcloud.h"
+#endif
 
 /*************/
 // lo_address in an object
@@ -73,7 +76,6 @@ class ShmImage : public Shm
     public:
         ShmImage(const char* filename);
         ~ShmImage();
-        //void setImage(cv::Mat& image, const unsigned long long timestamp = 0);
         void setCapture(Capture_Ptr& capture, const unsigned long long timestamp = 0);
 
     private:
@@ -86,5 +88,20 @@ class ShmImage : public Shm
         bool init(const unsigned int width, const unsigned int height, int type);
 };
 #endif // HAVE_SHMDATA
+
+#if HAVE_PCL
+/*************/
+// Class to write a PCL through shm
+class ShmPcl : public Shm
+{
+    public:
+        ShmPcl(const char* filename);
+        ~ShmPcl();
+        void setCapture(Capture_Ptr& capture, const unsigned long long timestamp = 0);
+
+    private:
+        std::shared_ptr<ShmPointCloud> _writer;
+}
+#endif // HAVE_PCL
 
 #endif // BASE_OBJECTS_H

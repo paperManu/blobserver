@@ -50,6 +50,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/detector_nop.h \
 	$(top_srcdir)/include/hdribuilder.h \
 	$(top_srcdir)/include/helpers.h \
+	$(top_srcdir)/include/shmpointcloud.h \
     $(top_srcdir)/include/source.h \
     $(top_srcdir)/include/source_2d.h \
     $(top_srcdir)/include/source_2d_opencv.h \
