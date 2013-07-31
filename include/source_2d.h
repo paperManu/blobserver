@@ -170,13 +170,10 @@ class Source_2D : public Source
     protected:
         MatBuffer mBuffer; //!< Image buffer
         cv::Mat mCorrectedBuffer; //!< Corrected image buffer
-        bool mUpdated; //!< Flag set to true if a new grab is available
-        mutable std::mutex mMutex; //!< Mutex to prevent concurrent read/write of mBuffer
 
         // Base caracteristics of the source
         unsigned int mWidth, mHeight;
         unsigned int mChannels;
-        unsigned int mFramerate;
 
         float mExposureTime, mExposureParam; // Both are not necessarily identical
         float mAperture;

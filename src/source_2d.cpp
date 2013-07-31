@@ -6,8 +6,7 @@ std::string Source_2D::mClassName = "Source_2D";
 std::string Source_2D::mDocumentation = "N/A";
 
 /*************/
-Source_2D::Source_2D():
-    mUpdated(false)
+Source_2D::Source_2D()
 {
     mName = mClassName;
     mDocumentation = "N/A";
