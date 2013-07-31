@@ -52,20 +52,22 @@ void Detector_Stitch::make()
 }
 
 /*************/
-atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
+atom::Message Detector_Stitch::detect(const vector< Capture_Ptr > pCaptures)
 {
 
-    if (pCaptures.size() == 0)
+    vector<cv::Mat> captures = captureToMat(pCaptures);
+    
+    if (captures.size() == 0)
         return mLastMessage;
 
     
     // make sure there are 2 sources
-    if (pCaptures.size() == 1)
-        mOutputBuffer = pCaptures[0].clone();
+    if (captures.size() == 1)
+        mOutputBuffer = captures[0].clone();
     else
     {
-        cv::Mat input1 = pCaptures[0];
-        cv::Mat input2 = pCaptures[1];
+        cv::Mat input1 = captures[0];
+        cv::Mat input2 = captures[1];
 
         int px1 = source_pos[0][0];
         int py1 = source_pos[0][1];
@@ -96,7 +98,7 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
             crop1.copyTo(mOutputBuffer(cv::Rect(px1,py1,crop1.cols,crop1.rows)));
         }
         else
-            // mOutputBuffer = pCaptures[1].clone();
+            // mOutputBuffer = captures[1].clone();
             input1.copyTo(mOutputBuffer(cv::Rect(px1,py1,input1.cols,input1.rows)));
 
         if (source_crop[1])
@@ -124,7 +126,7 @@ atom::Message Detector_Stitch::detect(vector<cv::Mat> pCaptures)
             crop2.copyTo(mOutputBuffer(cv::Rect(px2,py2,crop2.cols,crop2.rows)));
         }
         else
-            // mOutputBuffer = pCaptures[1].clone();
+            // mOutputBuffer = captures[1].clone();
             input2.copyTo(mOutputBuffer(cv::Rect(px2,py2,input2.cols,input2.rows)));
     }
 
