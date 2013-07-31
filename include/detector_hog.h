@@ -61,6 +61,7 @@ class Detector_Hog : public Detector
 
         // Tracking and movement filtering parameters
         int mBlobLifetime;
+        int mKeepOldBlobs, mKeepMaxTime; // Parameters to set when we need blobs to be kept even when not detected anymore
         float mProcessNoiseCov, mMeasurementNoiseCov;
 
         // Descriptor to identify objects...

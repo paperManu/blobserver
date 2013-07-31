@@ -203,12 +203,13 @@ class BlobPair
 
 /*************/
 template<class T>
-void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs, int pLifetime = 30)
+void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs, int pLifetime = 30, int pKeepOldBlobs = 0, int pKeepMaxTime = 0)
 {
     // First we update all the previous blobs we detected,
     // and keep their predicted new position
     for(int i = 0; i < pBlobs.size(); ++i)
-        pBlobs[i].predict();
+        if (pBlobs[i].getLifetime() > 0)
+            pBlobs[i].predict();
     
     // Then we compare all these prediction with real measures and
     // associate them together
@@ -258,6 +259,7 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
         lPairs[i].getCurrent()->renewLifetime();
     }
     // We delete the blobs we were not able to track
+    // (unless we want to keep all blobs)
     for (int i = 0; i < pBlobs.size();)
     {
         bool isIn = false;
@@ -267,12 +269,14 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
                 isIn = true;
         }
 
-        pBlobs[i].getOlder();
+        if (pBlobs[i].getLifetime() > 0)
+            pBlobs[i].getOlder();
 
         if (!isIn)
         {
             pBlobs[i].reduceLifetime();
-            if (pBlobs[i].getLifetime() < 0)
+            if (pBlobs[i].getLifetime() < 0 && (pBlobs[i].getAge() < pKeepOldBlobs || pKeepOldBlobs == 0)
+                || pBlobs[i].getLostDuration() > pKeepMaxTime && pKeepMaxTime > 0)
             {
                 pBlobs.erase(pBlobs.begin() + i);
             }

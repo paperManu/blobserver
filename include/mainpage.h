@@ -89,6 +89,7 @@
  * - filterSize (int, default 3): size of the morphologicial filter used to filter noise.
  * - learningTime (int, default 300): number of frames for a pixel to be considered background
  * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
+ * - keepOldBlobs (int[2], default [0]): parameters to not delete blobs which have disappeared. Parameters are: [minAgeToKeep] [maxTimeToKeep]
  * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
  * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
  * - area (int[2], default 0 65535): minimum and maximum areas of the detected objects.
@@ -135,6 +136,7 @@
  * - bins (int, default 9): number of orientations to consider
  * - margin (float, default 0.0): margin to the hyperplane to add to the detection (higher = less false positives and less hit rate)
  * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
+ * - keepOldBlobs (int[2], default [0]): parameters to not delete blobs which have disappeared. Parameters are: [minAgeToKeep] [maxTimeToKeep]
  * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
  * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
  * - saveSamples (int, default 0): if set to 1, saves detected samples older than saveSamplesAge

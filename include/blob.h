@@ -54,12 +54,23 @@ class Blob
         
         // Lifetime is linked to the time left for the blob to live if not detected again
         void setLifetime(int time) {mTotalLifetime = mLifetime = time;}
-        void renewLifetime() {mLifetime = mTotalLifetime;}
-        void reduceLifetime() {mLifetime--;}
+        void renewLifetime()
+        {
+            if (mLifetime < 0)
+                mLostDuration = 0;
+            mLifetime = mTotalLifetime;
+        }
+        void reduceLifetime()
+        {
+            if (mLifetime < 0)
+                mLostDuration++;
+            mLifetime--;
+        }
         int getLifetime() const {return mLifetime;}
         // Age is the total time the blob has been there
         void getOlder() {mAge++;}
         unsigned long getAge() const {return mAge;}
+        unsigned long getLostDuration() const {return mLostDuration;}
 
         properties getBlob();
         bool isUpdated();
@@ -69,7 +80,8 @@ class Blob
         
         int mTotalLifetime;
         int mLifetime;
-        unsigned long mAge;
+        unsigned long mAge; // The age of the blob, not counting time it was lost
+        unsigned long mLostDuration;
         properties mProperties;
         properties mPrediction;
 

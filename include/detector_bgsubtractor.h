@@ -60,6 +60,7 @@ class Detector_BgSubtractor : public Detector
 
         // Tracking and movement filtering parameters
         int mBlobLifetime;
+        int mKeepOldBlobs, mKeepMaxTime; // Parameters to set when we need blobs to be kept even when not detected anymore
         float mProcessNoiseCov, mMeasurementNoiseCov;
 
         // Background subtractor, used to select window of interest
