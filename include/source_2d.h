@@ -184,9 +184,6 @@ class Source_2D : public Source
         float mISO;
         float mGamma;
 
-        unsigned int mSubsourceNbr;
-        unsigned int mId;
-        
         bool mHdriActive;
 
         // Base methods for any type of source
