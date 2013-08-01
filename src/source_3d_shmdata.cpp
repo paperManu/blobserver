@@ -2,7 +2,7 @@
 
 using namespace std;
 
-#if HAVE_SHMDATA && HAVE_PCL
+#if HAVE_PCL && HAVE_SHMDATA
 
 std::string Source_3D_Shmdata::mClassName = "Source_3D_Shmdata";
 std::string Source_3D_Shmdata::mDocumentation = "N/A";

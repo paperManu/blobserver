@@ -4,6 +4,32 @@
 
 using namespace std;
 
+/*************/
+// ShmAuto
+ShmAuto::ShmAuto(const char* filename)
+{
+    mFilename = filename;
+}
+
+/*************/
+void ShmAuto::setCapture(Capture_Ptr& capture, const unsigned long long timestamp)
+{
+    if (typeid(capture) == typeid(Capture_2D_Mat_Ptr))
+    {
+        if (typeid(mShm) != typeid(ShmImage))
+            mShm.reset(new ShmImage(mFilename.c_str()));
+        mShm->setCapture(capture);
+    }
+#if HAVE_PCL
+    else if (typeid(capture) == typeid(Capture_3D_PclRgba_Ptr))
+    {
+        if (typeid(mShm) != typeid(ShmPcl))
+            mShm.reset(new ShmPcl(mFilename.c_str()));
+        mShm->setCapture(capture);
+    }
+#endif // HAVE_PCL
+}
+
 #if HAVE_SHMDATA
 /*************/
 // ShmImage
