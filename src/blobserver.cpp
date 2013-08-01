@@ -52,6 +52,9 @@
 #if HAVE_SHMDATA
 #include "source_2d_shmdata.h"
 #endif
+#if HAVE_PCL && HAVE_SHMDATA
+#include "source_3d_shmdata.h"
+#endif
 #include "detector_bgsubtractor.h"
 #include "detector_depthtouch.h"
 #include "detector_hog.h"
@@ -446,6 +449,10 @@ void App::registerClasses()
     mSourceFactory.register_class<Source_2D_Shmdata>(Source_2D_Shmdata::getClassName(),
         Source_2D_Shmdata::getDocumentation());
 #endif // HAVE_SHMDATA
+#if HAVE_PCL && HAVE_SHMDATA
+    mSourceFactory.register_class<Source_3D_Shmdata>(Source_3D_Shmdata::getClassName(),
+        Source_3D_Shmdata::getDocumentation());
+#endif // HAVE_PCL && HAVE_SHMDATA
 }
 
 /*************/

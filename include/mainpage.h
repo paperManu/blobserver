@@ -87,6 +87,7 @@
 
  * Available parameters:
  * - filterSize (int, default 3): size of the morphologicial filter used to filter noise.
+ * - filterDilateCoeff (int, default 2): coefficient applied to filterSize value for dilation phase of the morphological operation
  * - learningTime (int, default 300): number of frames for a pixel to be considered background
  * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
  * - keepOldBlobs (int[2], default [0]): parameters to not delete blobs which have disappeared. Parameters are: [minAgeToKeep] [maxTimeToKeep]

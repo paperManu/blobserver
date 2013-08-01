@@ -29,6 +29,7 @@ blobserver_SOURCES = \
     source_2d.cpp \
     source_2d_opencv.cpp \
     source_2d_shmdata.cpp \
+    source_3d_shmdata.cpp \
     threadPool.cpp
 
 noinst_HEADERS = \
@@ -57,6 +58,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/source_2d.h \
     $(top_srcdir)/include/source_2d_opencv.h \
     $(top_srcdir)/include/source_2d_shmdata.h \
+    $(top_srcdir)/include/source_3d_shmdata.h \
     $(top_srcdir)/include/threadPool.h
 
 blobserver_CXXFLAGS = \

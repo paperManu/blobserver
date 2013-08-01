@@ -100,8 +100,8 @@ class ShmPcl : public Shm
         void setCapture(Capture_Ptr& capture, const unsigned long long timestamp = 0);
 
     private:
-        std::shared_ptr<ShmPointCloud> _writer;
-}
+        std::shared_ptr< ShmPointCloud<pcl::PointXYZRGBA> > _writer;
+};
 #endif // HAVE_PCL
 
 #endif // BASE_OBJECTS_H

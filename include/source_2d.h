@@ -157,15 +157,6 @@ class Source_2D : public Source
          * \brief Gets the channel number of the source
          */
         unsigned int getChannels() const {return mChannels;}
-        /**
-         * \brief Gets the framerate of the source
-         */
-        unsigned int getFramerate() const {return mFramerate;}
-        /**
-         * \brief Gets the subsource number
-         */
-        unsigned int getSubsourceNbr() const {return mSubsourceNbr;}
-
 
     protected:
         MatBuffer mBuffer; //!< Image buffer

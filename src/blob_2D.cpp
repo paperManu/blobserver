@@ -109,8 +109,7 @@ void Blob2D::setNewMeasures(properties pNewBlob)
 float Blob2D::getDistanceFromPrediction(properties pBlob)
 {
     float distance = pow(pBlob.position.x - mPrediction.position.x, 2.0)
-        + pow(pBlob.position.y - mPrediction.position.y, 2.0)
-        + pow(pBlob.size - mPrediction.size, 2.0);
+        + pow(pBlob.position.y - mPrediction.position.y, 2.0);
 
     return distance;
 }

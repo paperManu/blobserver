@@ -8,7 +8,7 @@
             </Param>
             <Param>
                 <Name>filterSize</Name>
-                <Value>3</Value>
+                <Value>2</Value>
             </Param>
             <Param>
                 <Name>learningTime</Name>
