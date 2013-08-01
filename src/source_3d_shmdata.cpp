@@ -56,6 +56,7 @@ Capture_Ptr Source_3D_Shmdata::retrieveFrame()
     unsigned long long timestamp = mShm->getCloud(pointCloud);
 
     Capture_3D_PclRgba_Ptr capture(new Capture_3D_PclRgba(pointCloud));
+
     return capture;
 }
 
@@ -112,6 +113,8 @@ atom::Message Source_3D_Shmdata::getParameter(atom::Message pParam) const
         msg.push_back(atom::IntValue::create(mFramerate));
     else if (paramName == "subsourcenbr")
         msg.push_back(atom::IntValue::create(mSubsourceNbr));
+    else if (paramName == "id")
+        msg.push_back(atom::IntValue::create(mId));
 
     return msg;
 }

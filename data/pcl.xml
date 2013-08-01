@@ -1,0 +1,23 @@
+<Blobserver>
+    <Flow>
+        <Detector>
+            <Type>Detector_Nop</Type>
+        </Detector>
+        <Source>
+            <Type>Source_3D_Shmdata</Type>
+            <Subsource>0</Subsource>
+            <Param>
+                <Name>location</Name>
+                <Value>/tmp/pcl</Value>
+            </Param>
+        </Source>
+        <Client>
+            <Address>localhost</Address>
+            <Port>9000</Port>
+        </Client>
+        <Server>
+            <Address>localhost</Address>
+            <Port>9002</Port>
+        </Server>
+    </Flow>
+</Blobserver>

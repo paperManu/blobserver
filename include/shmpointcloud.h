@@ -358,6 +358,7 @@ ShmPointCloud<T>::ShmPointCloud(const char* filename, const bool isWriter) :
     {
         // Shmdata reader
         _reader = shmdata_any_reader_init();
+        shmdata_any_reader_run_gmainloop(_reader, SHMDATA_FALSE);
         shmdata_any_reader_set_on_data_handler(_reader, ShmPointCloud::onData, this);
         //shmdata_any_reader_set_absolute_timestamp(_reader, SHMDATA_ENABLE_ABSOLUTE_TIMESTAMP);
         shmdata_any_reader_start(_reader, (char*)(filename));

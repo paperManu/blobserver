@@ -14,16 +14,16 @@ ShmAuto::ShmAuto(const char* filename)
 /*************/
 void ShmAuto::setCapture(Capture_Ptr& capture, const unsigned long long timestamp)
 {
-    if (typeid(capture) == typeid(Capture_2D_Mat_Ptr))
+    if (dynamic_pointer_cast<Capture_2D_Mat>(capture).get() != NULL)
     {
-        if (typeid(mShm) != typeid(ShmImage))
+        if (dynamic_pointer_cast<ShmImage>(mShm).get() == NULL)
             mShm.reset(new ShmImage(mFilename.c_str()));
         mShm->setCapture(capture);
     }
 #if HAVE_PCL
-    else if (typeid(capture) == typeid(Capture_3D_PclRgba_Ptr))
+    else if (dynamic_pointer_cast<Capture_3D_PclRgba>(capture).get() != NULL)
     {
-        if (typeid(mShm) != typeid(ShmPcl))
+        if (dynamic_pointer_cast<ShmPcl>(mShm).get() == NULL)
             mShm.reset(new ShmPcl(mFilename.c_str()));
         mShm->setCapture(capture);
     }
