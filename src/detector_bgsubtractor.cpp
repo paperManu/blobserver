@@ -62,16 +62,22 @@ atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
     // We get windows of interest, using BG subtraction
     // and previous blobs positions
     mBgSubtractor(input, mBgSubtractorBuffer, mLearningRate);
-
+    
     // Info when learning should be done
     static int learnTimeElapsed = 0;
     if (learnTimeElapsed == 0)
     {
         learnTimeElapsed++;
         g_log(NULL, G_LOG_LEVEL_INFO, "%s: Background learning started", mClassName.c_str());
+        atom::Message msg;
+        return msg;
     }
     else if (learnTimeElapsed < mLearningTime)
+    {
         learnTimeElapsed++;
+        atom::Message msg;
+        return msg;
+    }
     else if (learnTimeElapsed == mLearningTime)
     {
         learnTimeElapsed++;
@@ -121,8 +127,7 @@ atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
     for (int i = 0; i < mBlobs.size();)
     {
         Blob::properties prop = mBlobs[i].getBlob();
-        if (prop.position.x + prop.size/2 > input.cols || prop.position.x + prop.size/2 < 0
-            || prop.position.y + prop.size/2 > input.rows || prop.position.y + prop.size/2 < 0)
+        if (prop.position.x > input.cols || prop.position.x < 0 || prop.position.y > input.rows || prop.position.y < 0)
             mBlobs.erase(mBlobs.begin() + i);
         else
             i++;
@@ -199,6 +204,12 @@ void Detector_BgSubtractor::setParameter(atom::Message pMessage)
         float filterSize;
         if (readParam(pMessage, filterSize))
             mFilterSize = max(1, (int)filterSize);
+    }
+    if (cmd == "filterDilateCoeff")
+    {
+        float filterSize;
+        if (readParam(pMessage, filterSize))
+            mFilterDilateCoeff = max(0, (int)filterSize);
     }
     else if (cmd == "lifetime")
     {
