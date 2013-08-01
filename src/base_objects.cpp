@@ -113,3 +113,18 @@ bool ShmImage::init(const unsigned int width, const unsigned int height, int typ
     return true;
 }
 #endif // HAVE_SHMDATA
+
+#if HAVE_PCL
+/*************/
+ShmPcl::ShmPcl(const char* filename)
+{
+    _writer.reset(new ShmPointCloud(filename, true);
+}
+
+/*************/
+void ShmPcl::setCapture(Capture_Ptr& capture, const unsigned long long timestamp = 0)
+{
+    Capture_3D_PclRgba_Ptr capture3d = dynamic_pointer_cast<Capture_3D_PclRgba>(capture);
+    _writer->setCloud(capture3d->get(), false, timestamp);
+}
+#endif //HAVE_PCL
