@@ -31,6 +31,8 @@
 #include <atom/message.h>
 
 #include "config.h"
+
+#if HAVE_PCL && HAVE_SHMDATA
 #include "constants.h"
 #include "helpers.h"
 #include "shmpointcloud.h"
@@ -67,4 +69,5 @@ class Source_3D_Shmdata : public Source
         void make(int pParam);
 };
 
+#endif // HAVE_PCL && HAVE_SHMDATA
 #endif // SOURCE_3D_SHM

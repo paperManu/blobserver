@@ -28,33 +28,13 @@
 #include <limits>
 #include <stdio.h>
 #include <stdlib.h>
-#include <memory>
-#include <mutex>
-#include <thread>
 #include <chrono>
-#include <map>
 
-#include <glib.h>
-#include <glib/gstdio.h>
-#include <opencv2/opencv.hpp>
-#include <lo/lo.h>
-#include <atom/osc.h>
-
-#include "config.h"
-#include "constants.h"
-#include "abstract-factory.h"
-#include "base_objects.h"
-#include "blob_2D.h"
-#include "configurator.h"
-#include "threadPool.h"
+#include "blobserver.h"
 
 #include "source_2d_opencv.h"
-#if HAVE_SHMDATA
 #include "source_2d_shmdata.h"
-#endif
-#if HAVE_PCL && HAVE_SHMDATA
 #include "source_3d_shmdata.h"
-#endif
 #include "detector_bgsubtractor.h"
 #include "detector_depthtouch.h"
 #include "detector_hog.h"
@@ -90,107 +70,6 @@ static GOptionEntry gEntries[] =
     {"bench", 'B', 0, G_OPTION_ARG_NONE, &gBench, "Enables printing timings of main loop, for debug purpose", NULL},
     {"debug", 'd', 0, G_OPTION_ARG_NONE, &gDebug, "Enables printing of debug messages", NULL},
     {NULL}
-};
-
-/*************/
-// Struct to contain a complete flow, from capture to client
-struct Flow
-{
-    std::vector<std::shared_ptr<Source>> sources;
-    std::shared_ptr<Detector> detector;
-#if HAVE_SHMDATA
-    std::shared_ptr<Shm> shm;
-#endif
-    std::shared_ptr<OscClient> client;
-    unsigned int id;
-    bool run;
-};
-
-/*****************************/
-// Definition of the app class
-class App
-{
-    public:
-        ~App();
-
-        static shared_ptr<App> getInstance();
-
-        // Initialization, depending on arguments
-        int init(int argc, char** argv);
-
-        // Main loop
-        int loop();
-
-        void stop();
-
-    private:
-        /***********/
-        // Attributes
-        // Singleton
-        static shared_ptr<App> mInstance;
-
-        bool mRun;
-
-        // Factories
-        factory::AbstractFactory<Detector, string, string, int> mDetectorFactory;
-        factory::AbstractFactory<Source, string, string, int> mSourceFactory;
-
-        // liblo related
-        lo_server_thread mOscServer;
-
-        // detection related
-        vector<shared_ptr<Source>> mSources;
-        map<string, shared_ptr<OscClient>> mClients;
-        vector<Flow> mFlows;
-        // A mutex to prevent unexpected changes in flows
-        mutex mFlowMutex;
-        mutex mSourceMutex;
-        // A thread pool for detectors
-        shared_ptr<ThreadPool> mThreadPool;
-
-        // Threads
-        shared_ptr<thread> mSourcesThread;
-
-        cv::Mat mMask; // TODO: set mask through a parameter
-        // TODO: send mask through gstreamer! or from any source!
-
-        static unsigned int mCurrentId;
-
-        /********/
-        // Methods
-        App();
-
-        // Arguments parser
-        int parseArgs(int argc, char **argv);
-
-        // Factory registering
-        void registerClasses();
-
-        // Log handler
-        static void logHandler(const gchar* log_domain, GLogLevelFlags log_level, const gchar* message, gpointer user_data);
-
-        // Creates a new and unique ID for a flow
-        unsigned int getValidId() {return ++mCurrentId;}
-
-        // Sources update function, use in a thread
-        static void updateSources();
-
-        // OSC related, server side
-        static void oscError(int num, const char* msg, const char* path);
-        static int oscGenericHandler(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        static int oscHandlerSignIn(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        static int oscHandlerSignOut(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        static int oscHandlerChangePort(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        static int oscHandlerChangeIp(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        static int oscHandlerConnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        static int oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        static int oscHandlerSetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        static int oscHandlerGetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        static int oscHandlerGetDetectors(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        static int oscHandlerGetSources(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-
-        // OSC related, client side
-        void sendToAllClients(const char* path, atom::Message& message);
 };
 
 shared_ptr<App> App::mInstance(nullptr);

@@ -25,9 +25,6 @@ Source_2D::Source_2D()
     mISO = 100.f;
     mGamma = 2.2f;
 
-    mSubsourceNbr = 0;
-    mId = 0;
-
     mFilterNoise = false;
 
     mScale = 1.f;

@@ -138,7 +138,7 @@ class Detector
         /**
          * \brief Gets the resulting image from the detector.
          */
-        Capture_Ptr getOutput() const {return Capture_2D_Mat_Ptr(new Capture_2D_Mat(mOutputBuffer.clone()));}
+        virtual Capture_Ptr getOutput() const {return Capture_2D_Mat_Ptr(new Capture_2D_Mat(mOutputBuffer.clone()));}
 
         /**
          * \brief Returns an object which is a shmwriter able to handle the output of the given detector

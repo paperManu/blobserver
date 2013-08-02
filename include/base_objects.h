@@ -70,6 +70,19 @@ class Shm
 };
 
 /*************/
+// Class which auto-selects the shm type
+class ShmAuto : public Shm
+{
+    public:
+        ShmAuto(const char* filename);
+        void setCapture(Capture_Ptr& capture, const unsigned long long timestamp = 0);
+
+    private:
+        std::shared_ptr<Shm> mShm;
+        std::string mFilename;
+};
+
+/*************/
 // Simple class to send image through shm
 class ShmImage : public Shm
 {
@@ -96,7 +109,6 @@ class ShmPcl : public Shm
 {
     public:
         ShmPcl(const char* filename);
-        ~ShmPcl();
         void setCapture(Capture_Ptr& capture, const unsigned long long timestamp = 0);
 
     private:

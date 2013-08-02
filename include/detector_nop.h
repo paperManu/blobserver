@@ -41,14 +41,18 @@ class Detector_Nop : public Detector
         atom::Message detect(std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
-        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
+        Capture_Ptr getOutput() const {return mCapture;}
+
+        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmAuto(filename));}
 
     private:
         static std::string mClassName;
         static std::string mDocumentation;
-        static unsigned int mSourceNbr;
 
+        static unsigned int mSourceNbr;
         unsigned int mFrameNumber;
+
+        Capture_Ptr mCapture;
 
         void make();
 };
