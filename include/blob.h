@@ -35,7 +35,7 @@ class Blob
     {
         cv::Point position;
         cv::Point speed;
-        cv::Vec3b color;
+        cv::Mat colorHist;
         float orientation;
         float size;
     };

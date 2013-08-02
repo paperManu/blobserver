@@ -29,7 +29,7 @@
 
 #include "config.h"
 #include "detector.h"
-#include "blob_2D.h"
+#include "blob_2D_color.h"
 
 /*************/
 // Class Detector_BgSubtractor
@@ -52,7 +52,7 @@ class Detector_BgSubtractor : public Detector
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
+        std::vector<Blob2DColor> mBlobs; // Vector of detected and tracked blobs
 
         // Some filtering parameters
         int mFilterSize;
@@ -62,6 +62,7 @@ class Detector_BgSubtractor : public Detector
         int mBlobLifetime;
         int mKeepOldBlobs, mKeepMaxTime; // Parameters to set when we need blobs to be kept even when not detected anymore
         float mProcessNoiseCov, mMeasurementNoiseCov;
+        float mMaxDistanceForColorDiff;
 
         // Background subtractor, used to select window of interest
         // to feed to the SVM

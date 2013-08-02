@@ -43,6 +43,7 @@ void Detector_BgSubtractor::make()
     mKeepMaxTime = 0;
     mProcessNoiseCov = 1e-6;
     mMeasurementNoiseCov = 1e-4;
+    mMaxDistanceForColorDiff = 16;
 
     mLearningRate = 300;
     mMinArea = 0.f;
@@ -94,6 +95,19 @@ atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
     cv::Mat buffer = mBgSubtractorBuffer.clone();
     cv::findContours(buffer, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
 
+    // Preparing some parameters for histogram creation
+    int channels[input.channels()];
+    int histSize[input.channels()];
+    float range[] = {0, 256};
+    const float* ranges[input.channels()];
+
+    for (int i = 0; i < input.channels(); ++i)
+    {
+        channels[i] = i;
+        histSize[i] = 32;
+        ranges[i] = range;
+    }
+
     vector<Blob::properties> properties;
     for (unsigned int i = 0; i < contours.size(); ++i)
     {
@@ -110,17 +124,23 @@ atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
         property.speed.x = 0.f;
         property.speed.y = 0.f;
 
+        cv::Mat crop = cv::Mat(input, box);
+        cv::Mat hist;
+        cv::calcHist(&crop, 1, channels, cv::Mat(), hist, 3, histSize, ranges, true, false);
+        property.colorHist = hist;
+
         properties.push_back(property);
     }
 
     // We want to track them
-    trackBlobs<Blob2D>(properties, mBlobs, mBlobLifetime, mKeepOldBlobs, mKeepMaxTime);
+    trackBlobs<Blob2DColor>(properties, mBlobs, mBlobLifetime, mKeepOldBlobs, mKeepMaxTime);
 
     // We make sure that the filtering parameters are set
     for (int i = 0; i < mBlobs.size(); ++i)
     {
         mBlobs[i].setParameter("processNoiseCov", mProcessNoiseCov);
         mBlobs[i].setParameter("measurementNoiseCov", mMeasurementNoiseCov);
+        mBlobs[i].setParameter("maxDistanceForColorDiff", mMaxDistanceForColorDiff);
     }
 
     // We delete blobs which are outside the frame
@@ -134,7 +154,7 @@ atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
     }
 
     cv::Mat resultMat = cv::Mat::zeros(input.rows, input.cols, CV_8UC3);
-    for_each (mBlobs.begin(), mBlobs.end(), [&] (Blob2D blob)
+    for_each (mBlobs.begin(), mBlobs.end(), [&] (Blob2DColor blob)
     {
         Blob::properties props = blob.getBlob();
         cv::circle(resultMat, props.position, sqrtf(props.size), cv::Scalar(1, 1, 1), CV_FILLED);
@@ -236,6 +256,12 @@ void Detector_BgSubtractor::setParameter(atom::Message pMessage)
         float cov;
         if (readParam(pMessage, cov))
             mMeasurementNoiseCov = abs(cov);
+    }
+    else if (cmd == "maxDistanceForColorDiff")
+    {
+        float dist;
+        if (readParam(pMessage, dist))
+            mMaxDistanceForColorDiff = abs(dist);
     }
     else if (cmd == "learningTime")
     {

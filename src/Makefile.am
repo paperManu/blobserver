@@ -13,6 +13,7 @@ blobserver_SOURCES = \
     blobserver.cpp \
     blob.cpp \
     blob_2D.cpp \
+    blob_2D_color.cpp \
     configurator.cpp \
     descriptor_hog.cpp \
     detector.cpp \
@@ -37,6 +38,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/base_objects.h \
     $(top_srcdir)/include/blob.h \
     $(top_srcdir)/include/blob_2D.h \
+    $(top_srcdir)/include/blob_2D_color.h \
     $(top_srcdir)/include/blobserver.h \
     $(top_srcdir)/include/configurator.h \
     $(top_srcdir)/include/capture.h \

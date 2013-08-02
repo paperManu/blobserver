@@ -93,6 +93,7 @@
  * - keepOldBlobs (int[2], default [0]): parameters to not delete blobs which have disappeared. Parameters are: [minAgeToKeep] [maxTimeToKeep]
  * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
  * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
+ * - maxDistanceForColorDiff (float, default 16): maximum distance beyond which the color of blobs is not considered for tracking.
  * - area (int[2], default 0 65535): minimum and maximum areas of the detected objects.
  *
  * OSC output:
