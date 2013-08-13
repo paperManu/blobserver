@@ -1,8 +1,8 @@
 <Blobserver>
     <Flow>
-        <Detector>
-            <Type>Detector_Nop</Type>
-        </Detector>
+        <Actuator>
+            <Type>Actuator_Nop</Type>
+        </Actuator>
         <Source>
             <Type>Source_2D_OpenCV</Type>
             <Subsource>300</Subsource>

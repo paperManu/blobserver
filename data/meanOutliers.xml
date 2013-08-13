@@ -1,7 +1,7 @@
 <Blobserver>
     <Flow>
-        <Detector>
-            <Type>Detector_MeanOutliers</Type>
+        <Actuator>
+            <Type>Actuator_MeanOutliers</Type>
             <Param>
                 <Name>detectionLevel</Name>
                 <Value>4</Value>
@@ -10,7 +10,7 @@
                 <Name>filterSize</Name>
                 <Value>2</Value>
             </Param>
-        </Detector>
+        </Actuator>
         <Source>
             <Type>Source_2D_OpenCV</Type>
             <Subsource>300</Subsource>

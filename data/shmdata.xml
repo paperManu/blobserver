@@ -1,12 +1,12 @@
 <Blobserver>
     <Flow>
-        <Detector>
-            <Type>Detector_MeanOutliers</Type>
+        <Actuator>
+            <Type>Actuator_MeanOutliers</Type>
             <Param>
                 <Name>verbose</Name>
                 <Value>0</Value>
             </Param>
-        </Detector>
+        </Actuator>
         <Source>
             <Type>Source_2D_Shmdata</Type>
             <Subsource>0</Subsource>
@@ -25,13 +25,13 @@
         </Server>
     </Flow>
     <Flow>
-        <Detector>
-            <Type>Detector_MeanOutliers</Type>
+        <Actuator>
+            <Type>Actuator_MeanOutliers</Type>
             <Param>
                 <Name>verbose</Name>
                 <Value>1</Value>
             </Param>
-        </Detector>
+        </Actuator>
         <Source>
             <Type>Source_2D_OpenCV</Type>
             <Subsource>300</Subsource>

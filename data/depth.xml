@@ -1,7 +1,7 @@
 <Blobserver>
     <Flow>
-        <Detector>
-            <Type>Detector_DepthTouch</Type>
+        <Actuator>
+            <Type>Actuator_DepthTouch</Type>
             <Param>
                 <Name>verbose</Name>
                 <Value>1</Value>
@@ -22,7 +22,7 @@
                 <Name>learningTime</Name>
                 <Value>120</Value>
             </Param>
-        </Detector>
+        </Actuator>
         <Source>
             <Type>Source_2D_Shmdata</Type>
             <Subsource>0</Subsource>
