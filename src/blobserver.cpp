@@ -49,6 +49,8 @@ static gboolean gVersion = FALSE;
 static gboolean gHide = FALSE;
 static gboolean gVerbose = FALSE;
 
+static int gFramerate = 30;
+
 static gchar* gConfigFile = NULL;
 static gchar* gMaskFilename = NULL;
 static gboolean gTcp = FALSE;
@@ -63,7 +65,8 @@ static GOptionEntry gEntries[] =
     {"config", 'C', 0, G_OPTION_ARG_STRING, &gConfigFile, "Specify a configuration file to load at startup", NULL},
     {"hide", 'H', 0, G_OPTION_ARG_NONE, &gHide, "Hides the camera window", NULL},
     {"verbose", 'V', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
-    {"mask", 'm', 0, G_OPTION_ARG_STRING, &gMaskFilename, "Specifies a mask which will be applied to all detectors", NULL},
+    {"mask", 'm', 0, G_OPTION_ARG_STRING, &gMaskFilename, "Specifies a mask which will be applied to all actuators", NULL},
+    {"framerate", 'f', 0, G_OPTION_ARG_INT, &gFramerate, "Specifies the framerate to which blobserver should run (default 30)", NULL},
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
     {"port", 'p', 0, G_OPTION_ARG_STRING, &gPort, "Specifies TCP port to use for server (default 9002)", NULL},
     {"bench", 'B', 0, G_OPTION_ARG_NONE, &gBench, "Enables printing timings of main loop, for debug purpose", NULL},
@@ -347,7 +350,7 @@ int App::loop()
     bool lShowCamera = !gHide;
     int lSourceNumber = 0;
 
-    unsigned long long usecPeriod = 33333;
+    unsigned long long usecPeriod = 1e6 / (long long)gFramerate;
 
     mutex lMutex;
 
@@ -528,7 +531,7 @@ void App::updateSources()
 {
     shared_ptr<App> theApp = App::getInstance();
 
-    unsigned long long msecPeriod = 16;
+    unsigned long long usecPeriod = 1e6 / (long long)gFramerate;
 
     while(theApp->mRun)
     {
@@ -556,12 +559,12 @@ void App::updateSources()
         }
 
         unsigned long long chronoEnd = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
-        unsigned long long chronoElapsed = chronoEnd - chronoStart;
+        unsigned long long chronoElapsed = (chronoEnd - chronoStart) * 1e3;
 
         timespec nap;
         nap.tv_sec = 0;
-        if (chronoElapsed < msecPeriod)
-            nap.tv_nsec = msecPeriod - chronoElapsed * 1e6;
+        if (chronoElapsed < usecPeriod)
+            nap.tv_nsec = (usecPeriod - chronoElapsed) * 1e3;
         else
             nap.tv_nsec = 0;
 
