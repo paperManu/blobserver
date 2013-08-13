@@ -85,6 +85,16 @@ atom::Message Actuator_ClusterPcl::detect(vector<Capture_Ptr> pCaptures)
         clusterPositions.push_back(position);
     });
 
+    mLastMessage.clear();
+    mLastMessage.push_back(atom::IntValue::create(clusterPositions.size()));
+    mLastMessage.push_back(atom::IntValue::create(3));
+    for (int i = 0; i < clusterPositions.size(); i++)
+    {
+        mLastMessage.push_back(atom::FloatValue::create(clusterPositions[i].x));
+        mLastMessage.push_back(atom::FloatValue::create(clusterPositions[i].y));
+        mLastMessage.push_back(atom::FloatValue::create(clusterPositions[i].z));
+    }
+
     return mLastMessage;
 }
 
