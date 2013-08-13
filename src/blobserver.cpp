@@ -36,6 +36,7 @@
 #include "source_2d_shmdata.h"
 #include "source_3d_shmdata.h"
 #include "actuator_bgsubtractor.h"
+#include "actuator_clusterPcl.h"
 #include "actuator_depthtouch.h"
 #include "actuator_hog.h"
 #include "actuator_lightSpots.h"

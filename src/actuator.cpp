@@ -14,7 +14,7 @@ Actuator::Actuator()
 
     mVerbose = true;
 
-    mOutputBuffer = cv::Mat::zeros(0, 0, CV_8U);
+    mOutputBuffer = cv::Mat::zeros(480, 640, CV_8U);
     // By default, the mask is all white (all pixels are used)
     mSourceMask = cv::Mat::ones(1, 1, CV_8U);
 }
