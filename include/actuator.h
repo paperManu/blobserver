@@ -22,8 +22,8 @@
  * The actuator base class.
  */
 
-#ifndef DETECTOR_H
-#define DETECTOR_H
+#ifndef ACTUATOR_H
+#define ACTUATOR_H
 
 #include <algorithm>
 
@@ -306,4 +306,4 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
     }
 }
 
-#endif // DETECTOR_H
+#endif // ACTUATOR_H

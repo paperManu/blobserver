@@ -22,8 +22,8 @@
  * The Actuator_MainOutliers class.
  */
 
-#ifndef DETECTOR_MEANOUTLIERS_H
-#define DETECTOR_MEANOUTLIERS_H
+#ifndef ACTUATOR_MEANOUTLIERS_H
+#define ACTUATOR_MEANOUTLIERS_H
 
 #include "actuator.h"
 #include "blob_2D.h"
@@ -57,4 +57,4 @@ class Actuator_MeanOutliers : public Actuator
         void make();
 };
 
-#endif // DETECTOR_MEANOUTLIERS_H
+#endif // ACTUATOR_MEANOUTLIERS_H

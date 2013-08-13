@@ -22,8 +22,8 @@
  * The Actuator_BgSubtractor class.
  */
 
-#ifndef DETECTOR_BGSUBTRACTOR_H
-#define DETECTOR_BGSUBTRACTOR_H
+#ifndef ACTUATOR_BGSUBTRACTOR_H
+#define ACTUATOR_BGSUBTRACTOR_H
 
 #include <vector>
 
@@ -77,4 +77,4 @@ class Actuator_BgSubtractor : public Actuator
         void make();
 };
 
-#endif // DETECTOR_BGSUBTRACTOR_H
+#endif // ACTUATOR_BGSUBTRACTOR_H

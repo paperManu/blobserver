@@ -22,8 +22,8 @@
  * The Actuator_DepthTouch class.
  */
 
-#ifndef DETECTOR_DEPTHTOUCH_H
-#define DETECTOR_DEPTHTOUCH_H
+#ifndef ACTUATOR_DEPTHTOUCH_H
+#define ACTUATOR_DEPTHTOUCH_H
 
 #include <vector>
 
@@ -76,4 +76,4 @@ class Actuator_DepthTouch : public Actuator
         void learn(cv::Mat input);
 };
 
-#endif // DETECTOR_DEPTHTOUCH_H
+#endif // ACTUATOR_DEPTHTOUCH_H

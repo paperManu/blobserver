@@ -22,8 +22,8 @@
  * The Actuator_LightSpots class.
  */
 
-#ifndef DETECTOR_LIGHTSPOTS_H
-#define DETECTOR_LIGHTSPOTS_H
+#ifndef ACTUATOR_LIGHTSPOTS_H
+#define ACTUATOR_LIGHTSPOTS_H
 
 #include "actuator.h"
 #include "blob_2D.h"
@@ -58,4 +58,4 @@ class Actuator_LightSpots : public Actuator
         void make();
 };
 
-#endif // DETECTOR_LIGHTSPOTS_H
+#endif // ACTUATOR_LIGHTSPOTS_H

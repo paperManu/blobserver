@@ -22,8 +22,8 @@
  * The Actuator_ObjOnAPlane class.
  */
 
-#ifndef DETECTOR_OBJONAPLANE_H
-#define DETECTOR_OBJONAPLANE_H
+#ifndef ACTUATOR_OBJONAPLANE_H
+#define ACTUATOR_OBJONAPLANE_H
 
 #include <memory>
 #include "actuator.h"
@@ -64,4 +64,4 @@ class Actuator_ObjOnAPlane : public Actuator
         void updateMaps(std::vector<cv::Mat> pCaptures); // Updates the space conversion maps
 };
 
- #endif // DETECTOR_OBJONAPLANE_H
+ #endif // ACTUATOR_OBJONAPLANE_H

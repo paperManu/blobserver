@@ -22,8 +22,8 @@
  * The Actuator_Nop class.
  */
 
-#ifndef DETECTOR_NOP_H
-#define DETECTOR_NOP_H
+#ifndef ACTUATOR_NOP_H
+#define ACTUATOR_NOP_H
 
 #include "actuator.h"
 
@@ -57,4 +57,4 @@ class Actuator_Nop : public Actuator
         void make();
 };
 
-#endif // DETECTOR_NOP_H
+#endif // ACTUATOR_NOP_H
