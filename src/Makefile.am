@@ -84,6 +84,10 @@ blobserver_LDADD = \
     $(SHMDATA_LIBS) \
     $(XML2_LIBS)
 
+if PCL
+blobserver_LDADD += $(BOOST_SYSTEM_LIBS)
+endif
+
 # Blobcontroler
 blobcontroller_SOURCES = \
     base_objects.cpp \

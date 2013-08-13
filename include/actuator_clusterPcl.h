@@ -25,6 +25,9 @@
 #ifndef ACTUATOR_CLUSTERPCL_H
 #define ACTUATOR_CLUSTERPCL_H
 
+#include "config.h"
+#include "actuator.h"
+
 #if HAVE_PCL
 
 /*************/

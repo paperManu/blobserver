@@ -71,6 +71,11 @@ PKG_CHECK_MODULES([SHMDATA], [shmdata-0.8 shmdata-any-0.8],
 PKG_CHECK_MODULES([PCL], [pcl_filters-1.7 pcl_common-1.7 pcl_octree-1.7 pcl_sample_consensus-1.7 pcl_search-1.7 pcl_kdtree-1.7 pcl_surface-1.7 pcl_features-1.7 pcl_visualization-1.7 pcl_segmentation-1.7],
     AC_DEFINE([HAVE_PCL], [1], [Defined to 1 if pcl-1.7 is detected]),
     AC_DEFINE([HAVE_PCL], [0], [Defined to 1 if pcl-1.7 is detected]))
+AM_CONDITIONAL(PCL, test -n "$PCL_LIBS")
+
+# Boost (needed for PCL...)
+BOOST_REQUIRE([1.48])
+BOOST_SYSTEM
 
 # Liblo
 PKG_CHECK_MODULES([LIBLO], [liblo >= 0.26])
