@@ -89,9 +89,9 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool dist
     {
         lCur = cur->xmlChildrenNode;
 
-        // We need to get the detector name, as well as information about sources
+        // We need to get the actuator name, as well as information about sources
         // to create the flow (before any change of parameters)
-        string detector;
+        string actuator;
         vector<string> sources;
         vector<int> subsources;
         string client, realClient, server;
@@ -100,9 +100,9 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool dist
 
         while (lCur != NULL)
         {
-            if (!xmlStrcmp(lCur->name, (const xmlChar*)"Detector"))
+            if (!xmlStrcmp(lCur->name, (const xmlChar*)"Actuator"))
             {
-                detector = getStringValueFrom(doc, lCur, (const xmlChar*)"Type");
+                actuator = getStringValueFrom(doc, lCur, (const xmlChar*)"Type");
             }
             else if (!xmlStrcmp(lCur->name, (const xmlChar*)"Source"))
             {
@@ -161,7 +161,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool dist
         {
             atom::Message message;
             message.push_back(atom::StringValue::create(client.c_str()));
-            message.push_back(atom::StringValue::create(detector.c_str()));
+            message.push_back(atom::StringValue::create(actuator.c_str()));
             for (int i = 0; i < sources.size(); ++i)
             {
                 if (sources[i] == string(""))
@@ -209,7 +209,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool dist
 
             while (lCur != NULL)
             {
-                if (!xmlStrcmp(lCur->name, (const xmlChar*)"Detector"))
+                if (!xmlStrcmp(lCur->name, (const xmlChar*)"Actuator"))
                 {
                     if (lCur->xmlChildrenNode != NULL)
                     {
@@ -225,7 +225,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool dist
                                     atom::Message message;
                                     message.push_back(atom::StringValue::create(simpleFlow.address.c_str()));
                                     message.push_back(atom::IntValue::create(simpleFlow.id));
-                                    message.push_back(atom::StringValue::create((const char*)"Detector"));
+                                    message.push_back(atom::StringValue::create((const char*)"Actuator"));
                                     message.push_back(atom::StringValue::create(paramName.c_str()));
                                     for (int i = 0; i < values.size(); ++i)
                                         message.push_back(values[i]);

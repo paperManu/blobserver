@@ -18,8 +18,8 @@
  */
 
 /*
- * @detector.h
- * The detector base class.
+ * @actuator.h
+ * The actuator base class.
  */
 
 #ifndef DETECTOR_H
@@ -66,26 +66,26 @@ class Parallel_Mask : public cv::ParallelLoopBody
 };
 
 /*************/
-//! Base Detector class, from which all detectors derive
-class Detector
+//! Base Actuator class, from which all actuators derive
+class Actuator
 {
     public:
         /**
          * \brief Constructor
          */
-        Detector();
-        Detector(int pParam);
+        Actuator();
+        Actuator(int pParam);
 
         /**
-         * \brief Gets the class name of the detector
+         * \brief Gets the class name of the actuator
          */
         static std::string getClassName() {return mClassName;}
         /**
-         * \brief Gets the class documentation of the detector
+         * \brief Gets the class documentation of the actuator
          */
         static std::string getDocumentation() {return mDocumentation;}
         /**
-         * \brief Get the number of sources this detector needs
+         * \brief Get the number of sources this actuator needs
          */
         static unsigned int getSourceNbr() {return mSourceNbr;}
 
@@ -120,28 +120,28 @@ class Detector
         atom::Message getParameter(atom::Message pParam) const;
         
         /**
-         * \brief Gives a ptr to the detector, for it to control the source (if needed)
+         * \brief Gives a ptr to the actuator, for it to control the source (if needed)
          * \param source A shared_ptr to the source. A weak_ptr is created from it.
          */
         void addSource(std::shared_ptr<Source> source);
         
         /**
-         * \brief Gets the name to use in the osc path when sending the message related to this detector
+         * \brief Gets the name to use in the osc path when sending the message related to this actuator
          */
         std::string getName() const {return mName;}
 
         /**
-         * \brief Gets the full OSC path to use for sending message from this detector
+         * \brief Gets the full OSC path to use for sending message from this actuator
          */
         std::string getOscPath() const {return mOscPath;}
 
         /**
-         * \brief Gets the resulting image from the detector.
+         * \brief Gets the resulting image from the actuator.
          */
         virtual Capture_Ptr getOutput() const {return Capture_2D_Mat_Ptr(new Capture_2D_Mat(mOutputBuffer.clone()));}
 
         /**
-         * \brief Returns an object which is a shmwriter able to handle the output of the given detector
+         * \brief Returns an object which is a shmwriter able to handle the output of the given actuator
          */
         virtual std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new Shm());}
 
@@ -150,8 +150,8 @@ class Detector
         atom::Message mLastMessage; //!< Last message built by detect()
         bool mVerbose;
 
-        std::string mOscPath; //!< OSC path for the detector, to be set in child class
-        std::string mName; // !< Name of the detector, to be set in child class
+        std::string mOscPath; //!< OSC path for the actuator, to be set in child class
+        std::string mName; // !< Name of the actuator, to be set in child class
 
         std::vector<std::weak_ptr<Source>> mSources;
 
@@ -163,7 +163,7 @@ class Detector
     private:
         static std::string mClassName; //!< Class name, to be set in child class
         static std::string mDocumentation; //!< Class documentation, to be set in child class
-        static unsigned int mSourceNbr; //!< Number of sources needed for the detector, to be set in child class
+        static unsigned int mSourceNbr; //!< Number of sources needed for the actuator, to be set in child class
 
         cv::Mat mSourceMask, mMask;
 };

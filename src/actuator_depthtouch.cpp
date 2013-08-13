@@ -1,4 +1,4 @@
-#include "detector_depthtouch.h"
+#include "actuator_depthtouch.h"
 
 #include <chrono>
 #include <memory>
@@ -9,26 +9,26 @@
 using namespace std;
 
 /*************/
-// Definition of class Detector_DepthTouch
+// Definition of class Actuator_DepthTouch
 /*************/
-std::string Detector_DepthTouch::mClassName = "Detector_DepthTouch";
-std::string Detector_DepthTouch::mDocumentation = "N/A";
-unsigned int Detector_DepthTouch::mSourceNbr = 1;
+std::string Actuator_DepthTouch::mClassName = "Actuator_DepthTouch";
+std::string Actuator_DepthTouch::mDocumentation = "N/A";
+unsigned int Actuator_DepthTouch::mSourceNbr = 1;
 
 /*************/
-Detector_DepthTouch::Detector_DepthTouch()
+Actuator_DepthTouch::Actuator_DepthTouch()
 {
     make();
 }
 
 /*************/
-Detector_DepthTouch::Detector_DepthTouch(int pParam)
+Actuator_DepthTouch::Actuator_DepthTouch(int pParam)
 {
     make();
 }
 
 /*************/
-void Detector_DepthTouch::make()
+void Actuator_DepthTouch::make()
 {
     mOutputBuffer = cv::Mat::zeros(480, 640, CV_8UC3);
 
@@ -49,7 +49,7 @@ void Detector_DepthTouch::make()
 }
 
 /*************/
-atom::Message Detector_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
+atom::Message Actuator_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
 {
     vector<cv::Mat> captures = captureToMat(pCaptures);
     if (captures.size() < mSourceNbr)
@@ -167,7 +167,7 @@ atom::Message Detector_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
 }
 
 /*************/
-void Detector_DepthTouch::learn(cv::Mat input)
+void Actuator_DepthTouch::learn(cv::Mat input)
 {
     mLearningData.push_back(input);
     mLearningLeft--;
@@ -209,7 +209,7 @@ void Detector_DepthTouch::learn(cv::Mat input)
 }
 
 /*************/
-void Detector_DepthTouch::setParameter(atom::Message pMessage)
+void Actuator_DepthTouch::setParameter(atom::Message pMessage)
 {
     std::string cmd;
     try

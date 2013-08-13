@@ -16,14 +16,14 @@ blobserver_SOURCES = \
     blob_2D_color.cpp \
     configurator.cpp \
     descriptor_hog.cpp \
-    detector.cpp \
-    detector_bgsubtractor.cpp \
-	detector_depthtouch.cpp \
-    detector_hog.cpp \
-    detector_lightSpots.cpp \
-    detector_meanOutliers.cpp \
-    detector_objOnAPlane.cpp \
-    detector_nop.cpp \
+    actuator.cpp \
+    actuator_bgsubtractor.cpp \
+	actuator_depthtouch.cpp \
+    actuator_hog.cpp \
+    actuator_lightSpots.cpp \
+    actuator_meanOutliers.cpp \
+    actuator_objOnAPlane.cpp \
+    actuator_nop.cpp \
 	hdribuilder.cpp \
     source.cpp \
     source_2d.cpp \
@@ -44,14 +44,14 @@ noinst_HEADERS = \
     $(top_srcdir)/include/capture.h \
     $(top_srcdir)/include/creator.h \
     $(top_srcdir)/include/descriptor_hog.h \
-    $(top_srcdir)/include/detector.h \
-    $(top_srcdir)/include/detector_bgsubtractor.h \
-    $(top_srcdir)/include/detector_depthtouch.h \
-    $(top_srcdir)/include/detector_hog.h \
-    $(top_srcdir)/include/detector_lightSpots.h \
-    $(top_srcdir)/include/detector_meanOutliers.h \
-    $(top_srcdir)/include/detector_objOnAPlane.h \
-    $(top_srcdir)/include/detector_nop.h \
+    $(top_srcdir)/include/actuator.h \
+    $(top_srcdir)/include/actuator_bgsubtractor.h \
+    $(top_srcdir)/include/actuator_depthtouch.h \
+    $(top_srcdir)/include/actuator_hog.h \
+    $(top_srcdir)/include/actuator_lightSpots.h \
+    $(top_srcdir)/include/actuator_meanOutliers.h \
+    $(top_srcdir)/include/actuator_objOnAPlane.h \
+    $(top_srcdir)/include/actuator_nop.h \
 	$(top_srcdir)/include/hdribuilder.h \
 	$(top_srcdir)/include/helpers.h \
 	$(top_srcdir)/include/shmpointcloud.h \

@@ -42,7 +42,7 @@
 #include "blob_2D.h"
 #include "configurator.h"
 #include "constants.h"
-#include "detector.h"
+#include "actuator.h"
 #include "source.h"
 #include "threadPool.h"
 
@@ -51,9 +51,9 @@
 struct Flow
 {
     std::vector<std::shared_ptr<Source>> sources;
-    std::shared_ptr<Detector> detector;
+    std::shared_ptr<Actuator> actuator;
 #if HAVE_SHMDATA
-    std::shared_ptr<Shm> shm;
+    std::shared_ptr<Shm> sink;
 #endif
     std::shared_ptr<OscClient> client;
     unsigned int id;
@@ -86,7 +86,7 @@ class App
         bool mRun;
 
         // Factories
-        factory::AbstractFactory<Detector, std::string, std::string, int> mDetectorFactory;
+        factory::AbstractFactory<Actuator, std::string, std::string, int> mActuatorFactory;
         factory::AbstractFactory<Source, std::string, std::string, int> mSourceFactory;
 
         // liblo related
@@ -99,7 +99,7 @@ class App
         // A mutex to prevent unexpected changes in flows
         std::mutex mFlowMutex;
         std::mutex mSourceMutex;
-        // A thread pool for detectors
+        // A thread pool for actuators
         std::shared_ptr<ThreadPool> mThreadPool;
 
         // Threads
@@ -140,7 +140,7 @@ class App
         static int oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerSetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerGetParameter(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
-        static int oscHandlerGetDetectors(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
+        static int oscHandlerGetActuators(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
         static int oscHandlerGetSources(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data);
 
         // OSC related, client side

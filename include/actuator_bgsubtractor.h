@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Emmanuel Durand
+ * Copyright (C) 2013 Emmanuel Durand
  *
  * This file is part of blobserver.
  *
@@ -18,23 +18,26 @@
  */
 
 /*
- * @detector_mainOutliers.h
- * The Detector_MainOutliers class.
+ * @actuator_bgsubtractor.h
+ * The Actuator_BgSubtractor class.
  */
 
-#ifndef DETECTOR_MEANOUTLIERS_H
-#define DETECTOR_MEANOUTLIERS_H
+#ifndef DETECTOR_BGSUBTRACTOR_H
+#define DETECTOR_BGSUBTRACTOR_H
 
-#include "detector.h"
-#include "blob_2D.h"
+#include <vector>
+
+#include "config.h"
+#include "actuator.h"
+#include "blob_2D_color.h"
 
 /*************/
-// Class Detector_MeanOutliers
-class Detector_MeanOutliers : public Detector
+// Class Actuator_BgSubtractor
+class Actuator_BgSubtractor : public Actuator
 {
     public:
-        Detector_MeanOutliers();
-        Detector_MeanOutliers(int pParam);
+        Actuator_BgSubtractor();
+        Actuator_BgSubtractor(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -49,12 +52,29 @@ class Detector_MeanOutliers : public Detector
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        float mDetectionLevel; // Above std dev * mDetectionLevel, an object is detected
-        int mFilterSize;
-        Blob2D mMeanBlob;
-        bool isInitialized;
+        std::vector<Blob2DColor> mBlobs; // Vector of detected and tracked blobs
 
+        // Some filtering parameters
+        int mFilterSize;
+        int mFilterDilateCoeff;
+
+        // Tracking and movement filtering parameters
+        int mBlobLifetime;
+        int mKeepOldBlobs, mKeepMaxTime; // Parameters to set when we need blobs to be kept even when not detected anymore
+        float mProcessNoiseCov, mMeasurementNoiseCov;
+        float mMaxDistanceForColorDiff;
+
+        // Background subtractor, used to select window of interest
+        // to feed to the SVM
+        cv::BackgroundSubtractorMOG2 mBgSubtractor;
+
+        // Various variables
+        cv::Mat mBgSubtractorBuffer;
+        float mLearningRate, mLearningTime;
+        float mMinArea, mMaxArea;
+
+        // Methods
         void make();
 };
 
-#endif // DETECTOR_MEANOUTLIERS_H
+#endif // DETECTOR_BGSUBTRACTOR_H

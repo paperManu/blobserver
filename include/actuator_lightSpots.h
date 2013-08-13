@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2012 Emmanuel Durand
  *
  * This file is part of blobserver.
  *
@@ -18,26 +18,21 @@
  */
 
 /*
- * @detector_bgsubtractor.h
- * The Detector_BgSubtractor class.
+ * @actuator_lightSpots.h
+ * The Actuator_LightSpots class.
  */
 
-#ifndef DETECTOR_BGSUBTRACTOR_H
-#define DETECTOR_BGSUBTRACTOR_H
+#ifndef DETECTOR_LIGHTSPOTS_H
+#define DETECTOR_LIGHTSPOTS_H
 
-#include <vector>
+#include "actuator.h"
+#include "blob_2D.h"
 
-#include "config.h"
-#include "detector.h"
-#include "blob_2D_color.h"
-
-/*************/
-// Class Detector_BgSubtractor
-class Detector_BgSubtractor : public Detector
+class Actuator_LightSpots : public Actuator
 {
     public:
-        Detector_BgSubtractor();
-        Detector_BgSubtractor(int pParam);
+        Actuator_LightSpots();
+        Actuator_LightSpots(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -51,30 +46,16 @@ class Detector_BgSubtractor : public Detector
         static std::string mClassName;
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
+        
+        cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
+        std::vector<Blob2D> mLightBlobs; // Vector of detected and tracked blobs
 
-        std::vector<Blob2DColor> mBlobs; // Vector of detected and tracked blobs
-
-        // Some filtering parameters
+        int mMaxTrackedBlobs;
+        float mDetectionLevel;
         int mFilterSize;
-        int mFilterDilateCoeff;
-
-        // Tracking and movement filtering parameters
-        int mBlobLifetime;
-        int mKeepOldBlobs, mKeepMaxTime; // Parameters to set when we need blobs to be kept even when not detected anymore
         float mProcessNoiseCov, mMeasurementNoiseCov;
-        float mMaxDistanceForColorDiff;
 
-        // Background subtractor, used to select window of interest
-        // to feed to the SVM
-        cv::BackgroundSubtractorMOG2 mBgSubtractor;
-
-        // Various variables
-        cv::Mat mBgSubtractorBuffer;
-        float mLearningRate, mLearningTime;
-        float mMinArea, mMaxArea;
-
-        // Methods
         void make();
 };
 
-#endif // DETECTOR_BGSUBTRACTOR_H
+#endif // DETECTOR_LIGHTSPOTS_H

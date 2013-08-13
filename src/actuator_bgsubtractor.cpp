@@ -1,4 +1,4 @@
-#include "detector_bgsubtractor.h"
+#include "actuator_bgsubtractor.h"
 
 #include <chrono>
 #include <memory>
@@ -9,26 +9,26 @@
 using namespace std;
 
 /*************/
-// Definition of class Detector_BgSubtractor
+// Definition of class Actuator_BgSubtractor
 /*************/
-std::string Detector_BgSubtractor::mClassName = "Detector_BgSubtractor";
-std::string Detector_BgSubtractor::mDocumentation = "N/A";
-unsigned int Detector_BgSubtractor::mSourceNbr = 1;
+std::string Actuator_BgSubtractor::mClassName = "Actuator_BgSubtractor";
+std::string Actuator_BgSubtractor::mDocumentation = "N/A";
+unsigned int Actuator_BgSubtractor::mSourceNbr = 1;
 
 /*************/
-Detector_BgSubtractor::Detector_BgSubtractor()
+Actuator_BgSubtractor::Actuator_BgSubtractor()
 {
     make();
 }
 
 /*************/
-Detector_BgSubtractor::Detector_BgSubtractor(int pParam)
+Actuator_BgSubtractor::Actuator_BgSubtractor(int pParam)
 {
     make();
 }
 
 /*************/
-void Detector_BgSubtractor::make()
+void Actuator_BgSubtractor::make()
 {
     mOutputBuffer = cv::Mat::zeros(480, 640, CV_8UC3);
 
@@ -51,7 +51,7 @@ void Detector_BgSubtractor::make()
 }
 
 /*************/
-atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCaptures)
+atom::Message Actuator_BgSubtractor::detect(const vector< Capture_Ptr > pCaptures)
 {
     vector<cv::Mat> captures = captureToMat(pCaptures);
     if (captures.size() < mSourceNbr)
@@ -207,7 +207,7 @@ atom::Message Detector_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
 }
 
 /*************/
-void Detector_BgSubtractor::setParameter(atom::Message pMessage)
+void Actuator_BgSubtractor::setParameter(atom::Message pMessage)
 {
     std::string cmd;
     try

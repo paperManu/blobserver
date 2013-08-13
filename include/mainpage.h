@@ -30,9 +30,9 @@
  **************
  * \section intro_sec What is Blobserver
  * 
- * Blobserver is an OSC-based server aimed at detecting entities (objects / people / light / ...), in any compatible image flow. Its structure is so that it should be relatively easy to add new detectors as well as new light sources. As of yet, configuration and communication with Blobserver is done entirely through OSC messaging. Some kind of configuration file will be added soon to simplify the setup and usability, especially for permanent installations.
+ * Blobserver is an OSC-based server aimed at detecting entities (objects / people / light / ...), in any compatible image flow. Its structure is so that it should be relatively easy to add new actuators as well as new light sources. As of yet, configuration and communication with Blobserver is done entirely through OSC messaging. Some kind of configuration file will be added soon to simplify the setup and usability, especially for permanent installations.
  * 
- * Blobserver is built around the concept of flow. A flow is the association of a detector and as many sources as needed for it to work correctly. At each frame, all the flows are evaluated, and the various objects detected are sent through OSC to the corresponding clients.
+ * Blobserver is built around the concept of flow. A flow is the association of a actuator and as many sources as needed for it to work correctly. At each frame, all the flows are evaluated, and the various objects detected are sent through OSC to the corresponding clients.
  * 
  **************
  * \section sources_sec List of compatible sources
@@ -77,11 +77,11 @@
  * - cameraNumber (int): index of the shmdata, this can be used to access multiple times to the same shmdata
  * 
  **************
- * \section detectors_sec List of detectors
+ * \section actuators_sec List of actuators
  * 
- * \subsection detector_bgsubtractor_sec Background subtractor using mixtures of gaussians as models (Detector_BgSubtractor)
+ * \subsection actuator_bgsubtractor_sec Background subtractor using mixtures of gaussians as models (Actuator_BgSubtractor)
  *
- * This detector detects objects based on a model of the background which uses mixture of gaussians. It is mostly based on the implementation from OpenCV (http://docs.opencv.org/modules/video/doc/motion_analysis_and_object_tracking.html?#BackgroundSubtractorMOG2%20:%20public%20BackgroundSubtractor).
+ * This actuator detects objects based on a model of the background which uses mixture of gaussians. It is mostly based on the implementation from OpenCV (http://docs.opencv.org/modules/video/doc/motion_analysis_and_object_tracking.html?#BackgroundSubtractorMOG2%20:%20public%20BackgroundSubtractor).
  * 
  * Number of source(s) needed: 1
 
@@ -100,9 +100,9 @@
  * - name: bgsubtractor
  * - values: X(int) Y(int) Size(int) dX(float) dY(float) Id(int) Age(int) lostDuration(int)
  *
- * \subsection detector_depthtouch_sec Adding touch interaction to surfaces using depth map (Detector_DepthTouch)
+ * \subsection actuator_depthtouch_sec Adding touch interaction to surfaces using depth map (Actuator_DepthTouch)
  *
- * This detector uses an input depth map (16 bits single channel image) to create a model of the targeted surface. After the model is created, it detects any object coming close to the surface, depending on the parameters. This means that objects passing in front of the surface are not detected unless their depth is close to the original surface.
+ * This actuator uses an input depth map (16 bits single channel image) to create a model of the targeted surface. After the model is created, it detects any object coming close to the surface, depending on the parameters. This means that objects passing in front of the surface are not detected unless their depth is close to the original surface.
  * 
  * Number of source(s) needed: 1
 
@@ -120,9 +120,9 @@
  * - name: depthtouch
  * - values: X(int) Y(int) dX(float) dY(float) Id(int)
  *
- * \subsection detector_hog_sec Histogram of Oriented Gradients (Detector_Hog)
+ * \subsection actuator_hog_sec Histogram of Oriented Gradients (Actuator_Hog)
  *
- * This detector searches for objects corresponding to the model trained with blobtrainer.
+ * This actuator searches for objects corresponding to the model trained with blobtrainer.
  *
  * Number of source(s) needed: 1
  *
@@ -148,7 +148,7 @@
  * - name: hog
  * - values: X(int) Y(int) dX(int) dY(int) Id(int) Age(int) lostDuration(int)
  * 
- * \subsection detector_lightspot_sec Light spots (Detector_LightSpots)
+ * \subsection actuator_lightspot_sec Light spots (Actuator_LightSpots)
  * 
  * Detects the brightest spots in an input image, i.e. light from a torchlight, and outputs the resulting blobs' size, position and ID.
  * 
@@ -164,9 +164,9 @@
  * - name: lightSpots
  * - values: X(int) Y(int) Size(int) dX(int) dY(int) Id(int)
  * 
- * \subsection detector_mean_outliers_sec Mean outliers (Detector_MeanOutliers)
+ * \subsection actuator_mean_outliers_sec Mean outliers (Actuator_MeanOutliers)
  * 
- * This detector is a generalization of the Lightspots detector, except that it does not only detect blobs brighter that the mean, but any blob which is far from the mean value of the current frame.
+ * This actuator is a generalization of the Lightspots actuator, except that it does not only detect blobs brighter that the mean, but any blob which is far from the mean value of the current frame.
  * 
  * Number of source(s) needed: 1
  * 
@@ -180,9 +180,9 @@
  * - name: meanOutliers
  * - values: X(int) Y(int) Size(int) dX(int) dY(int)
  *
- * \subsection detector_objonaplane_sec Objects on a plane (Detector_ObjOnAPlane)
+ * \subsection actuator_objonaplane_sec Objects on a plane (Actuator_ObjOnAPlane)
  *
- * This detector is specificaly designed to detect objects placed on a planar surface, by comparing images from two or more cameras. These cameras should be calibrated geometrically and colorimetrically to get optimal results. Note that this detector is still in development. Cameras are calibrated by specifying to all of them the coordinates, in the image space, of a set of fixed points in the real space.
+ * This actuator is specificaly designed to detect objects placed on a planar surface, by comparing images from two or more cameras. These cameras should be calibrated geometrically and colorimetrically to get optimal results. Note that this actuator is still in development. Cameras are calibrated by specifying to all of them the coordinates, in the image space, of a set of fixed points in the real space.
  *
  * Number of source(s) needed: 2+
  *
@@ -205,8 +205,8 @@
  * \code
  * <Blobserver>
  *     <Flow>
- *         <Detector>
- *             <Type>Detector_Type</Type>
+ *         <Actuator>
+ *             <Type>Actuator_Type</Type>
  *             <Param>
  *                 <Name>Param_1</Name>
  *                 <Value>value</Value>
@@ -218,7 +218,7 @@
  *             <Param>
  *                 ...
  *             </Param>
- *         </Detector>
+ *         </Actuator>
  *         <Source>
  *             <Type>Source_Type</Type>
  *             <Subsource>nbr</Subsource>
@@ -277,18 +277,18 @@
  * - client (string): ip address or network name for the client Blobserver sends messages to.
  * - port (integer): TCP port the messages will be sent to.
  * 
- * \subsection howto_osc_connect_sec /blobserver/connect client detector source subsource source subsource ...
+ * \subsection howto_osc_connect_sec /blobserver/connect client actuator source subsource source subsource ...
  * 
  * Ex.:
  * <pre>
- * /blobserver/connect localhost Detector_MeanOutliers Source_OpenCV 300
+ * /blobserver/connect localhost Actuator_MeanOutliers Source_OpenCV 300
  * </pre>
  * 
  * Sets up a new flow, and specifies the source(s) to use as its input.
  * 
  * Parameters:
  * - client (string): ip address or network name of the client to which OSC messages will be sent.
- * - detector (string): name of the detector we want to use
+ * - actuator (string): name of the actuator we want to use
  * - source (string): name of one of the sources we want to use
  * - subsource (integer): index of the subsource we want to use (0 for default)
  * 
@@ -318,9 +318,9 @@
  * If all went well, returns the following message:
  * <pre>/blobserver/disconnect "Disconnected"</pre>
  * 
- * \subsection howto_osc_setparameter_sec /blobserver/setParameter client index "Detector" parameter values
+ * \subsection howto_osc_setparameter_sec /blobserver/setParameter client index "Actuator" parameter values
  * 
- * Sets the given values for the specified parameter of the detector with the given index.
+ * Sets the given values for the specified parameter of the actuator with the given index.
  * 
  * Parameter:
  * - client (string): ip address or network name for the client Blobserver sends messages to.
@@ -353,9 +353,9 @@
  * 
  * Returns an error message if things went wrong.
  * 
- * \subsection howto_osc_getparameter_sec /blobserver/getParameter client index "Detector" parameter
+ * \subsection howto_osc_getparameter_sec /blobserver/getParameter client index "Actuator" parameter
  * 
- * Returns the value(s) for the given parameter of the given detector:
+ * Returns the value(s) for the given parameter of the given actuator:
  * 
  * Parameters:
  * - client (string): ip address or network name for the client Blobserver sends messages to.
@@ -364,7 +364,7 @@
  * 
  * \subsection howto_osc_getparameter2_sec /blobserver/getParameter client index "Sources" srcIndex parameter
  * 
- * Return the value(s) for the given parameter of the given source from the given detector.
+ * Return the value(s) for the given parameter of the given source from the given actuator.
  * 
  * Parameters:
  * - client (string): ip address or network name for the client Blobserver sends messages to.
@@ -372,10 +372,10 @@
  * - srcIndex (integer): index of the source in the flow
  * - parameter (string): name of the parameter
  * 
- * \subsection howto_osc_detectors_sec /blobserver/detectors client
+ * \subsection howto_osc_actuators_sec /blobserver/actuators client
  * 
- * Returns a list of the available detectors, in the form of the following message:
- * <pre>/blobserver/detectors "Detector_1" "Detector_2" ...</pre>
+ * Returns a list of the available actuators, in the form of the following message:
+ * <pre>/blobserver/actuators "Actuator_1" "Actuator_2" ...</pre>
  * 
  * Parameters:
  * - client (string): ip address or network name for the client Blobserver sends messages to.
@@ -400,8 +400,8 @@
  **************
  * \section howto_messages_sec How to use Blobserver - Detection related messages
  * 
- * During each iteration of the main loop, detected objects are sent through OSC to all clients which subscribed to each flow. Messages can vary depending on the detector used, and you should report to the section dedicated to this detector for further information. Anyway, these messages have the following general form:
- * <pre>/blobserver/[detector_name] [values]</pre>
+ * During each iteration of the main loop, detected objects are sent through OSC to all clients which subscribed to each flow. Messages can vary depending on the actuator used, and you should report to the section dedicated to this actuator for further information. Anyway, these messages have the following general form:
+ * <pre>/blobserver/[actuator_name] [values]</pre>
  */
 
 #endif // MAINPAGE_H

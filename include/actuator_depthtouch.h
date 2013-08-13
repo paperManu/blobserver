@@ -18,8 +18,8 @@
  */
 
 /*
- * @detector_depthtouch.h
- * The Detector_DepthTouch class.
+ * @actuator_depthtouch.h
+ * The Actuator_DepthTouch class.
  */
 
 #ifndef DETECTOR_DEPTHTOUCH_H
@@ -28,16 +28,16 @@
 #include <vector>
 
 #include "config.h"
-#include "detector.h"
+#include "actuator.h"
 #include "blob_2D.h"
 
 /*************/
-// Class Detector_DepthTouch
-class Detector_DepthTouch : public Detector
+// Class Actuator_DepthTouch
+class Actuator_DepthTouch : public Actuator
 {
     public:
-        Detector_DepthTouch();
-        Detector_DepthTouch(int pParam);
+        Actuator_DepthTouch();
+        Actuator_DepthTouch(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}

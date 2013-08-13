@@ -18,22 +18,23 @@
  */
 
 /*
- * @detector_objOnAPlane.h
- * The Detector_ObjOnAPlane class.
+ * @actuator_mainOutliers.h
+ * The Actuator_MainOutliers class.
  */
 
-#ifndef DETECTOR_OBJONAPLANE_H
-#define DETECTOR_OBJONAPLANE_H
+#ifndef DETECTOR_MEANOUTLIERS_H
+#define DETECTOR_MEANOUTLIERS_H
 
-#include <memory>
-#include "detector.h"
+#include "actuator.h"
 #include "blob_2D.h"
 
-class Detector_ObjOnAPlane : public Detector
+/*************/
+// Class Actuator_MeanOutliers
+class Actuator_MeanOutliers : public Actuator
 {
     public:
-        Detector_ObjOnAPlane();
-        Detector_ObjOnAPlane(int pParam);
+        Actuator_MeanOutliers();
+        Actuator_MeanOutliers(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -48,20 +49,12 @@ class Detector_ObjOnAPlane : public Detector
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        int mMaxTrackedBlobs;
-        float mDetectionLevel;
+        float mDetectionLevel; // Above std dev * mDetectionLevel, an object is detected
         int mFilterSize;
-        float mProcessNoiseCov, mMeasurementNoiseCov;
-        
-        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
-        int mMinArea;
+        Blob2D mMeanBlob;
+        bool isInitialized;
 
-        std::vector<std::vector<cv::Vec2f>> mSpaces; // First space is the real plane
-        std::vector<cv::Mat> mMaps;
-        bool mMapsUpdated;
-
-        void make(); // Called by the constructor
-        void updateMaps(std::vector<cv::Mat> pCaptures); // Updates the space conversion maps
+        void make();
 };
 
- #endif // DETECTOR_OBJONAPLANE_H
+#endif // DETECTOR_MEANOUTLIERS_H

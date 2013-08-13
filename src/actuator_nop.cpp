@@ -1,37 +1,37 @@
-#include "detector_nop.h"
+#include "actuator_nop.h"
 
 using namespace std;
 
-std::string Detector_Nop::mClassName = "Detector_Nop";
-std::string Detector_Nop::mDocumentation = "N/A";
-unsigned int Detector_Nop::mSourceNbr = 1;
+std::string Actuator_Nop::mClassName = "Actuator_Nop";
+std::string Actuator_Nop::mDocumentation = "N/A";
+unsigned int Actuator_Nop::mSourceNbr = 1;
 
 /*************/
-Detector_Nop::Detector_Nop()
+Actuator_Nop::Actuator_Nop()
 {
     make();
 }
 
 /*************/
-Detector_Nop::Detector_Nop(int pParam)
+Actuator_Nop::Actuator_Nop(int pParam)
 {
     make();
 }
 
 /*************/
-void Detector_Nop::make()
+void Actuator_Nop::make()
 {
     mOutputBuffer = cv::Mat::zeros(480, 640, CV_8UC3);
 
     mName = mClassName;
-    // OSC path for this detector
+    // OSC path for this actuator
     mOscPath = "/blobserver/nop";
 
     mFrameNumber = 0;
 }
 
 /*************/
-atom::Message Detector_Nop::detect(vector< Capture_Ptr > pCaptures)
+atom::Message Actuator_Nop::detect(vector< Capture_Ptr > pCaptures)
 {
     if (pCaptures.size() == 0)
         return mLastMessage;
@@ -44,7 +44,7 @@ atom::Message Detector_Nop::detect(vector< Capture_Ptr > pCaptures)
 }
 
 /*************/
-void Detector_Nop::setParameter(atom::Message pMessage)
+void Actuator_Nop::setParameter(atom::Message pMessage)
 {
     setBaseParameter(pMessage);
 }

@@ -18,44 +18,43 @@
  */
 
 /*
- * @detector_lightSpots.h
- * The Detector_LightSpots class.
+ * @actuator_nop.h
+ * The Actuator_Nop class.
  */
 
-#ifndef DETECTOR_LIGHTSPOTS_H
-#define DETECTOR_LIGHTSPOTS_H
+#ifndef DETECTOR_NOP_H
+#define DETECTOR_NOP_H
 
-#include "detector.h"
-#include "blob_2D.h"
+#include "actuator.h"
 
-class Detector_LightSpots : public Detector
+ /*************/
+// Class Actuator_Nop
+class Actuator_Nop : public Actuator
 {
     public:
-        Detector_LightSpots();
-        Detector_LightSpots(int pParam);
+        Actuator_Nop();
+        Actuator_Nop(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(const std::vector< Capture_Ptr > pCaptures);
+        atom::Message detect(std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
-        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
+        Capture_Ptr getOutput() const {return mCapture;}
+
+        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmAuto(filename));}
 
     private:
         static std::string mClassName;
         static std::string mDocumentation;
-        static unsigned int mSourceNbr;
-        
-        cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
-        std::vector<Blob2D> mLightBlobs; // Vector of detected and tracked blobs
 
-        int mMaxTrackedBlobs;
-        float mDetectionLevel;
-        int mFilterSize;
-        float mProcessNoiseCov, mMeasurementNoiseCov;
+        static unsigned int mSourceNbr;
+        unsigned int mFrameNumber;
+
+        Capture_Ptr mCapture;
 
         void make();
 };
 
-#endif // DETECTOR_LIGHTSPOTS_H
+#endif // DETECTOR_NOP_H

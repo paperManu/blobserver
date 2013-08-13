@@ -18,43 +18,50 @@
  */
 
 /*
- * @detector_nop.h
- * The Detector_Nop class.
+ * @actuator_objOnAPlane.h
+ * The Actuator_ObjOnAPlane class.
  */
 
-#ifndef DETECTOR_NOP_H
-#define DETECTOR_NOP_H
+#ifndef DETECTOR_OBJONAPLANE_H
+#define DETECTOR_OBJONAPLANE_H
 
-#include "detector.h"
+#include <memory>
+#include "actuator.h"
+#include "blob_2D.h"
 
- /*************/
-// Class Detector_Nop
-class Detector_Nop : public Detector
+class Actuator_ObjOnAPlane : public Actuator
 {
     public:
-        Detector_Nop();
-        Detector_Nop(int pParam);
+        Actuator_ObjOnAPlane();
+        Actuator_ObjOnAPlane(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(std::vector< Capture_Ptr > pCaptures);
+        atom::Message detect(const std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
-        Capture_Ptr getOutput() const {return mCapture;}
-
-        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmAuto(filename));}
+        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
 
     private:
         static std::string mClassName;
         static std::string mDocumentation;
-
         static unsigned int mSourceNbr;
-        unsigned int mFrameNumber;
 
-        Capture_Ptr mCapture;
+        int mMaxTrackedBlobs;
+        float mDetectionLevel;
+        int mFilterSize;
+        float mProcessNoiseCov, mMeasurementNoiseCov;
+        
+        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
+        int mMinArea;
 
-        void make();
+        std::vector<std::vector<cv::Vec2f>> mSpaces; // First space is the real plane
+        std::vector<cv::Mat> mMaps;
+        bool mMapsUpdated;
+
+        void make(); // Called by the constructor
+        void updateMaps(std::vector<cv::Mat> pCaptures); // Updates the space conversion maps
 };
 
-#endif // DETECTOR_NOP_H
+ #endif // DETECTOR_OBJONAPLANE_H

@@ -18,8 +18,8 @@
  */
 
 /*
- * @detector_hog.h
- * The Detector_Hog class.
+ * @actuator_hog.h
+ * The Actuator_Hog class.
  */
 
 #ifndef DETECTOR_HOG_H
@@ -28,17 +28,17 @@
 #include <vector>
 
 #include "config.h"
-#include "detector.h"
+#include "actuator.h"
 #include "descriptor_hog.h"
 #include "blob_2D.h"
 
  /*************/
-// Class Detector_Hog
-class Detector_Hog : public Detector
+// Class Actuator_Hog
+class Actuator_Hog : public Actuator
 {
     public:
-        Detector_Hog();
-        Detector_Hog(int pParam);
+        Actuator_Hog();
+        Actuator_Hog(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}

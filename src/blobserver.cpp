@@ -35,13 +35,13 @@
 #include "source_2d_opencv.h"
 #include "source_2d_shmdata.h"
 #include "source_3d_shmdata.h"
-#include "detector_bgsubtractor.h"
-#include "detector_depthtouch.h"
-#include "detector_hog.h"
-#include "detector_lightSpots.h"
-#include "detector_meanOutliers.h"
-#include "detector_nop.h"
-#include "detector_objOnAPlane.h"
+#include "actuator_bgsubtractor.h"
+#include "actuator_depthtouch.h"
+#include "actuator_hog.h"
+#include "actuator_lightSpots.h"
+#include "actuator_meanOutliers.h"
+#include "actuator_nop.h"
+#include "actuator_objOnAPlane.h"
 
 using namespace std;
 
@@ -63,7 +63,7 @@ static GOptionEntry gEntries[] =
     {"config", 'C', 0, G_OPTION_ARG_STRING, &gConfigFile, "Specify a configuration file to load at startup", NULL},
     {"hide", 'H', 0, G_OPTION_ARG_NONE, &gHide, "Hides the camera window", NULL},
     {"verbose", 'V', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
-    {"mask", 'm', 0, G_OPTION_ARG_STRING, &gMaskFilename, "Specifies a mask which will be applied to all detectors", NULL},
+    {"mask", 'm', 0, G_OPTION_ARG_STRING, &gMaskFilename, "Specifies a mask which will be applied to all actuators", NULL},
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
     {"port", 'p', 0, G_OPTION_ARG_STRING, &gPort, "Specifies TCP port to use for server (default 9002)", NULL},
     {"bench", 'B', 0, G_OPTION_ARG_NONE, &gBench, "Enables printing timings of main loop, for debug purpose", NULL},
@@ -119,7 +119,7 @@ int App::init(int argc, char** argv)
     g_log_set_handler(LOG_BROADCAST, (GLogLevelFlags)(G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_WARNING | G_LOG_LEVEL_ERROR | G_LOG_FLAG_FATAL),
                       logHandler, this);
 
-    // Register source and detector classes
+    // Register source and actuator classes
     registerClasses();
 
     gPort = (gchar*)"9002";
@@ -166,7 +166,7 @@ int App::init(int argc, char** argv)
         lo_server_thread_add_method(mOscServer, "/blobserver/disconnect", NULL, App::oscHandlerDisconnect, NULL);
         lo_server_thread_add_method(mOscServer, "/blobserver/setParameter", NULL, App::oscHandlerSetParameter, NULL);
         lo_server_thread_add_method(mOscServer, "/blobserver/getParameter", NULL, App::oscHandlerGetParameter, NULL);
-        lo_server_thread_add_method(mOscServer, "/blobserver/detectors", NULL, App::oscHandlerGetDetectors, NULL);
+        lo_server_thread_add_method(mOscServer, "/blobserver/actuators", NULL, App::oscHandlerGetActuators, NULL);
         lo_server_thread_add_method(mOscServer, "/blobserver/sources", NULL, App::oscHandlerGetSources, NULL);
         lo_server_thread_add_method(mOscServer, NULL, NULL, App::oscGenericHandler, NULL);
         lo_server_thread_start(mOscServer);
@@ -302,21 +302,21 @@ int App::parseArgs(int argc, char** argv)
 /*****************/
 void App::registerClasses()
 {
-    // Register detectors
-    mDetectorFactory.register_class<Detector_BgSubtractor>(Detector_BgSubtractor::getClassName(),
-        Detector_BgSubtractor::getDocumentation());
-    mDetectorFactory.register_class<Detector_DepthTouch>(Detector_DepthTouch::getClassName(),
-        Detector_DepthTouch::getDocumentation());
-    mDetectorFactory.register_class<Detector_Hog>(Detector_Hog::getClassName(),
-        Detector_Hog::getDocumentation());
-    mDetectorFactory.register_class<Detector_LightSpots>(Detector_LightSpots::getClassName(),
-        Detector_LightSpots::getDocumentation());
-    mDetectorFactory.register_class<Detector_MeanOutliers>(Detector_MeanOutliers::getClassName(),
-        Detector_MeanOutliers::getDocumentation());
-    mDetectorFactory.register_class<Detector_Nop>(Detector_Nop::getClassName(),
-        Detector_Nop::getDocumentation());
-    mDetectorFactory.register_class<Detector_ObjOnAPlane>(Detector_ObjOnAPlane::getClassName(),
-        Detector_ObjOnAPlane::getDocumentation());
+    // Register actuators
+    mActuatorFactory.register_class<Actuator_BgSubtractor>(Actuator_BgSubtractor::getClassName(),
+        Actuator_BgSubtractor::getDocumentation());
+    mActuatorFactory.register_class<Actuator_DepthTouch>(Actuator_DepthTouch::getClassName(),
+        Actuator_DepthTouch::getDocumentation());
+    mActuatorFactory.register_class<Actuator_Hog>(Actuator_Hog::getClassName(),
+        Actuator_Hog::getDocumentation());
+    mActuatorFactory.register_class<Actuator_LightSpots>(Actuator_LightSpots::getClassName(),
+        Actuator_LightSpots::getDocumentation());
+    mActuatorFactory.register_class<Actuator_MeanOutliers>(Actuator_MeanOutliers::getClassName(),
+        Actuator_MeanOutliers::getDocumentation());
+    mActuatorFactory.register_class<Actuator_Nop>(Actuator_Nop::getClassName(),
+        Actuator_Nop::getDocumentation());
+    mActuatorFactory.register_class<Actuator_ObjOnAPlane>(Actuator_ObjOnAPlane::getClassName(),
+        Actuator_ObjOnAPlane::getDocumentation());
 
     // Register sources
     mSourceFactory.register_class<Source_2D_OpenCV>(Source_2D_OpenCV::getClassName(),
@@ -398,7 +398,7 @@ int App::loop()
                 if (flow->run == false)
                     continue;
 
-                // Apply the detector on these frames
+                // Apply the actuator on these frames
                 mThreadPool->enqueue([=, &lMutex] ()
                 {
                     // Retrieve the frames from all sources in this flow
@@ -412,14 +412,14 @@ int App::loop()
                             frames.push_back(flow->sources[i]->retrieveFrame());
                         }
                     }
-                    flow->detector->detect(frames);
+                    flow->actuator->detect(frames);
                 } );
             }
-            // Wait for all detectors to finish
+            // Wait for all actuators to finish
             mThreadPool->waitAllThreads(); 
 
             if (gBench)
-                timeSince(chronoStart, string("Update detectors"));
+                timeSince(chronoStart, string("Update actuators"));
 
             for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
             {
@@ -428,16 +428,16 @@ int App::loop()
 
                 // Get the message resulting from the detection
                 atom::Message message;
-                message = flow.detector->getLastMessage();
+                message = flow.actuator->getLastMessage();
 
-                Capture_Ptr output = flow.detector->getOutput();
+                Capture_Ptr output = flow.actuator->getOutput();
                 lBuffers.push_back(output);
 
 #if HAVE_SHMDATA
-                flow.shm->setCapture(output);
+                flow.sink->setCapture(output);
 #endif
 
-                lBufferNames.push_back(flow.detector->getName());
+                lBufferNames.push_back(flow.actuator->getName());
 
                 // Send messages
                 // Beginning of the frame
@@ -463,7 +463,7 @@ int App::loop()
                     
                     lo_message oscMsg = lo_message_new();
                     atom::message_build_to_lo_message(msg, oscMsg);
-                    lo_send_message(flow.client->get(), flow.detector->getOscPath().c_str(), oscMsg);
+                    lo_send_message(flow.client->get(), flow.actuator->getOscPath().c_str(), oscMsg);
                 }
 
                 // End of the frame
@@ -803,7 +803,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
 {
     shared_ptr<App> theApp = App::getInstance();
 
-    // Messge must be : ip / port / detector / source0 / subsource0 / source1 / ...
+    // Messge must be : ip / port / actuator / source0 / subsource0 / source1 / ...
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
 
@@ -837,30 +837,30 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     }
 
     // Check arguments
-    // First argument is the chosen detector, next ones are sources
-    string detectorName;
+    // First argument is the chosen actuator, next ones are sources
+    string actuatorName;
     try
     {
-        detectorName = atom::toString(message[1]);
+        actuatorName = atom::toString(message[1]);
     }
     catch (atom::BadTypeTagError typeError)
     {
-        lo_send(address->get(), "/blobserver/connect", "s", "Expected a detector type at position 2");
+        lo_send(address->get(), "/blobserver/connect", "s", "Expected a actuator type at position 2");
         return 1;
     }
 
-    // Create the specified detector
-    shared_ptr<Detector> detector;
-    if (theApp->mDetectorFactory.key_exists(detectorName))
-        detector = theApp->mDetectorFactory.create(detectorName);
+    // Create the specified actuator
+    shared_ptr<Actuator> actuator;
+    if (theApp->mActuatorFactory.key_exists(actuatorName))
+        actuator = theApp->mActuatorFactory.create(actuatorName);
     else
     {
-        lo_send(address->get(), "/blobserver/connect", "s", "Detector type not recognized");
+        lo_send(address->get(), "/blobserver/connect", "s", "Actuator type not recognized");
         return 1;
     }
 
     // Check how many cameras we need for it
-    unsigned int sourceNbr = detector->getSourceNbr();
+    unsigned int sourceNbr = actuator->getSourceNbr();
     
     // Allocate all the sources
     vector<shared_ptr<Source>> sources;
@@ -932,7 +932,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         // We can create the flow!
         Flow flow;
         
-        flow.detector = detector;
+        flow.actuator = actuator;
         flow.client = address;
         flow.id = theApp->getValidId();
         flow.run = false;
@@ -941,7 +941,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         sprintf(shmFile, "/tmp/blobserver_output_%i", flow.id);
 
 #if HAVE_SHMDATA
-        flow.shm = detector->getShmObject(shmFile);
+        flow.sink = actuator->getShmObject(shmFile);
 #endif
 
         vector<shared_ptr<Source>>::const_iterator source;
@@ -961,8 +961,8 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
             if (!isInSources)
                 theApp->mSources.push_back(*source);
 
-            // Adds a weak ptr to sources to the detector, for it to control them
-            detector->addSource(*source);
+            // Adds a weak ptr to sources to the actuator, for it to control them
+            actuator->addSource(*source);
         }
 
         theApp->mFlows.push_back(flow);
@@ -972,7 +972,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     }
     else
     {
-        lo_send(address->get(), "/blobserver/connect", "s", "The specified detector needs more sources");
+        lo_send(address->get(), "/blobserver/connect", "s", "The specified actuator needs more sources");
         return 1;
     }
     
@@ -1014,11 +1014,11 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
     }
     
     bool all = false;
-    int detectorId;
+    int actuatorId;
     if (message.size() == 1)
         all = true;
     else
-        detectorId = atom::toInt(message[1]);
+        actuatorId = atom::toInt(message[1]);
 
     // Delete flows related to this address, according to the parameter
     lock_guard<mutex> lock(theApp->mFlowMutex);
@@ -1027,7 +1027,7 @@ int App::oscHandlerDisconnect(const char* path, const char* types, lo_arg** argv
     {
         if (string(lo_address_get_url(flow->client->get())) == string(lo_address_get_url(address->get())))
         {
-            if (all == true || detectorId == flow->id)
+            if (all == true || actuatorId == flow->id)
             {
                 lo_send(flow->client->get(), "/blobserver/disconnect", "s", "Disconnected");
                 theApp->mFlows.erase(flow);
@@ -1076,7 +1076,7 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
         return 0;
     }
 
-    // Message must contain ip address, flow id, target (detector or src), src number if applicable, parameter and value
+    // Message must contain ip address, flow id, target (actuator or src), src number if applicable, parameter and value
     // or just ip address, flow id, and start/stop
     if (message.size() < 3)
     {
@@ -1095,8 +1095,8 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
         {
             lock_guard<mutex> lock(theApp->mFlowMutex);
 
-            // If the parameter is for the detector
-            if (atom::toString(message[2]) == "Detector")
+            // If the parameter is for the actuator
+            if (atom::toString(message[2]) == "Actuator")
             {
                 if (message.size() < 5)
                 {
@@ -1108,7 +1108,7 @@ int App::oscHandlerSetParameter(const char* path, const char* types, lo_arg** ar
                     atom::Message msg;
                     for (int i = 3; i < message.size(); ++i)
                         msg.push_back(message[i]);
-                    flow->detector->setParameter(msg);
+                    flow->actuator->setParameter(msg);
                 }
             }
             // If the parameter is for one of the sources
@@ -1205,12 +1205,12 @@ int App::oscHandlerGetParameter(const char* path, const char* types, lo_arg** ar
         {
             lock_guard<mutex> lock(theApp->mFlowMutex);
 
-            // If the parameter is for the detector
-            if (entity == "Detector")
+            // If the parameter is for the actuator
+            if (entity == "Actuator")
             {
                 atom::Message msg;
                 msg.push_back(message[3]);
-                msg = flow.detector->getParameter(msg);
+                msg = flow.actuator->getParameter(msg);
 
                 lo_message oscMsg = lo_message_new();
                 atom::message_build_to_lo_message(msg, oscMsg);
@@ -1259,7 +1259,7 @@ int App::oscHandlerGetParameter(const char* path, const char* types, lo_arg** ar
 }
 
 /*****************/
-int App::oscHandlerGetDetectors(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
+int App::oscHandlerGetActuators(const char* path, const char* types, lo_arg** argv, int argc, void* data, void* user_data)
 {
     shared_ptr<App> theApp = App::getInstance();
 
@@ -1289,8 +1289,8 @@ int App::oscHandlerGetDetectors(const char* path, const char* types, lo_arg** ar
         return 0;
     }
 
-    // Get all the available detectors
-    vector<string> keys = theApp->mDetectorFactory.get_keys();
+    // Get all the available actuators
+    vector<string> keys = theApp->mActuatorFactory.get_keys();
 
     atom::Message outMessage;
     for_each (keys.begin(), keys.end(), [&] (string key)
@@ -1301,7 +1301,7 @@ int App::oscHandlerGetDetectors(const char* path, const char* types, lo_arg** ar
     lo_message oscMsg = lo_message_new();
     atom::message_build_to_lo_message(outMessage, oscMsg);
 
-    lo_send_message(address->get(), "/blobserver/detectors", oscMsg);
+    lo_send_message(address->get(), "/blobserver/actuators", oscMsg);
 }
 
 /*****************/
