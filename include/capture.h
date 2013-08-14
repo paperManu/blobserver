@@ -29,6 +29,7 @@
 
 #include "config.h"
 
+#include <atom/stringvalue.h>
 #include <glib.h>
 #include <opencv2/opencv.hpp>
 #if HAVE_PCL
@@ -44,6 +45,16 @@ class Capture
         ~Capture() {};
 
         virtual std::string type() {};
+        atom::Value::ptr operator[](std::string prop)
+        {
+            if (metadata.find(prop) == metadata.end())
+                return atom::StringValue::create("n/a");
+            else
+                return metadata[prop];
+        }
+
+    protected:
+        std::map<std::string, atom::Value::ptr> metadata;
 };
 
 /*************/
