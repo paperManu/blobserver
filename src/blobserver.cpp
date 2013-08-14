@@ -201,6 +201,8 @@ int App::init(int argc, char** argv)
     mRun = true;
     mSourcesThread.reset(new thread(updateSources));
 
+    nanosleep(&nap, NULL);
+
     return 0;
 }
 
