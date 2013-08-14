@@ -33,6 +33,10 @@ void Actuator_ClusterPcl::make()
     mOscPath = "/blobserver/clusterPcl";
 
     mFrameNumber = 0;
+
+    mMinClusterSize = 50;
+    mMaxClusterSize = 25000;
+    mClusterTolerance = 0.03;
 }
 
 /*************/
@@ -67,9 +71,9 @@ atom::Message Actuator_ClusterPcl::detect(vector<Capture_Ptr> pCaptures)
 
     vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<pcl::PointXYZRGBA> ec;
-    ec.setClusterTolerance(0.03);
-    ec.setMinClusterSize(50);
-    ec.setMaxClusterSize(25000);
+    ec.setClusterTolerance(mClusterTolerance);
+    ec.setMinClusterSize(mMinClusterSize);
+    ec.setMaxClusterSize(mMaxClusterSize);
     ec.setSearchMethod(tree);
     ec.setInputCloud(pcl);
     ec.extract(cluster_indices);
@@ -112,6 +116,35 @@ atom::Message Actuator_ClusterPcl::detect(vector<Capture_Ptr> pCaptures)
 /*************/
 void Actuator_ClusterPcl::setParameter(atom::Message pMessage)
 {
+    std::string cmd;
+    try
+    {
+        cmd = toString(pMessage[0]);
+    }
+    catch (atom::BadTypeTagError error)
+    {
+        return;
+    }
+
+    if (cmd == "minClusterSize")
+    {
+        float size;
+        if (readParam(pMessage, size))
+            mMinClusterSize = max(1, (int)size);
+    }
+    if (cmd == "maxClusterSize")
+    {
+        float size;
+        if (readParam(pMessage, size))
+            mMaxClusterSize = max(1, (int)size);
+    }
+    if (cmd == "clusterTolerance")
+    {
+        float tol;
+        if (readParam(pMessage, tol))
+            mClusterTolerance = max((float)1e-3, tol);
+    }
+
     setBaseParameter(pMessage);
 }
 

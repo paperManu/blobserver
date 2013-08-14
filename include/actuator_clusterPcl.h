@@ -55,6 +55,9 @@ class Actuator_ClusterPcl : public Actuator
 
         Capture_Ptr mCapture;
 
+        int mMinClusterSize, mMaxClusterSize;
+        float mClusterTolerance;
+
         void make();
 };
 

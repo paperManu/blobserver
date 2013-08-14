@@ -225,7 +225,7 @@ void Actuator_BgSubtractor::setParameter(atom::Message pMessage)
         if (readParam(pMessage, filterSize))
             mFilterSize = max(1, (int)filterSize);
     }
-    if (cmd == "filterDilateCoeff")
+    else if (cmd == "filterDilateCoeff")
     {
         float filterSize;
         if (readParam(pMessage, filterSize))
