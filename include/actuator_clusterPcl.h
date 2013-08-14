@@ -44,9 +44,7 @@ class Actuator_ClusterPcl : public Actuator
         atom::Message detect(std::vector<Capture_Ptr> pCaptures);
         void setParameter(atom::Message pMessage);
 
-        Capture_Ptr getOutput() const {return mCapture;}
-
-        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<ShmPcl>(new ShmPcl(filename));}
+        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<ShmImage>(new ShmImage(filename));}
 
     private:
         static std::string mClassName;

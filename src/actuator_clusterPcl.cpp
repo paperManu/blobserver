@@ -46,7 +46,11 @@ atom::Message Actuator_ClusterPcl::detect(vector<Capture_Ptr> pCaptures)
             pointclouds.push_back(pcl->get());
     });
 
+    if (pointclouds.size() == 0)
+        return mLastMessage;
+
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pcl = pointclouds[0];
+
     if (pcl->points.size() == 0)
         return mLastMessage;
 
@@ -87,12 +91,13 @@ atom::Message Actuator_ClusterPcl::detect(vector<Capture_Ptr> pCaptures)
 
     mLastMessage.clear();
     mLastMessage.push_back(atom::IntValue::create(clusterPositions.size()));
-    mLastMessage.push_back(atom::IntValue::create(3));
+    mLastMessage.push_back(atom::IntValue::create(4));
     for (int i = 0; i < clusterPositions.size(); i++)
     {
         mLastMessage.push_back(atom::FloatValue::create(clusterPositions[i].x));
         mLastMessage.push_back(atom::FloatValue::create(clusterPositions[i].y));
         mLastMessage.push_back(atom::FloatValue::create(clusterPositions[i].z));
+        mLastMessage.push_back(atom::IntValue::create(i));
     }
 
     return mLastMessage;

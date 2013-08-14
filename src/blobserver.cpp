@@ -323,6 +323,10 @@ void App::registerClasses()
         Actuator_Nop::getDocumentation());
     mActuatorFactory.register_class<Actuator_ObjOnAPlane>(Actuator_ObjOnAPlane::getClassName(),
         Actuator_ObjOnAPlane::getDocumentation());
+#if HAVE_PCL
+    mActuatorFactory.register_class<Actuator_ClusterPcl>(Actuator_ClusterPcl::getClassName(),
+        Actuator_ClusterPcl::getDocumentation());
+#endif // HAVE_PCL
 
     // Register sources
     mSourceFactory.register_class<Source_2D_OpenCV>(Source_2D_OpenCV::getClassName(),
