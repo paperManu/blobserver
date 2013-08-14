@@ -47,12 +47,18 @@ atom::Message Actuator_ClusterPcl::detect(vector<Capture_Ptr> pCaptures)
     });
 
     if (pointclouds.size() == 0)
+    {
+        mLastMessage.clear();
         return mLastMessage;
+    }
 
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pcl = pointclouds[0];
 
     if (pcl->points.size() == 0)
+    {
+        mLastMessage.clear();
         return mLastMessage;
+    }
 
     vector<pcl::PointXYZ> clusterPositions;
 

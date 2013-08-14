@@ -393,7 +393,7 @@ int App::loop()
         }
 
         if (gBench)
-            timeSince(chronoStart, string("Retrieve corrected frames"));
+            timeSince(chronoStart, string("Benchmark - Retrieve frames"));
 
         // Go through the flows
         {
@@ -429,7 +429,7 @@ int App::loop()
             mThreadPool->waitAllThreads(); 
 
             if (gBench)
-                timeSince(chronoStart, string("Update actuators"));
+                timeSince(chronoStart, string("Benchmark - Update actuators"));
 
             for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
             {
@@ -481,7 +481,7 @@ int App::loop()
             } );
 
             if (gBench)
-                timeSince(chronoStart, string("Update buffers"));
+                timeSince(chronoStart, string("Benchmark - Update buffers"));
         }
 
         if (lShowCamera)
@@ -522,7 +522,7 @@ int App::loop()
         nanosleep(&nap, NULL);
 
         if (gBench)
-            timeSince(chronoStart, string("3 - Total frame time"));
+            timeSince(chronoStart, string("Benchmark - Total frame time"));
 
         frameNbr++;
     }
