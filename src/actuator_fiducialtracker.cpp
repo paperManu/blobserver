@@ -28,7 +28,7 @@ void Actuator_FiducialTracker::make()
 
     mName = mClassName;
     // OSC path for this actuator
-    mOscPath = "/blobserver/nop";
+    mOscPath = "/blobserver/fiducialtracker";
 
     mFrameNumber = 0;
 
@@ -103,16 +103,24 @@ atom::Message Actuator_FiducialTracker::detect(vector< Capture_Ptr > pCaptures)
     int fidCount = find_fiducialsX(mFiducials, MAX_FIDUCIAL_COUNT, &mFidTrackerx, &mFidSegmenter, mWidth, mHeight);
     g_log(NULL, G_LOG_LEVEL_DEBUG, "%s: Number of marker found: %i", mClassName.c_str(), fidCount);
 
+    mLastMessage.clear();
+    mLastMessage.push_back(atom::IntValue::create(fidCount));
+    mLastMessage.push_back(atom::IntValue::create(4));
+
     for (int i = 0; i < fidCount; ++i)
     {
         char buffer[16];
         sprintf(buffer, "%i", mFiducials[i].id);
         cv::putText(mOutputBuffer, string(buffer), cv::Point(mFiducials[i].x, mFiducials[i].y), cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(128), 3);
         cv::putText(mOutputBuffer, string(buffer), cv::Point(mFiducials[i].x, mFiducials[i].y), cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255), 1);
+
+        mLastMessage.push_back(atom::IntValue::create(mFiducials[i].id));
+        mLastMessage.push_back(atom::FloatValue::create(mFiducials[i].x));
+        mLastMessage.push_back(atom::FloatValue::create(mFiducials[i].y));
+        mLastMessage.push_back(atom::FloatValue::create(mFiducials[i].angle));
     }
 
     mFrameNumber++;
-    mLastMessage = atom::createMessage("iii", 1, 1, mFrameNumber);
 
     return mLastMessage;
 }
