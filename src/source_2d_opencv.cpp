@@ -86,6 +86,9 @@ cv::Mat Source_2D_OpenCV::retrieveRawFrame()
     mCamera.retrieve(buffer);
     mBuffer = buffer;
 
+    // If in-camera autoexposure is on, this needs to be done at each frame
+    mExposureTime = (float)(mCamera.get(CV_CAP_PROP_EXPOSURE));
+
     return mBuffer.get().clone();
 }
 
