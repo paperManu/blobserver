@@ -35,9 +35,11 @@
 #include "source_2d_opencv.h"
 #include "source_2d_shmdata.h"
 #include "source_3d_shmdata.h"
+
 #include "actuator_bgsubtractor.h"
 #include "actuator_clusterPcl.h"
 #include "actuator_depthtouch.h"
+#include "actuator_fiducialtracker.h"
 #include "actuator_hog.h"
 #include "actuator_lightSpots.h"
 #include "actuator_meanOutliers.h"
@@ -313,6 +315,8 @@ void App::registerClasses()
         Actuator_BgSubtractor::getDocumentation());
     mActuatorFactory.register_class<Actuator_DepthTouch>(Actuator_DepthTouch::getClassName(),
         Actuator_DepthTouch::getDocumentation());
+    mActuatorFactory.register_class<Actuator_FiducialTracker>(Actuator_FiducialTracker::getClassName(),
+        Actuator_FiducialTracker::getDocumentation());
     mActuatorFactory.register_class<Actuator_Hog>(Actuator_Hog::getClassName(),
         Actuator_Hog::getDocumentation());
     mActuatorFactory.register_class<Actuator_LightSpots>(Actuator_LightSpots::getClassName(),

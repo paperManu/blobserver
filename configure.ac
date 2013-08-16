@@ -14,7 +14,7 @@ AC_CONFIG_HEADERS([include/config.h])
 
 # Check for C and C++ compilers
 AC_PROG_CXX
-AC_PROG_CC
+AM_PROG_CC_C_O
 
 AC_MSG_CHECKING([to see if compiler understands -std=gnu++0x])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ ], [ ])], [
