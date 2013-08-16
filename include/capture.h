@@ -41,35 +41,10 @@
 class Capture
 {
     public:
-        struct Metadata
-        {
-            std::string type;
-            union data
-            {
-                int i;
-                float f;
-                std::string s;
-            };
-        };
-
         Capture() {};
         ~Capture() {};
 
         virtual std::string type() {};
-        Metadata operator[](std::string prop)
-        {
-            if (mMetadata.find(prop) == mMetadata.end())
-            {
-                Metadata blank;
-                blank.type = "n";
-                return blank;
-            }
-            else
-                return mMetadata[prop];
-        }
-
-    protected:
-        std::map<std::string, Metadata> mMetadata;
 };
 
 /*************/
