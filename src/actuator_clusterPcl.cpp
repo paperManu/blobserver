@@ -1,14 +1,14 @@
 #include "actuator_clusterPcl.h"
 
+using namespace std;
+
+#if HAVE_PCL
+
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/segmentation/extract_clusters.h>
-
-using namespace std;
-
-#if HAVE_PCL
 
 std::string Actuator_ClusterPcl::mClassName = "Actuator_ClusterPcl";
 std::string Actuator_ClusterPcl::mDocumentation = "N/A";
