@@ -1,39 +1,18 @@
 <Blobserver>
     <Flow>
         <Actuator>
-            <Type>Actuator_Hog</Type>
-            <Param>
-                <Name>verbose</Name>
-                <Value>0</Value>
-            </Param>
-
-            <Param>
-                <Name>modelFilename</Name>
-                <Value>model.xml</Value>
-            </Param>
-            <Param>
-                <Name>maxTimePerFrame</Name>
-                <Value>1e5</Value>
-            </Param>
-            <Param>
-                <Name>maxThreads</Name>
-                <Value>8</Value>
-            </Param>
-            <Param>
-                <Name>mergeDistance</Name>
-                <Value>64</Value>
-            </Param>
+            <Type>Actuator_FiducialTracker</Type>
         </Actuator>
         <Source>
             <Type>Source_2D_OpenCV</Type>
             <Subsource>300</Subsource>
             <Param>
                 <Name>framerate</Name>
-                <Value>30</Value>
+                <Value>15</Value>
             </Param>
             <Param>
                 <Name>iso</Name>
-                <Value>800</Value>
+                <Value>400</Value>
             </Param>
             <Param>
                 <Name>width</Name>
@@ -45,11 +24,11 @@
             </Param>
             <Param>
                 <Name>exposureTime</Name>
-                <Value>1024</Value>
+                <Value>500</Value>
             </Param>
             <Param>
-                <Name>gain</Name>
-                <Value>512</Value>
+                <Name>autoExposure</Name>
+                <Value>300 200 80 40 127 32 0.05</Value>
             </Param>
             <Param>
                 <Name>whiteBalanceRed</Name>
@@ -60,8 +39,8 @@
                 <Value>512</Value>
             </Param>
             <Param>
-                <Name>gamma</Name>
-                <Value>2.2</Value>
+                <Name>save</Name>
+                <Value>0 5 /home/manu/tmp/test_</Value>
             </Param>
         </Source>
         <Client>

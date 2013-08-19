@@ -18,23 +18,23 @@
  */
 
 /*
- * @detector_mainOutliers.h
- * The Detector_MainOutliers class.
+ * @detector_stitch.h
+ * The Actuator_Stitch class.
  */
 
-#ifndef DETECTOR_MEANOUTLIERS_H
-#define DETECTOR_MEANOUTLIERS_H
+#ifndef ACTUATOR_STITCH_H
+#define ACTUATOR_STITCH_H
 
-#include "detector.h"
-#include "blob_2D.h"
+#include "actuator.h"
+#include "base_objects.h"
 
-/*************/
-// Class Detector_MeanOutliers
-class Detector_MeanOutliers : public Detector
+ /*************/
+// Class Actuator_Stitch
+class Actuator_Stitch : public Actuator
 {
     public:
-        Detector_MeanOutliers();
-        Detector_MeanOutliers(int pParam);
+        Actuator_Stitch();
+        Actuator_Stitch(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -44,17 +44,20 @@ class Detector_MeanOutliers : public Detector
 
         std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
 
+
     private:
         static std::string mClassName;
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        float mDetectionLevel; // Above std dev * mDetectionLevel, an object is detected
-        int mFilterSize;
-        Blob2D mMeanBlob;
-        bool isInitialized;
+        unsigned int mFrameNumber;
+
+        bool defineOutputResolution;
+        bool source_crop[2];
+        unsigned int source_crop_parameters[2][4];
+        unsigned int source_pos[2][2];
 
         void make();
 };
 
-#endif // DETECTOR_MEANOUTLIERS_H
+#endif // ACTUATOR_STITCH_H

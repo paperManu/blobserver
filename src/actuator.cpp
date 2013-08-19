@@ -1,39 +1,39 @@
-#include "detector.h"
+#include "actuator.h"
 
 using namespace std;
 
-std::string Detector::mClassName = "Detector";
-std::string Detector::mDocumentation = "N/A";
-unsigned int Detector::mSourceNbr = 1;
+std::string Actuator::mClassName = "Actuator";
+std::string Actuator::mDocumentation = "N/A";
+unsigned int Actuator::mSourceNbr = 1;
 
 /**************/
-Detector::Detector()
+Actuator::Actuator()
 {
     mName = mClassName;
     mSourceNbr = 1;
 
     mVerbose = true;
 
-    mOutputBuffer = cv::Mat::zeros(0, 0, CV_8U);
+    mOutputBuffer = cv::Mat::zeros(480, 640, CV_8U);
     // By default, the mask is all white (all pixels are used)
     mSourceMask = cv::Mat::ones(1, 1, CV_8U);
 }
 
 /**************/
-Detector::Detector(int pParam)
+Actuator::Actuator(int pParam)
 {
-    Detector();
+    Actuator();
 }
 
 /**************/
-void Detector::setMask(cv::Mat pMask)
+void Actuator::setMask(cv::Mat pMask)
 {
     mSourceMask = pMask.clone();
     mMask = pMask.clone();
 }
 
 /**************/
-atom::Message Detector::getParameter(atom::Message pParam) const
+atom::Message Actuator::getParameter(atom::Message pParam) const
 {
     atom::Message message;
 
@@ -60,7 +60,7 @@ atom::Message Detector::getParameter(atom::Message pParam) const
 }
 
 /**************/
-void Detector::setBaseParameter(const atom::Message pMessage)
+void Actuator::setBaseParameter(const atom::Message pMessage)
 {
     std::string cmd;
     try
@@ -81,13 +81,13 @@ void Detector::setBaseParameter(const atom::Message pMessage)
 }
 
 /**************/
-void Detector::addSource(shared_ptr<Source> source)
+void Actuator::addSource(shared_ptr<Source> source)
 {
     mSources.push_back(source);
 }
 
 /**************/
-cv::Mat Detector::getMask(cv::Mat pCapture, int pInterpolation)
+cv::Mat Actuator::getMask(cv::Mat pCapture, int pInterpolation)
 {
     if (pCapture.rows != mMask.rows || pCapture.cols != mMask.cols)
         cv::resize(mSourceMask, mMask, pCapture.size(), 0, 0, pInterpolation);
@@ -96,7 +96,7 @@ cv::Mat Detector::getMask(cv::Mat pCapture, int pInterpolation)
 }
 
 /**************/
-vector<cv::Mat> Detector::captureToMat(vector< Capture_Ptr > pCaptures)
+vector<cv::Mat> Actuator::captureToMat(vector< Capture_Ptr > pCaptures)
 {
     vector<cv::Mat> images;
     for_each (pCaptures.begin(), pCaptures.end(), [&] (Capture_Ptr capture)

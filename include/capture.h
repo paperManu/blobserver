@@ -29,6 +29,7 @@
 
 #include "config.h"
 
+#include <atom/stringvalue.h>
 #include <glib.h>
 #include <opencv2/opencv.hpp>
 #if HAVE_PCL

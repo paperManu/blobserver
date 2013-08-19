@@ -18,26 +18,26 @@
  */
 
 /*
- * @detector_depthtouch.h
- * The Detector_DepthTouch class.
+ * @actuator_bgsubtractor.h
+ * The Actuator_BgSubtractor class.
  */
 
-#ifndef DETECTOR_DEPTHTOUCH_H
-#define DETECTOR_DEPTHTOUCH_H
+#ifndef ACTUATOR_BGSUBTRACTOR_H
+#define ACTUATOR_BGSUBTRACTOR_H
 
 #include <vector>
 
 #include "config.h"
-#include "detector.h"
-#include "blob_2D.h"
+#include "actuator.h"
+#include "blob_2D_color.h"
 
 /*************/
-// Class Detector_DepthTouch
-class Detector_DepthTouch : public Detector
+// Class Actuator_BgSubtractor
+class Actuator_BgSubtractor : public Actuator
 {
     public:
-        Detector_DepthTouch();
-        Detector_DepthTouch(int pParam);
+        Actuator_BgSubtractor();
+        Actuator_BgSubtractor(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -52,28 +52,29 @@ class Detector_DepthTouch : public Detector
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        // Detection parameters
-        int mFilterSize;
-        float mDetectionDistance;
-        float mSigmaCoeff;
-        int mLearningTime;
+        std::vector<Blob2DColor> mBlobs; // Vector of detected and tracked blobs
 
-        // Internal variables
-        bool mIsLearning;
-        int mLearningLeft;
+        // Some filtering parameters
+        int mFilterSize;
+        int mFilterDilateCoeff;
 
         // Tracking and movement filtering parameters
-        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
         int mBlobLifetime;
+        int mKeepOldBlobs, mKeepMaxTime; // Parameters to set when we need blobs to be kept even when not detected anymore
         float mProcessNoiseCov, mMeasurementNoiseCov;
+        float mMaxDistanceForColorDiff;
 
-        cv::Mat mBackgroundMean;
-        cv::Mat mBackgroundStddev;
-        std::vector<cv::Mat> mLearningData;
+        // Background subtractor, used to select window of interest
+        // to feed to the SVM
+        cv::BackgroundSubtractorMOG2 mBgSubtractor;
+
+        // Various variables
+        cv::Mat mBgSubtractorBuffer;
+        float mLearningRate, mLearningTime;
+        float mMinArea, mMaxArea;
 
         // Methods
         void make();
-        void learn(cv::Mat input);
 };
 
-#endif // DETECTOR_DEPTHTOUCH_H
+#endif // ACTUATOR_BGSUBTRACTOR_H

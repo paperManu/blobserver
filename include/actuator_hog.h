@@ -18,26 +18,27 @@
  */
 
 /*
- * @detector_bgsubtractor.h
- * The Detector_BgSubtractor class.
+ * @actuator_hog.h
+ * The Actuator_Hog class.
  */
 
-#ifndef DETECTOR_BGSUBTRACTOR_H
-#define DETECTOR_BGSUBTRACTOR_H
+#ifndef ACTUATOR_HOG_H
+#define ACTUATOR_HOG_H
 
 #include <vector>
 
 #include "config.h"
-#include "detector.h"
-#include "blob_2D_color.h"
+#include "actuator.h"
+#include "descriptor_hog.h"
+#include "blob_2D.h"
 
-/*************/
-// Class Detector_BgSubtractor
-class Detector_BgSubtractor : public Detector
+ /*************/
+// Class Actuator_Hog
+class Actuator_Hog : public Actuator
 {
     public:
-        Detector_BgSubtractor();
-        Detector_BgSubtractor(int pParam);
+        Actuator_Hog();
+        Actuator_Hog(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -52,7 +53,7 @@ class Detector_BgSubtractor : public Detector
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        std::vector<Blob2DColor> mBlobs; // Vector of detected and tracked blobs
+        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
 
         // Some filtering parameters
         int mFilterSize;
@@ -62,7 +63,26 @@ class Detector_BgSubtractor : public Detector
         int mBlobLifetime;
         int mKeepOldBlobs, mKeepMaxTime; // Parameters to set when we need blobs to be kept even when not detected anymore
         float mProcessNoiseCov, mMeasurementNoiseCov;
-        float mMaxDistanceForColorDiff;
+
+        // Descriptor to identify objects...
+        Descriptor_Hog mDescriptor;
+        // ... and its parameters
+        cv::Size_<int> mRoiSize;
+        cv::Size_<int> mBlockSize;
+        cv::Size_<int> mCellSize;
+        unsigned int mBins;
+        float mSigma;
+
+        // SVM...
+        CvSVM mSvm;
+        float mSvmMargin;
+        bool mIsModelLoaded;
+        std::vector<cv::Point> mSvmValidPositions;
+        unsigned long long mMaxTimePerFrame; // Maximum time allowed per frame, in usec
+        int mMaxThreads; // Maximum number of concurrent threads
+        // PCA ...
+        cv::PCA mPca;
+        bool mIsPcaLoaded;
 
         // Background subtractor, used to select window of interest
         // to feed to the SVM
@@ -70,11 +90,14 @@ class Detector_BgSubtractor : public Detector
 
         // Various variables
         cv::Mat mBgSubtractorBuffer;
-        float mLearningRate, mLearningTime;
-        float mMinArea, mMaxArea;
+        cv::RNG mRng;
+        float mBlobMergeDistance; // Distance to considerer two blobs as one
+        bool mSaveSamples; // If true, save samples older than mSaveSamplesAge
+        unsigned long mSaveSamplesAge;
 
         // Methods
         void make();
+        void updateDescriptorParams();
 };
 
-#endif // DETECTOR_BGSUBTRACTOR_H
+#endif // ACTUATOR_HOG_H

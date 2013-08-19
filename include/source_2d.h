@@ -166,6 +166,9 @@ class Source_2D : public Source
         unsigned int mWidth, mHeight;
         unsigned int mChannels;
 
+        // Exposure LUT
+        LookupTable mExposureLUT;
+
         float mExposureTime, mExposureParam; // Both are not necessarily identical
         float mAperture;
         float mGain;
@@ -217,7 +220,7 @@ class Source_2D : public Source
 
         // Color correction
         cmsHTRANSFORM mICCTransform;
-
+        
         // Auto exposure
         cv::Rect mAutoExposureRoi;
         float mAutoExposureTarget, mAutoExposureThreshold, mAutoExposureStep;

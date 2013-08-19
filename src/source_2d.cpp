@@ -254,6 +254,27 @@ void Source_2D::setBaseParameter(atom::Message pParam)
             cmsDeleteTransform(mICCTransform);
         mICCTransform = loadICCTransform(filename);
     }
+    else if (paramName == "exposureLUT")
+    {
+        int nbr;
+        if (!readParam(pParam, nbr))
+            return;
+
+        int type;
+        if (!readParam(pParam, type, 2))
+            return;
+
+        vector< vector<float> > keys;
+        for (int i = 0; i < nbr / 2; ++i)
+        {
+            if (!readParam(pParam, keys[i][0], i * 2 + 3))
+                return;
+            if (!readParam(pParam, keys[i][1], i * 2 + 4))
+                return;
+        }
+
+        mExposureLUT.set((LookupTable::interpolation)type, keys);
+    }
     else if (paramName == "autoExposure")
     {
         float v[7];

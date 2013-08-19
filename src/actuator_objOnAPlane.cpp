@@ -1,4 +1,4 @@
-#include "detector_objOnAPlane.h"
+#include "actuator_objOnAPlane.h"
 
 using namespace std;
 
@@ -71,26 +71,26 @@ class Parallel_Compare : public cv::ParallelLoopBody
 };
 
 /*****************/
-// Definition of Detector_ObjOnAPlane
+// Definition of Actuator_ObjOnAPlane
 /*****************/
-std::string Detector_ObjOnAPlane::mClassName = "Detector_ObjOnAPlane";
-std::string Detector_ObjOnAPlane::mDocumentation = "N/A";
-unsigned int Detector_ObjOnAPlane::mSourceNbr = 0;
+std::string Actuator_ObjOnAPlane::mClassName = "Actuator_ObjOnAPlane";
+std::string Actuator_ObjOnAPlane::mDocumentation = "N/A";
+unsigned int Actuator_ObjOnAPlane::mSourceNbr = 0;
 
 /*****************/
-Detector_ObjOnAPlane::Detector_ObjOnAPlane()
+Actuator_ObjOnAPlane::Actuator_ObjOnAPlane()
 {
     make();
 }
 
 /*****************/
-Detector_ObjOnAPlane::Detector_ObjOnAPlane(int pParam)
+Actuator_ObjOnAPlane::Actuator_ObjOnAPlane(int pParam)
 {
     make();
 }
 
 /*****************/
-void Detector_ObjOnAPlane::make()
+void Actuator_ObjOnAPlane::make()
 {
     mName = mClassName;
     mOscPath = "/blobserver/objOnAPlane";
@@ -105,7 +105,7 @@ void Detector_ObjOnAPlane::make()
 }
 
 /*****************/
-atom::Message Detector_ObjOnAPlane::detect(const vector< Capture_Ptr > pCaptures)
+atom::Message Actuator_ObjOnAPlane::detect(const vector< Capture_Ptr > pCaptures)
 {
     vector<cv::Mat> captures = captureToMat(pCaptures);
 
@@ -226,7 +226,7 @@ atom::Message Detector_ObjOnAPlane::detect(const vector< Capture_Ptr > pCaptures
 }
 
 /*****************/
-void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
+void Actuator_ObjOnAPlane::setParameter(atom::Message pMessage)
 {
     std::string cmd;
     try
@@ -355,7 +355,7 @@ void Detector_ObjOnAPlane::setParameter(atom::Message pMessage)
 }
 
 /*****************/
-void Detector_ObjOnAPlane::updateMaps(std::vector<cv::Mat> pCaptures)
+void Actuator_ObjOnAPlane::updateMaps(std::vector<cv::Mat> pCaptures)
 {
     mMaps.clear();
 

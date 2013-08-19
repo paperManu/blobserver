@@ -1,4 +1,4 @@
-#include "detector_hog.h"
+#include "actuator_hog.h"
 
 #include <chrono>
 #include <memory>
@@ -72,26 +72,26 @@ class Parallel_Detect : public cv::ParallelLoopBody
 };
 
 /*************/
-// Definition of class Detector_Hog
+// Definition of class Actuator_Hog
 /*************/
-std::string Detector_Hog::mClassName = "Detector_Hog";
-std::string Detector_Hog::mDocumentation = "N/A";
-unsigned int Detector_Hog::mSourceNbr = 1;
+std::string Actuator_Hog::mClassName = "Actuator_Hog";
+std::string Actuator_Hog::mDocumentation = "N/A";
+unsigned int Actuator_Hog::mSourceNbr = 1;
 
 /*************/
-Detector_Hog::Detector_Hog()
+Actuator_Hog::Actuator_Hog()
 {
     make();
 }
 
 /*************/
-Detector_Hog::Detector_Hog(int pParam)
+Actuator_Hog::Actuator_Hog(int pParam)
 {
     make();
 }
 
 /*************/
-void Detector_Hog::make()
+void Actuator_Hog::make()
 {
     mOutputBuffer = cv::Mat::zeros(480, 640, CV_8UC3);
 
@@ -127,7 +127,7 @@ void Detector_Hog::make()
 }
 
 /*************/
-atom::Message Detector_Hog::detect(const vector< Capture_Ptr > pCaptures)
+atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
 {
     vector<cv::Mat> captures = captureToMat(pCaptures);
     if (captures.size() < mSourceNbr)
@@ -356,7 +356,7 @@ atom::Message Detector_Hog::detect(const vector< Capture_Ptr > pCaptures)
 }
 
 /*************/
-void Detector_Hog::setParameter(atom::Message pMessage)
+void Actuator_Hog::setParameter(atom::Message pMessage)
 {
     std::string cmd;
     try
@@ -518,7 +518,7 @@ void Detector_Hog::setParameter(atom::Message pMessage)
 }
 
 /*************/
-void Detector_Hog::updateDescriptorParams()
+void Actuator_Hog::updateDescriptorParams()
 {
     mDescriptor.setHogParams(mRoiSize, mBlockSize, mCellSize, mBins, false, Descriptor_Hog::L2_NORM, mSigma);
 }

@@ -56,6 +56,31 @@ class OscClient
         lo_address mAddress;
 };
 
+/*************/
+// LookupTable objects
+class LookupTable
+{
+    public:
+        enum interpolation
+        {
+            linear = 0
+        };
+        LookupTable();
+        LookupTable(interpolation inter, std::vector< std::vector<float> > keys);
+        void set(interpolation inter, std::vector< std::vector<float> > keys);
+        bool isSet() {return mIsSet;}
+
+        float operator[](const float& value);
+        bool isOutOfRange() {return mOutOfRange;}
+
+    private:
+        bool mIsSet;
+        interpolation mInterpolation;
+        float mStart[2], mEnd[2];
+        std::vector< std::vector<float> > mKeys;
+        bool mOutOfRange;
+};
+
 #if HAVE_SHMDATA
 /*************/
 // Generic Shmdata writer class

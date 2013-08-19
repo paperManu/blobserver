@@ -32,9 +32,9 @@
 #include <glib.h>
 #include <atom/message.h>
 
+#include "base_objects.h"
 #include "capture.h"
 #include "helpers.h"
-#include "hdribuilder.h"
 
 /*************/
 //! Base Source class, from which all Source classes derive

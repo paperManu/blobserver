@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Emmanuel Durand
+ * Copyright (C) 2013 Emmanuel Durand
  *
  * This file is part of blobserver.
  *
@@ -18,21 +18,26 @@
  */
 
 /*
- * @detector_lightSpots.h
- * The Detector_LightSpots class.
+ * @actuator_depthtouch.h
+ * The Actuator_DepthTouch class.
  */
 
-#ifndef DETECTOR_LIGHTSPOTS_H
-#define DETECTOR_LIGHTSPOTS_H
+#ifndef ACTUATOR_DEPTHTOUCH_H
+#define ACTUATOR_DEPTHTOUCH_H
 
-#include "detector.h"
+#include <vector>
+
+#include "config.h"
+#include "actuator.h"
 #include "blob_2D.h"
 
-class Detector_LightSpots : public Detector
+/*************/
+// Class Actuator_DepthTouch
+class Actuator_DepthTouch : public Actuator
 {
     public:
-        Detector_LightSpots();
-        Detector_LightSpots(int pParam);
+        Actuator_DepthTouch();
+        Actuator_DepthTouch(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -46,16 +51,29 @@ class Detector_LightSpots : public Detector
         static std::string mClassName;
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
-        
-        cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
-        std::vector<Blob2D> mLightBlobs; // Vector of detected and tracked blobs
 
-        int mMaxTrackedBlobs;
-        float mDetectionLevel;
+        // Detection parameters
         int mFilterSize;
+        float mDetectionDistance;
+        float mSigmaCoeff;
+        int mLearningTime;
+
+        // Internal variables
+        bool mIsLearning;
+        int mLearningLeft;
+
+        // Tracking and movement filtering parameters
+        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
+        int mBlobLifetime;
         float mProcessNoiseCov, mMeasurementNoiseCov;
 
+        cv::Mat mBackgroundMean;
+        cv::Mat mBackgroundStddev;
+        std::vector<cv::Mat> mLearningData;
+
+        // Methods
         void make();
+        void learn(cv::Mat input);
 };
 
-#endif // DETECTOR_LIGHTSPOTS_H
+#endif // ACTUATOR_DEPTHTOUCH_H

@@ -1,32 +1,32 @@
-#include "detector_lightSpots.h"
+#include "actuator_lightSpots.h"
 
 using namespace std;
 
-std::string Detector_LightSpots::mClassName = "Detector_LightSpots";
-std::string Detector_LightSpots::mDocumentation = "N/A";
-unsigned int Detector_LightSpots::mSourceNbr = 1;
+std::string Actuator_LightSpots::mClassName = "Actuator_LightSpots";
+std::string Actuator_LightSpots::mDocumentation = "N/A";
+unsigned int Actuator_LightSpots::mSourceNbr = 1;
 
 /*************/
-Detector_LightSpots::Detector_LightSpots()
+Actuator_LightSpots::Actuator_LightSpots()
 {
     make();
 }
 
 /*************/
-Detector_LightSpots::Detector_LightSpots(int pParam)
+Actuator_LightSpots::Actuator_LightSpots(int pParam)
 {
     make();
 }
 
 /*************/
-void Detector_LightSpots::make()
+void Actuator_LightSpots::make()
 {
     mDetectionLevel = 2.f;
     mFilterSize = 3;
     mMaxTrackedBlobs = 8;
 
     mName = mClassName;
-    // OSC path for this detector
+    // OSC path for this actuator
     mOscPath = "/blobserver/lightSpots";
 
     mProcessNoiseCov = 1e-5;
@@ -46,7 +46,7 @@ void Detector_LightSpots::make()
 }
 
 /*************/
-atom::Message Detector_LightSpots::detect(const vector< Capture_Ptr > pCaptures)
+atom::Message Actuator_LightSpots::detect(const vector< Capture_Ptr > pCaptures)
 {
     vector<cv::Mat> captures = captureToMat(pCaptures);
     if (captures.size() < mSourceNbr)
@@ -156,7 +156,7 @@ atom::Message Detector_LightSpots::detect(const vector< Capture_Ptr > pCaptures)
 }
 
 /*************/
-void Detector_LightSpots::setParameter(atom::Message pMessage)
+void Actuator_LightSpots::setParameter(atom::Message pMessage)
 {
     atom::Message::const_iterator iter = pMessage.begin();
 

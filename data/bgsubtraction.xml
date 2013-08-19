@@ -1,7 +1,7 @@
 <Blobserver>
     <Flow>
-        <Detector>
-            <Type>Detector_BgSubtractor</Type>
+        <Actuator>
+            <Type>Actuator_BgSubtractor</Type>
             <Param>
                 <Name>verbose</Name>
                 <Value>0</Value>
@@ -14,7 +14,15 @@
                 <Name>learningTime</Name>
                 <Value>300</Value>
             </Param>
-        </Detector>
+            <Param>
+                <Name>lifetime</Name>
+                <Value>30</Value>
+            </Param>
+            <Param>
+                <Name>area</Name>
+                <Value>0.0 65535.0</Value>
+            </Param>
+        </Actuator>
         <Source>
             <Type>Source_2D_OpenCV</Type>
             <Subsource>300</Subsource>

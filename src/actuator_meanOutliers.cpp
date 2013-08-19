@@ -1,32 +1,32 @@
-#include "detector_meanOutliers.h"
+#include "actuator_meanOutliers.h"
 
 using namespace std;
 
-std::string Detector_MeanOutliers::mClassName = "Detector_MeanOutliers";
-std::string Detector_MeanOutliers::mDocumentation = "N/A";
-unsigned int Detector_MeanOutliers::mSourceNbr = 1;
+std::string Actuator_MeanOutliers::mClassName = "Actuator_MeanOutliers";
+std::string Actuator_MeanOutliers::mDocumentation = "N/A";
+unsigned int Actuator_MeanOutliers::mSourceNbr = 1;
 
 /*************/
-Detector_MeanOutliers::Detector_MeanOutliers()
+Actuator_MeanOutliers::Actuator_MeanOutliers()
 {
     make();
 }
 
 /*************/
-Detector_MeanOutliers::Detector_MeanOutliers(int pParam)
+Actuator_MeanOutliers::Actuator_MeanOutliers(int pParam)
 {
     make();
 }
 
 /*************/
-void Detector_MeanOutliers::make()
+void Actuator_MeanOutliers::make()
 {
     isInitialized = false;
     mDetectionLevel = 2.f;
     mFilterSize = 3;
 
     mName = mClassName;
-    // OSC path for this detector
+    // OSC path for this actuator
     mOscPath = "/blobserver/meanOutliers";
 
     mMeanBlob.setParameter("processNoiseCov", 1e-6);
@@ -34,7 +34,7 @@ void Detector_MeanOutliers::make()
 }
 
 /*************/
-atom::Message Detector_MeanOutliers::detect(const vector< Capture_Ptr > pCaptures)
+atom::Message Actuator_MeanOutliers::detect(const vector< Capture_Ptr > pCaptures)
 {
     vector<cv::Mat> captures = captureToMat(pCaptures);
     if (captures.size() < mSourceNbr)
@@ -130,7 +130,7 @@ atom::Message Detector_MeanOutliers::detect(const vector< Capture_Ptr > pCapture
 }
 
 /*************/
-void Detector_MeanOutliers::setParameter(atom::Message pMessage)
+void Actuator_MeanOutliers::setParameter(atom::Message pMessage)
 {
     std::string cmd;
     try
