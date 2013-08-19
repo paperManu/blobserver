@@ -25,6 +25,7 @@ blobserver_SOURCES = \
     actuator_lightSpots.cpp \
     actuator_meanOutliers.cpp \
     actuator_objOnAPlane.cpp \
+    actuator_stitch.cpp \
     actuator_nop.cpp \
 	hdribuilder.cpp \
     source.cpp \
@@ -55,6 +56,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/actuator_lightSpots.h \
     $(top_srcdir)/include/actuator_meanOutliers.h \
     $(top_srcdir)/include/actuator_objOnAPlane.h \
+    $(top_srcdir)/include/actuator_stitch.h \
     $(top_srcdir)/include/actuator_nop.h \
 	$(top_srcdir)/include/hdribuilder.h \
 	$(top_srcdir)/include/helpers.h \

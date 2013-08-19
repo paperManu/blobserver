@@ -45,6 +45,7 @@
 #include "actuator_meanOutliers.h"
 #include "actuator_nop.h"
 #include "actuator_objOnAPlane.h"
+#include "actuator_stitch.h"
 
 using namespace std;
 
@@ -327,6 +328,8 @@ void App::registerClasses()
         Actuator_Nop::getDocumentation());
     mActuatorFactory.register_class<Actuator_ObjOnAPlane>(Actuator_ObjOnAPlane::getClassName(),
         Actuator_ObjOnAPlane::getDocumentation());
+    mActuatorFactory.register_class<Actuator_Stitch>(Actuator_Stitch::getClassName(),
+        Actuator_Stitch::getDocumentation());
 #if HAVE_PCL
     mActuatorFactory.register_class<Actuator_ClusterPcl>(Actuator_ClusterPcl::getClassName(),
         Actuator_ClusterPcl::getDocumentation());
