@@ -23,118 +23,112 @@ Actuator_Stitch::Actuator_Stitch(int pParam)
 /*************/
 void Actuator_Stitch::make()
 {
-    defineOutputResolution = false;
-
     // we assume to get 2 cameras with resolution 640x480
-    mOutputBuffer = cv::Mat::zeros(480, 1280, CV_8UC3);
+    mOutputBuffer = cv::Mat::zeros(480, 640, CV_8UC3);
 
     mName = mClassName;
     // OSC path for this detector
     mOscPath = "/blobserver/stitch";
 
     mFrameNumber = 0;
-
-    for (int i=0; i<2; i++) 
-    {
-        source_crop[i] = false;
-        for (int j=0; j<4; j++) 
-        {
-            source_crop_parameters[i][j] = 0;
-        }
-        
-    }
-
-    source_pos[0][0] = 0;
-    source_pos[0][1] = 0;
-    source_pos[1][0] = 640;
-    source_pos[1][1] = 0;
-
 }
 
 /*************/
 atom::Message Actuator_Stitch::detect(const vector< Capture_Ptr > pCaptures)
 {
-
     vector<cv::Mat> captures = captureToMat(pCaptures);
     
     if (captures.size() == 0)
         return mLastMessage;
 
-    
-    // make sure there are 2 sources
-    if (captures.size() == 1)
-        mOutputBuffer = captures[0].clone();
-    else
+    // We first transform all the images (crop + rotation)
+    int width = 0, height = 0;
+    int type = captures[0].type();
+
+    for (int index = 0; index < captures.size();)
     {
-        cv::Mat input1 = captures[0];
-        cv::Mat input2 = captures[1];
-
-        int px1 = source_pos[0][0];
-        int py1 = source_pos[0][1];
-
-        int px2 = source_pos[1][0];
-        int py2 = source_pos[1][1];
-
-        // only do this once (unless size of input changes)
-        if (defineOutputResolution == false)    
+        if (captures[index].type() != type)
         {
-            int maxw = max(px1 + input1.cols - source_crop_parameters[0][0] - source_crop_parameters[0][2], px2 + input2.cols - source_crop_parameters[1][0] - source_crop_parameters[1][2]);
-            int maxh = max(py1 + input1.rows - source_crop_parameters[0][1] - source_crop_parameters[0][3], py2 + input2.rows - source_crop_parameters[1][1] - source_crop_parameters[1][3]);
-            mOutputBuffer = cv::Mat::zeros(maxh, maxw, CV_8UC3);
-            defineOutputResolution = true;
+            captures.erase(captures.begin() + index);
+            continue;
         }
 
-        // paste cropped images on output image
-        if (source_crop[0])
+        if (mCameraCrop.find(index) != mCameraCrop.end())
         {
-            int x1 = source_crop_parameters[0][0];
-            int y1 = source_crop_parameters[0][1];
-            int w1 = input1.cols - source_crop_parameters[0][2] - x1;
-            int h1 = input1.rows - source_crop_parameters[0][3] - y1;
-            w1 = min (w1, mOutputBuffer.cols - px1);
-            h1 = min (h1, mOutputBuffer.rows - py1);
-            cv::Mat crop1 = input1(cv::Rect(x1,y1,w1,h1)).clone();
-
-            crop1.copyTo(mOutputBuffer(cv::Rect(px1,py1,crop1.cols,crop1.rows)));
+            cv::Mat crop = cv::Mat(captures[index], mCameraCrop[index]);
+            captures[index] = crop;
         }
         else
-            // mOutputBuffer = captures[1].clone();
-            input1.copyTo(mOutputBuffer(cv::Rect(px1,py1,input1.cols,input1.rows)));
-
-        if (source_crop[1])
         {
-            int x2 = source_crop_parameters[1][0];
-            int y2 = source_crop_parameters[1][1];
-            int w2 = input2.cols - source_crop_parameters[1][2] - x2;
-            int h2 = input2.rows - source_crop_parameters[1][3] - y2;
-            w2 = min (w2, mOutputBuffer.cols - px2);
-            h2 = min (h2, mOutputBuffer.rows - py2);
-
-            cv::Mat crop2 = input2(cv::Rect(x2,y2,w2,h2)).clone();
-            // cv::Mat mask = cv::Mat::zeros(h2, w2, CV_8UC1);
-            // cv::Mat mask = cv::Mat::zeros(crop2.cols, crop2.rows, CV_8UC1);
-            // for (int i=0; i<mask.rows; i++) 
-            // {
-            //     for (int j=0; j<mask.cols/2; j++)
-            //     {
-            //         // uchar& v = mask.at<uchar>(i,j);
-            //         // v[0] = 0.5;
-            //         mask.at<uchar>(i,j) = 0.01*j;    // int(255 * float(j) / (mask.cols/2))
-            //     }
-            // }
-            // crop2.copyTo(mOutputBuffer(cv::Rect(px2,py2,crop2.cols,crop2.rows)), mask);
-            crop2.copyTo(mOutputBuffer(cv::Rect(px2,py2,crop2.cols,crop2.rows)));
+            captures.erase(captures.begin() + index);
+            continue;
         }
-        else
-            // mOutputBuffer = captures[1].clone();
-            input2.copyTo(mOutputBuffer(cv::Rect(px2,py2,input2.cols,input2.rows)));
+
+        if (mCameraRotation.find(index) != mCameraRotation.end())
+        {
+            cv::Mat result = cv::Mat::zeros(captures[index].size(), captures[index].type());
+
+            cv::Mat center = cv::Mat::zeros(3, 3, CV_32F);
+            center.at<float>(0, 0) = 1.f;
+            center.at<float>(1, 1) = 1.f;
+            center.at<float>(0, 2) = captures[index].cols / 2;
+            center.at<float>(1, 2) = captures[index].rows / 2;
+            center.at<float>(2, 2) = 1.f;
+
+            cv::Mat negCenter = center.clone();
+            center.at<float>(0, 2) = -captures[index].cols / 2;
+            center.at<float>(1, 2) = -captures[index].rows / 2;
+
+            cv::Mat t = center * mCameraRotation[index] * negCenter;
+
+            cv::warpPerspective(captures[index], result, t, result.size(), cv::INTER_LINEAR);
+            captures[index] = result;
+        }
+
+        width = max(width, (int)mCameraPosition[index].at<float>(0, 0) + captures[index].cols);
+        height = max(height, (int)mCameraPosition[index].at<float>(1, 0) + captures[index].rows);
+
+        index++;
     }
 
+    // Then we put them at the right place in the image
+    cv::Mat stitch = cv::Mat::zeros(height, width, type); 
+    cv::Mat mask = cv::Mat::ones(height, width, CV_8U);
+    for (int index = 0; index < captures.size(); ++index)
+    {
+        cv::Mat roi = stitch(cv::Rect(mCameraPosition[index].at<float>(0), mCameraPosition[index].at<float>(1),
+                                      captures[index].cols, captures[index].rows));
+        cv::Mat roiMask = mask(cv::Rect(mCameraPosition[index].at<float>(0), mCameraPosition[index].at<float>(1),
+                                      captures[index].cols, captures[index].rows));
+
+        int nbrChannels = roi.channels();
+        cv::Mat channels[nbrChannels];
+        for (int i = 0; i < nbrChannels; ++i)
+            channels[i] = cv::Mat::zeros(roi.rows, roi.cols, roi.depth());
+        cv::split(roi, channels);
+
+        cv::Mat roiSplit[nbrChannels];
+        for (int i = 0; i < nbrChannels; ++i)
+            channels[i].convertTo(roiSplit[i], CV_8U);
+
+        cv::add(captures[index], roi, roi, roiMask);
+        for (int x = 0; x < roiMask.cols; ++x)
+            for (int y = 0; y < roiMask.rows; ++y)
+            {
+                bool isBlank = true;
+                for (int c = 0; c < nbrChannels; ++c)
+                    if (roiSplit[c].at<uchar>(y, x) != 0)
+                        isBlank = false;
+
+                if (isBlank)
+                    roiMask.at<uchar>(y, x) = 0;
+            }
+        cv::addWeighted(captures[index], 0.5, roi, 0.5, 0.0, roi);
+    }
+
+    mOutputBuffer = stitch;
 
     mFrameNumber++;
-    // no need to send out an OSC message
-    // mLastMessage = atom::createMessage("iii", 1, 1, mFrameNumber);
-
     return mLastMessage;
 }
 
@@ -152,81 +146,49 @@ void Actuator_Stitch::setParameter(atom::Message pMessage)
         return;
     }
 
-    if (cmd == "cam0_crop")
+    if (cmd == "cropInput")
     {
-        if (pMessage.size() == 5)
-        {
-            try
-            {
-                source_crop_parameters[0][0] = atom::toInt(pMessage[1]);
-                source_crop_parameters[0][1] = atom::toInt(pMessage[2]);
-                source_crop_parameters[0][2] = atom::toInt(pMessage[3]);
-                source_crop_parameters[0][3] = atom::toInt(pMessage[4]);
-            }
-            catch (atom::BadTypeTagError error)
-            {
-                return;
-            }
+        float index;
+        if (!readParam(pMessage, index))
+            return;
 
-            source_crop[0] = true;
-        }
-        else
-            return;
-    }
-    else if (cmd == "cam1_crop")
-    {
-        if (pMessage.size() == 5)
-        {
-            try
-            {
-                source_crop_parameters[1][0] = atom::toInt(pMessage[1]);
-                source_crop_parameters[1][1] = atom::toInt(pMessage[2]);
-                source_crop_parameters[1][2] = atom::toInt(pMessage[3]);
-                source_crop_parameters[1][3] = atom::toInt(pMessage[4]);
-            }
-            catch (atom::BadTypeTagError error)
-            {
+        float pos[4];
+        for (int i = 0; i < 4; ++i)
+            if (!readParam(pMessage, pos[i], i + 2))
                 return;
-            }
 
-            source_crop[1] = true;
-        }
-        else
-            return;
+        cv::Rect roi;
+        roi.x = pos[0];
+        roi.y = pos[1];
+        roi.width = pos[2];
+        roi.height = pos[3];
+
+        mCameraCrop[(int)index] = roi;
     }
-    else if (cmd == "cam0_pos")
+    else if (cmd == "transform")
     {
-        if (pMessage.size() == 3)
-        {
-            try
-            {
-                source_pos[0][0] = atom::toInt(pMessage[1]);
-                source_pos[0][1] = atom::toInt(pMessage[2]);
-            }
-            catch (atom::BadTypeTagError error)
-            {
-                return;
-            }
-        }
-        else
+        float index;
+        if (!readParam(pMessage, index))
             return;
-    }
-    else if (cmd == "cam1_pos")
-    {
-        if (pMessage.size() == 3)
-        {
-            try
-            {
-                source_pos[1][0] = atom::toInt(pMessage[1]);
-                source_pos[1][1] = atom::toInt(pMessage[2]);
-            }
-            catch (atom::BadTypeTagError error)
-            {
+
+        float t[3];
+        for (int i = 0; i < 3; ++i)
+            if (!readParam(pMessage, t[i], i + 2))
                 return;
-            }
-        }
-        else
-            return;
+
+        cv::Mat transform = cv::Mat::zeros(3, 3, CV_32F);
+        transform.at<float>(2, 2) = 1.f;
+        transform.at<float>(0, 0) = cos(t[2]);
+        transform.at<float>(1, 1) = cos(t[2]);
+        transform.at<float>(1, 0) = sin(t[2]);
+        transform.at<float>(0, 1) = -sin(t[2]);
+
+        cv::Mat position = cv::Mat::zeros(2, 1, CV_32F);
+        position.at<float>(0, 0) = t[0];
+        position.at<float>(1, 0) = t[1];
+
+        mCameraRotation[(int)index] = transform;
+        mCameraPosition[(int)index] = position;
     }
     else
         setBaseParameter(pMessage);

@@ -51,6 +51,7 @@ Source_2D::Source_2D()
 
     mHdriActive = false;
 
+    mSaveToFile = false;
     mSaveIndex = 0;
     mSavePhase = 0;
 }
@@ -258,11 +259,17 @@ void Source_2D::setBaseParameter(atom::Message pParam)
     {
         int nbr;
         if (!readParam(pParam, nbr))
+        {
+            g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Message wrongly formed for exposureLUT", mClassName.c_str());
             return;
+        }
 
         int type;
         if (!readParam(pParam, type, 2))
+        {
+            g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Message wrongly formed for exposureLUT", mClassName.c_str());
             return;
+        }
 
         vector< vector<float> > keys;
         for (int i = 0; i < nbr / 2; ++i)
@@ -280,7 +287,10 @@ void Source_2D::setBaseParameter(atom::Message pParam)
         float v[7];
         for (int i = 0; i < 4; ++i)
             if (!readParam(pParam, v[i], i+1))
+            {
+                g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Message wrongly formed for autoExposure", mClassName.c_str());
                 return;
+            }
 
         mAutoExposureRoi = cv::Rect(v[0], v[1], v[2], v[3]);
 

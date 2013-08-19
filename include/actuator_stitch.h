@@ -44,7 +44,6 @@ class Actuator_Stitch : public Actuator
 
         std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
 
-
     private:
         static std::string mClassName;
         static std::string mDocumentation;
@@ -52,10 +51,9 @@ class Actuator_Stitch : public Actuator
 
         unsigned int mFrameNumber;
 
-        bool defineOutputResolution;
-        bool source_crop[2];
-        unsigned int source_crop_parameters[2][4];
-        unsigned int source_pos[2][2];
+        std::map<int, cv::Rect> mCameraCrop;
+        std::map<int, cv::Mat> mCameraPosition;
+        std::map<int, cv::Mat> mCameraRotation;
 
         void make();
 };
