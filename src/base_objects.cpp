@@ -1,8 +1,50 @@
 #include "base_objects.h"
 
+#include <algorithm>
 #include <chrono>
 
 using namespace std;
+
+/*************/
+// LookupTable
+LookupTable::LookupTable(interpolation inter, vector< vector<float> > keys)
+{
+    mInterpolation = inter; 
+    mKeys = keys;
+    sort(mKeys.begin(), mKeys.end(), [] (vector<float> a, vector<float> b)
+    {
+        return a[0] < b[0];
+    });
+
+    mStart[0] = (*(mKeys.begin()))[0];
+    mStart[1] = (*(mKeys.begin()))[1];
+    mEnd[0] = (*(mKeys.end() - 1))[0];
+    mEnd[1] = (*(mKeys.end() - 1))[1];
+}
+
+/*************/
+float LookupTable::operator[](const float& value)
+{
+    if (mInterpolation == interpolation::linear)
+    {
+        if (value < mStart[0])
+            return mStart[1];
+        if (value > mEnd[0])
+            return mEnd[1];
+
+        vector<float> a;
+        a.push_back(value);
+        auto upper = upper_bound(mKeys.begin(), mKeys.end(), a, [] (vector<float> a, vector<float> b)
+        {
+            return a[0] < b[0];
+        });
+        auto lower = upper - 1;
+
+        float ratio = (a[0] - (*lower)[0]) / ((*upper)[0] - (*lower)[0]);
+        float result = (*lower)[1] + ratio * ((*upper)[1] - (*lower)[1]);
+        return result;
+    }
+}
 
 /*************/
 // ShmAuto

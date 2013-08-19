@@ -56,6 +56,26 @@ class OscClient
         lo_address mAddress;
 };
 
+/*************/
+// LookupTable objects
+class LookupTable
+{
+    public:
+        enum interpolation
+        {
+            linear = 0,
+            bezier = 1
+        };
+        LookupTable(interpolation inter, std::vector< std::vector<float> > keys);
+
+        float operator[](const float& value);
+
+    private:
+        interpolation mInterpolation;
+        float mStart[2], mEnd[2];
+        std::vector< std::vector<float> > mKeys;
+};
+
 #if HAVE_SHMDATA
 /*************/
 // Generic Shmdata writer class
