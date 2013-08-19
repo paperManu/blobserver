@@ -54,7 +54,7 @@
  * - hdri (int[3]): activates the creation of a HDR image. Parameters are: [startExposure] [stepSize] [nbrSteps].
  * - save (int[2] string): activates the automatic save of grabs. Parameters are: [activation] [period] [filename] 
  * 
- * \subsection source_opencv_sec OpenCV sources (Source_OpenCV)
+ * \subsection source_2d_opencv_sec OpenCV 2D sources (Source_2D_OpenCV)
  * 
  * Note that OpenCV must have been compiled with the desired camera support.
  * 
@@ -70,7 +70,7 @@
  * - whiteBalanceBlue (int): coefficient applied to the blue channel, multiplied by a value dependent of the camera model
  * - iso (int): link speed to set for firewire cameras
  * 
- * \subsection source_shmdata_sec shmdata sources (Source_Shmdata)
+ * \subsection source_2d_shmdata_sec shmdata 2D sources (Source_2D_Shmdata)
  * 
  * Available parameters:
  * - location (string): file path to the shmdata
@@ -196,6 +196,16 @@
  * - filterSize (int, default 3): size of the kernel for the morphological operations (to smooth the noise).
  * - minBlobArea (int, default 32): minimum size of a blob to not be considered as noise.
  * - maxTrackedBlobs (int, default 16): maximum number of blobs to track
+ *
+ * \subsection actuator_stitch_sec Stitching (Actuator_Stitch)
+ * 
+ * This actuator stitches any number of 2D images into one, according to the input parameters.
+ *
+ * Number of source(s) needed: 1+
+ *
+ * Available parameters:
+ * - cropInput (int[5], no default): crop parameters for the source given by the first value. Parameters are: [sourceIndex] [x] [y] [width] [height]
+ * - transform (float[4], no default): translation and rotation parameters for the given source. Parameters are: [sourceIndex] [x] [y] [angle in radian]
  *
  **************
  * \section howto_xml_sec How to use Blobserver - Configuration through a XML file
