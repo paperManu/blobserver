@@ -1,7 +1,7 @@
 <Blobserver>
 	<Flow>
 		<Source>
-            <Type>Source_Shmdata</Type>
+            <Type>Source_2D_Shmdata</Type>
             <Subsource>0</Subsource>
             <Param>
                 <Name>location</Name>
@@ -9,7 +9,7 @@
             </Param>
         </Source>
         <Source>
-            <Type>Source_Shmdata</Type>
+            <Type>Source_2D_Shmdata</Type>
             <Subsource>1</Subsource>
             <Param>
                 <Name>location</Name>
@@ -19,26 +19,26 @@
         <Actuator>
             <Type>Actuator_Stitch</Type>
             <Param>
-                <Name>cam0_crop</Name>
+                <Name>cropInput</Name>
+                <Value>0 0 0 640 480</Value>
+            </Param>
+            <Param>
+                <Name>transform</Name>
                 <Value>0 0 0 0</Value>
             </Param>
             <Param>
-                <Name>cam0_pos</Name>
-                <Value>0 0</Value>
+                <Name>cropInput</Name>
+                <Value>1 0 0 640 480</Value>
             </Param>
             <Param>
-                <Name>cam1_crop</Name>
-                <Value>0 0 0 0</Value>
-            </Param>
-            <Param>
-                <Name>cam1_pos</Name>
-                <Value>400 0</Value>
+                <Name>transform</Name>
+                <Value>1 400 0 0</Value>
             </Param>
         </Actuator>
 	</Flow>
     <Flow>
         <Source>
-            <Type>Source_Shmdata</Type>
+            <Type>Source_2D_Shmdata</Type>
             <Subsource>2</Subsource>
             <Param>
                 <Name>location</Name>
