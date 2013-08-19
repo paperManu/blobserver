@@ -33,6 +33,7 @@ void Actuator_FiducialTracker::make()
     mFrameNumber = 0;
 
     // Initialize libfidtrack objects
+    mDmap = NULL;
     initFidtracker();
 }
 
