@@ -144,10 +144,29 @@ void Source_2D_OpenCV::setParameter(atom::Message pParam)
     }
     else if (paramName == "exposureTime")
     {
-        mCamera.set(CV_CAP_PROP_AUTO_EXPOSURE, 0);
-        mCamera.set(CV_CAP_PROP_EXPOSURE, paramValue);
-        mExposureTime = (float)(mCamera.get(CV_CAP_PROP_EXPOSURE));
-        mExposureParam = paramValue;
+        // If a LUT is set, exposureTime is set in ms, otherwise it is a
+        // value with no specific scale (camera dependant)
+        if (mExposureLUT.isSet())
+        {
+            float param = mExposureLUT[paramValue];
+            if (mExposureLUT.isOutOfRange())
+            {
+                g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Exposure value out of bounds", mClassName.c_str());
+                return;
+            }
+            mCamera.set(CV_CAP_PROP_AUTO_EXPOSURE, 0);
+            mCamera.set(CV_CAP_PROP_EXPOSURE, param);
+            // TODO: add the opposite conversion for LUT
+            mExposureTime = paramValue;
+            mExposureParam = paramValue;
+        }
+        else
+        {
+            mCamera.set(CV_CAP_PROP_AUTO_EXPOSURE, 0);
+            mCamera.set(CV_CAP_PROP_EXPOSURE, paramValue);
+            mExposureTime = (float)(mCamera.get(CV_CAP_PROP_EXPOSURE));
+            mExposureParam = paramValue;
+        }
     }
     else if (paramName == "gain")
     {

@@ -2,12 +2,30 @@
 
 #include <algorithm>
 #include <chrono>
+#include <limits>
 
 using namespace std;
 
 /*************/
 // LookupTable
+LookupTable::LookupTable()
+{
+    mIsSet = false;
+
+    mStart[0] = numeric_limits<float>::max();
+    mEnd[0] = numeric_limits<float>::min();
+
+    mOutOfRange = true;
+}
+
+/*************/
 LookupTable::LookupTable(interpolation inter, vector< vector<float> > keys)
+{
+    set(inter, keys);
+}
+
+/*************/
+void LookupTable::set(interpolation inter, vector< vector<float> > keys)
 {
     mInterpolation = inter; 
     mKeys = keys;
@@ -20,17 +38,24 @@ LookupTable::LookupTable(interpolation inter, vector< vector<float> > keys)
     mStart[1] = (*(mKeys.begin()))[1];
     mEnd[0] = (*(mKeys.end() - 1))[0];
     mEnd[1] = (*(mKeys.end() - 1))[1];
+
+    mOutOfRange = true;
+    mIsSet = true;
 }
 
 /*************/
 float LookupTable::operator[](const float& value)
 {
+    mOutOfRange = true;
+
     if (mInterpolation == interpolation::linear)
     {
         if (value < mStart[0])
-            return mStart[1];
+            return value;
         if (value > mEnd[0])
-            return mEnd[1];
+            return value;
+
+        mOutOfRange = false;
 
         vector<float> a;
         a.push_back(value);
