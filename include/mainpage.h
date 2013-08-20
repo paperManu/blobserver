@@ -205,7 +205,7 @@
  *
  * Available parameters:
  * - cropInput (int[5], no default): crop parameters for the source given by the first value. Parameters are: [sourceIndex] [x] [y] [width] [height]
- * - transform (float[4], no default): translation and rotation parameters for the given source. Parameters are: [sourceIndex] [x] [y] [angle in radian]
+ * - transform (float[4], no default): translation and rotation parameters for the given source. Parameters are: [sourceIndex] [x] [y] [angle in degree]
  *
  **************
  * \section howto_xml_sec How to use Blobserver - Configuration through a XML file

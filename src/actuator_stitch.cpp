@@ -70,7 +70,7 @@ atom::Message Actuator_Stitch::detect(const vector< Capture_Ptr > pCaptures)
             cv::Point2f center = cv::Point2f((float)captures[index].cols / 2.f, (float)captures[index].rows / 2.f);
             cv::Mat t = cv::getRotationMatrix2D(center, mCameraRotation[index], 1.0);
 
-            cv::warpPerspective(captures[index], result, t, result.size(), cv::INTER_LINEAR);
+            cv::warpAffine(captures[index], result, t, result.size(), cv::INTER_LINEAR);
             captures[index] = result;
         }
 
