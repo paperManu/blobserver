@@ -502,6 +502,8 @@ int App::loop()
             {
                 cv::Mat displayMat = img->get();
                 cv::putText(displayMat, lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
+                    cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(0.0), 3.0);
+                cv::putText(displayMat, lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
                     cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
                 cv::imshow("blobserver", displayMat);
             }

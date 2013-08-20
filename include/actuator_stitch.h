@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Emmanuel Durand
+ * Copyright (C) 2013 Eva Schindling and Emmanuel Durand
  *
  * This file is part of blobserver.
  *
