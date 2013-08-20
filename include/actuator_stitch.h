@@ -53,7 +53,7 @@ class Actuator_Stitch : public Actuator
 
         std::map<int, cv::Rect> mCameraCrop;
         std::map<int, cv::Mat> mCameraPosition;
-        std::map<int, cv::Mat> mCameraRotation;
+        std::map<int, float> mCameraRotation;
 
         void make();
 };

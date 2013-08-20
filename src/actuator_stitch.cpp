@@ -67,19 +67,8 @@ atom::Message Actuator_Stitch::detect(const vector< Capture_Ptr > pCaptures)
         if (mCameraRotation.find(index) != mCameraRotation.end())
         {
             cv::Mat result = cv::Mat::zeros(captures[index].size(), captures[index].type());
-
-            cv::Mat center = cv::Mat::zeros(3, 3, CV_32F);
-            center.at<float>(0, 0) = 1.f;
-            center.at<float>(1, 1) = 1.f;
-            center.at<float>(0, 2) = captures[index].cols / 2;
-            center.at<float>(1, 2) = captures[index].rows / 2;
-            center.at<float>(2, 2) = 1.f;
-
-            cv::Mat negCenter = center.clone();
-            center.at<float>(0, 2) = -captures[index].cols / 2;
-            center.at<float>(1, 2) = -captures[index].rows / 2;
-
-            cv::Mat t = center * mCameraRotation[index] * negCenter;
+            cv::Point2f center = cv::Point2f((float)captures[index].cols / 2.f, (float)captures[index].rows / 2.f);
+            cv::Mat t = cv::getRotationMatrix2D(center, mCameraRotation[index], 1.0);
 
             cv::warpPerspective(captures[index], result, t, result.size(), cv::INTER_LINEAR);
             captures[index] = result;
@@ -176,18 +165,11 @@ void Actuator_Stitch::setParameter(atom::Message pMessage)
             if (!readParam(pMessage, t[i], i + 2))
                 return;
 
-        cv::Mat transform = cv::Mat::zeros(3, 3, CV_32F);
-        transform.at<float>(2, 2) = 1.f;
-        transform.at<float>(0, 0) = cos(t[2]);
-        transform.at<float>(1, 1) = cos(t[2]);
-        transform.at<float>(1, 0) = sin(t[2]);
-        transform.at<float>(0, 1) = -sin(t[2]);
-
         cv::Mat position = cv::Mat::zeros(2, 1, CV_32F);
         position.at<float>(0, 0) = t[0];
         position.at<float>(1, 0) = t[1];
 
-        mCameraRotation[(int)index] = transform;
+        mCameraRotation[(int)index] = t[2];
         mCameraPosition[(int)index] = position;
     }
     else
