@@ -282,6 +282,33 @@ void Source_2D::setBaseParameter(atom::Message pParam)
 
         mExposureLUT.set((LookupTable::interpolation)type, keys);
     }
+    else if (paramName == "gainLUT")
+    {
+        int nbr;
+        if (!readParam(pParam, nbr))
+        {
+            g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Message wrongly formed for gainLUT", mClassName.c_str());
+            return;
+        }
+
+        int type;
+        if (!readParam(pParam, type, 2))
+        {
+            g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Message wrongly formed for gainLUT", mClassName.c_str());
+            return;
+        }
+
+        vector< vector<float> > keys;
+        for (int i = 0; i < nbr / 2; ++i)
+        {
+            if (!readParam(pParam, keys[i][0], i * 2 + 3))
+                return;
+            if (!readParam(pParam, keys[i][1], i * 2 + 4))
+                return;
+        }
+
+        mGainLUT.set((LookupTable::interpolation)type, keys);
+    }
     else if (paramName == "autoExposure")
     {
         float v[7];

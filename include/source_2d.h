@@ -166,8 +166,8 @@ class Source_2D : public Source
         unsigned int mWidth, mHeight;
         unsigned int mChannels;
 
-        // Exposure LUT
-        LookupTable mExposureLUT;
+        // Lookup tables
+        LookupTable mExposureLUT, mGainLUT;
 
         float mExposureTime, mExposureParam; // Both are not necessarily identical
         float mAperture;

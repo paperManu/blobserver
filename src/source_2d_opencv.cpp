@@ -170,8 +170,25 @@ void Source_2D_OpenCV::setParameter(atom::Message pParam)
     }
     else if (paramName == "gain")
     {
-        mCamera.set(CV_CAP_PROP_GAIN, paramValue);
-        mGain = (float)(mCamera.get(CV_CAP_PROP_GAIN));
+        // If a LUT is set, the gain is set in dB, otherwise it is
+        // a value with no specific scale (camera dependant)
+        if (mGainLUT.isSet())
+        {
+            float param = mGainLUT[paramValue];
+            if (mGainLUT.isOutOfRange())
+            {
+                g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Exposure value out of bounds", mClassName.c_str());
+                return;
+            }
+            mCamera.set(CV_CAP_PROP_GAIN, param);
+            // TODO: add the opposite conversion for LUT
+            mGain = (float)(mCamera.get(CV_CAP_PROP_GAIN));
+        }
+        else
+        {
+            mCamera.set(CV_CAP_PROP_GAIN, paramValue);
+            mGain = (float)(mCamera.get(CV_CAP_PROP_GAIN));
+        }
     }
     else if (paramName == "gamma")
     {
