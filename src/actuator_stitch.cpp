@@ -60,7 +60,7 @@ atom::Message Actuator_Stitch::detect(const vector< Capture_Ptr > pCaptures)
         }
         else
         {
-            captures.erase(captures.begin() + index);
+            index++;
             continue;
         }
 
@@ -72,10 +72,15 @@ atom::Message Actuator_Stitch::detect(const vector< Capture_Ptr > pCaptures)
 
             cv::warpAffine(captures[index], result, t, result.size(), cv::INTER_LINEAR);
             captures[index] = result;
-        }
 
-        width = max(width, (int)mCameraPosition[index].at<float>(0, 0) + captures[index].cols);
-        height = max(height, (int)mCameraPosition[index].at<float>(1, 0) + captures[index].rows);
+            width = max(width, (int)mCameraPosition[index].at<float>(0, 0) + captures[index].cols);
+            height = max(height, (int)mCameraPosition[index].at<float>(1, 0) + captures[index].rows);
+        }
+        else
+        {
+            width = max(width, captures[index].cols);
+            width = max(width, captures[index].rows);
+        }
 
         index++;
     }
@@ -85,10 +90,19 @@ atom::Message Actuator_Stitch::detect(const vector< Capture_Ptr > pCaptures)
     cv::Mat mask = cv::Mat::ones(height, width, CV_8U);
     for (int index = 0; index < captures.size(); ++index)
     {
-        cv::Mat roi = stitch(cv::Rect(mCameraPosition[index].at<float>(0), mCameraPosition[index].at<float>(1),
-                                      captures[index].cols, captures[index].rows));
-        cv::Mat roiMask = mask(cv::Rect(mCameraPosition[index].at<float>(0), mCameraPosition[index].at<float>(1),
-                                      captures[index].cols, captures[index].rows));
+        cv::Mat roi, roiMask;
+        if (mCameraPosition.find(index) != mCameraPosition.end())
+        {
+            roi = stitch(cv::Rect(mCameraPosition[index].at<float>(0), mCameraPosition[index].at<float>(1),
+                                  captures[index].cols, captures[index].rows));
+            roiMask = mask(cv::Rect(mCameraPosition[index].at<float>(0), mCameraPosition[index].at<float>(1),
+                                  captures[index].cols, captures[index].rows));
+        }
+        else
+        {
+            roi = stitch(cv::Rect(0, 0, captures[index].cols, captures[index].rows));
+            roiMask = mask(cv::Rect(0, 0, captures[index].cols, captures[index].rows));
+        }
 
         int nbrChannels = roi.channels();
         cv::Mat channels[nbrChannels];
