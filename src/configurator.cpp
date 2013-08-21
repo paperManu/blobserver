@@ -96,7 +96,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool dist
         vector<int> subsources;
         string client, realClient, server;
         string serverPort;
-        int clientPort;
+        int clientPort = 0;
 
         while (lCur != NULL)
         {

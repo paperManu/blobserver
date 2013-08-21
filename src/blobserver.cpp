@@ -85,7 +85,7 @@ unsigned int App::mCurrentId = 0;
 App::App()
 {
     mCurrentId = 0;
-    mThreadPool.reset(new ThreadPool(5));
+    mThreadPool.reset(new ThreadPool(4));
 }
 
 
@@ -160,6 +160,7 @@ int App::init(int argc, char** argv)
             g_remove((const gchar*)buffer);
         }
     }
+    g_dir_close(directory);
 
     // Server
     mOscServer = lo_server_thread_new_with_proto(gPort, lNetProto, App::oscError);
@@ -481,6 +482,7 @@ int App::loop()
                     lo_message oscMsg = lo_message_new();
                     atom::message_build_to_lo_message(msg, oscMsg);
                     lo_send_message(flow.client->get(), flow.actuator->getOscPath().c_str(), oscMsg);
+                    free(oscMsg);
                 }
 
                 // End of the frame
