@@ -512,7 +512,7 @@ int App::loop()
                         }
 
                         char id[8];
-                        sprintf(id, "%i", index);
+                        sprintf(id, "_%i_%i", flow.id, index);
                         string path = flow.actuator->getOscPath() + string(id);
                         mapper_signal signal = mdev_add_output(mMapperDevice, path.c_str(), intSize, 'f', 0, 0, 0);
                         flow.mapperSignal.push_back(signal);
