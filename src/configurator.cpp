@@ -25,14 +25,14 @@ Configurator::~Configurator()
 /*************/
 void Configurator::loadXML(const char* filename, bool distant)
 {
-    g_log(NULL, G_LOG_LEVEL_INFO, "Attempting to read XML file %s", filename);
+    g_log(NULL, G_LOG_LEVEL_INFO, "%s::%s: Attempting to read XML file %s", __FILE__, __FUNCTION__, filename);
 
     xmlDocPtr doc;
     doc = xmlReadFile(filename, NULL, 0);
 
     if (doc == NULL)
     {
-        g_log(NULL, G_LOG_LEVEL_ERROR, "Failed to parse %s", filename);
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s: Failed to parse %s", __FILE__, __FUNCTION__, filename);
         return;
     }
 
@@ -40,7 +40,7 @@ void Configurator::loadXML(const char* filename, bool distant)
     cur = xmlDocGetRootElement(doc);
     if (cur == NULL || cur->xmlChildrenNode == NULL)
     {
-        g_log(NULL, G_LOG_LEVEL_WARNING, "Configuration file seems to be empty");
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s: Configuration file seems to be empty", __FILE__, __FUNCTION__);
         return;
     }
 
@@ -53,7 +53,7 @@ void Configurator::loadXML(const char* filename, bool distant)
             bool error = loadFlow(doc, cur, distant);
             if (error)
             {
-                g_log(NULL, G_LOG_LEVEL_ERROR, "An error has been detected while parsing file %s", filename);
+                g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s: An error has been detected while parsing file %s", __FILE__, __FUNCTION__, filename);
             }
         }
 
@@ -451,7 +451,7 @@ void Configurator::checkInt(int& value, const int defaultValue)
 /*************/
 void Configurator::oscError(int num, const char* msg, const char* path)
 {
-    g_log(NULL, G_LOG_LEVEL_WARNING, "liblo server error %i", num);
+    g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s: liblo server error %i", __FILE__, __FUNCTION__, num);
 }
 
 /*************/
@@ -461,7 +461,7 @@ int Configurator::oscGenericHandler(const char* path, const char* types, lo_arg*
 
     if(object->mVerbose)
     {
-        g_log(NULL, G_LOG_LEVEL_WARNING, "Unhandled message received");
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s: Unhandled message received", __FILE__, __FUNCTION__);
 
         for(int i = 0; i < argc; ++i)
         {
@@ -484,7 +484,7 @@ int Configurator::oscHandlerConnect(const char* path, const char* types, lo_arg*
 
     if (message.size() < 2)
     {
-        g_log(NULL, G_LOG_LEVEL_WARNING, "Error detected in the connect result");
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s: Error detected in the connect result: message is too short to be well formed", __FILE__, __FUNCTION__);
         return 1;
     }
     
@@ -492,7 +492,7 @@ int Configurator::oscHandlerConnect(const char* path, const char* types, lo_arg*
     {
         // Error detected when trying to create flow
         string error = atom::toString(message[1]);
-        cout << error << endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s: %s", __FILE__, __FUNCTION__, error.c_str());
         return 1;
     }
 
