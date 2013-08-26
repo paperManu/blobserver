@@ -115,9 +115,6 @@ class App
         // Threads
         std::shared_ptr<std::thread> mSourcesThread;
 
-        cv::Mat mMask; // TODO: set mask through a parameter
-        // TODO: send mask through gstreamer! or from any source!
-
         static unsigned int mCurrentId;
 
         /********/

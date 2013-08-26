@@ -47,7 +47,6 @@ void LookupTable::set(interpolation inter, vector< vector<float> > keys)
 float LookupTable::operator[](const float& value)
 {
     mOutOfRange = true;
-
     if (mInterpolation == interpolation::linear)
     {
         if (value < mStart[0])
@@ -56,6 +55,11 @@ float LookupTable::operator[](const float& value)
             return value;
 
         mOutOfRange = false;
+
+        if (value == mStart[0])
+            return mStart[1];
+        if (value == mEnd[0])
+            return mEnd[1];
 
         vector<float> a;
         a.push_back(value);

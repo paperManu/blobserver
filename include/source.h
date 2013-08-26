@@ -90,6 +90,11 @@ class Source
         virtual bool grabFrame() {}
 
         /**
+         * \brief Returns true if a new grab is available to retrieve
+         */
+        bool isUpdated() {return mUpdated;}
+
+        /**
          * \brief Retrieves the last frame grabbed by the source with grabFrame()
          */
         virtual Capture_Ptr retrieveFrame() {return Capture_Ptr();}

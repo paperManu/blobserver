@@ -70,7 +70,6 @@ static GOptionEntry gEntries[] =
     {"hide", 'H', 0, G_OPTION_ARG_NONE, &gHide, "Hides the camera window", NULL},
     {"verbose", 'V', 0, G_OPTION_ARG_NONE, &gVerbose, "If set, outputs values to the std::out", NULL},
     {"framerate", 'f', 0, G_OPTION_ARG_INT, &gFramerate, "Specifies the framerate to which blobserver should run (default 30)", NULL},
-    {"mask", 'm', 0, G_OPTION_ARG_STRING, &gMaskFilename, "Specifies a mask which will be applied to all actuators", NULL},
     {"tcp", 't', 0, G_OPTION_ARG_NONE, &gTcp, "Use TCP instead of UDP for message transmission", NULL},
     {"port", 'p', 0, G_OPTION_ARG_STRING, &gPort, "Specifies TCP port to use for server (default 9002)", NULL},
     {"bench", 'B', 0, G_OPTION_ARG_NONE, &gBench, "Enables printing timings of main loop, for debug purpose", NULL},
@@ -304,11 +303,6 @@ int App::parseArgs(int argc, char** argv)
     {
         g_log(NULL, G_LOG_LEVEL_ERROR, "Error while parsing options: %s", error->message);
         return 1;
-    }
-
-    if (gMaskFilename != NULL)
-    {
-        mMask = cv::imread(gMaskFilename, CV_LOAD_IMAGE_GRAYSCALE);
     }
 
     if (gVersion)
@@ -556,7 +550,7 @@ int App::loop()
             Capture_2D_Mat_Ptr img = dynamic_pointer_cast<Capture_2D_Mat>(lBuffers[lSourceNumber]);
             if (img.get() != NULL)
             {
-                cv::Mat displayMat = img->get();
+                cv::Mat displayMat = img->get().clone();
                 cv::putText(displayMat, lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
                     cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(0.0), 3.0);
                 cv::putText(displayMat, lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
@@ -623,7 +617,7 @@ void App::updateSources()
                 // We also check if this source is still used
                 if (source.use_count() == 2) // 2, because this ptr and the one in the vector
                 {
-                    g_log(NULL, G_LOG_LEVEL_INFO, "Source %s is no longer used. Disconnecting.", source->getName().c_str());
+                    g_log(NULL, G_LOG_LEVEL_INFO, "%s - Source %s is no longer used. Disconnecting.", __FUNCTION__, source->getName().c_str());
                     theApp->mSources.erase(iter);
                     --iter;
                 }
@@ -655,7 +649,7 @@ int App::oscGenericHandler(const char* path, const char* types, lo_arg** argv, i
 {
     if(gVerbose)
     {
-        g_log(NULL, G_LOG_LEVEL_WARNING, "Unhandled message received:");
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Unhandled message received:", __FUNCTION__);
 
         for(int i = 0; i < argc; ++i)
         {

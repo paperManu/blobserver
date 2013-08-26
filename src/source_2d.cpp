@@ -257,23 +257,26 @@ void Source_2D::setBaseParameter(atom::Message pParam)
     }
     else if (paramName == "exposureLUT")
     {
-        int nbr;
+        float nbr;
         if (!readParam(pParam, nbr))
         {
-            g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Message wrongly formed for exposureLUT", mClassName.c_str());
+            g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Message wrongly formed for exposureLUT: cannot read number of keys", mClassName.c_str());
             return;
         }
 
-        int type;
+        float type;
         if (!readParam(pParam, type, 2))
         {
-            g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Message wrongly formed for exposureLUT", mClassName.c_str());
+            g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Message wrongly formed for exposureLUT: cannot read interpolation type", mClassName.c_str());
             return;
         }
 
         vector< vector<float> > keys;
-        for (int i = 0; i < nbr / 2; ++i)
+        for (int i = 0; i < nbr; ++i)
         {
+            vector<float> key;
+            key.resize(2);
+            keys.push_back(key);
             if (!readParam(pParam, keys[i][0], i * 2 + 3))
                 return;
             if (!readParam(pParam, keys[i][1], i * 2 + 4))
