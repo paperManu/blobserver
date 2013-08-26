@@ -71,6 +71,7 @@ class LookupTable
         bool isSet() {return mIsSet;}
 
         float operator[](const float& value);
+        float inverse(const float& value);
         bool isOutOfRange() {return mOutOfRange;}
 
     private:

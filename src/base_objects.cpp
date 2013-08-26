@@ -76,6 +76,40 @@ float LookupTable::operator[](const float& value)
 }
 
 /*************/
+float LookupTable::inverse(const float& value)
+{
+    mOutOfRange = true;
+    if (mInterpolation == interpolation::linear)
+    {
+        if (value < mStart[1])
+            return value;
+        if (value > mEnd[1])
+            return value;
+
+        mOutOfRange = false;
+
+        if (value == mStart[1])
+            return mStart[0];
+        if (value == mEnd[1])
+            return mEnd[0];
+
+        vector<float> a;
+        a.push_back(0.f);
+        a.push_back(value);
+        auto upper = upper_bound(mKeys.begin(), mKeys.end(), a, [] (vector<float> a, vector<float> b)
+        {
+            return a[1] < b[1];
+        });
+        auto lower = upper - 1;
+
+        float ratio = (a[1] - (*lower)[1]) / ((*upper)[1] - (*lower)[1]);
+        float result = (*lower)[0] + ratio * ((*upper)[0] - (*lower)[0]);
+        return result;
+    }
+
+}
+
+/*************/
 // ShmAuto
 ShmAuto::ShmAuto(const char* filename)
 {

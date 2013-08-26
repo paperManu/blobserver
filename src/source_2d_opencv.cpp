@@ -156,8 +156,8 @@ void Source_2D_OpenCV::setParameter(atom::Message pParam)
             }
             mCamera.set(CV_CAP_PROP_AUTO_EXPOSURE, 0);
             mCamera.set(CV_CAP_PROP_EXPOSURE, param);
-            // TODO: add the opposite conversion for LUT
-            mExposureTime = paramValue;
+            float value = (float)(mCamera.get(CV_CAP_PROP_EXPOSURE));
+            mExposureTime = mExposureLUT.inverse(value);
             mExposureParam = paramValue;
         }
         else
@@ -182,7 +182,8 @@ void Source_2D_OpenCV::setParameter(atom::Message pParam)
             }
             mCamera.set(CV_CAP_PROP_GAIN, param);
             // TODO: add the opposite conversion for LUT
-            mGain = (float)(mCamera.get(CV_CAP_PROP_GAIN));
+            float value = (float)(mCamera.get(CV_CAP_PROP_GAIN));
+            mGain = mGainLUT.inverse(value);
         }
         else
         {
