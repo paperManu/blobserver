@@ -98,6 +98,7 @@ blobserver_CXXFLAGS = \
     $(LIBLO_CFLAGS) \
     $(LIBATOM_CFLAGS) \
     $(LCMS_CFLAGS) \
+    $(MAPPER_CFLAGS) \
     $(PCL_CFLAGS) \
     $(SHMDATA_CFLAGS) \
     $(XML2_CFLAGS)
@@ -108,6 +109,7 @@ blobserver_LDADD = \
     $(LIBLO_LIBS) \
     $(LIBATOM_LIBS) \
     $(LCMS_LIBS) \
+    $(MAPPER_LIBS) \
     $(PCL_LIBS) \
     $(SHMDATA_LIBS) \
     $(XML2_LIBS)

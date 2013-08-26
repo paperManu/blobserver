@@ -46,16 +46,23 @@
 #include "source.h"
 #include "threadPool.h"
 
+#if HAVE_MAPPER
+#include "mapper/mapper.h"
+#endif
+
 /*************/
 // Struct to contain a complete flow, from capture to client
 struct Flow
 {
     std::vector<std::shared_ptr<Source>> sources;
     std::shared_ptr<Actuator> actuator;
+    std::shared_ptr<OscClient> client;
 #if HAVE_SHMDATA
     std::shared_ptr<Shm> sink;
 #endif
-    std::shared_ptr<OscClient> client;
+#if HAVE_MAPPER
+    std::vector<mapper_signal> mapperSignal;
+#endif
     unsigned int id;
     bool run;
 };
@@ -91,6 +98,9 @@ class App
 
         // liblo related
         lo_server_thread mOscServer;
+
+        // libmapper related
+        mapper_device mMapperDevice;
 
         // detection related
         std::vector<std::shared_ptr<Source>> mSources;

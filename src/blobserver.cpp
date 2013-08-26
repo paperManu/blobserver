@@ -86,12 +86,19 @@ App::App()
 {
     mCurrentId = 0;
     mThreadPool.reset(new ThreadPool(4));
+#if HAVE_MAPPER
+    mMapperDevice = NULL;
+#endif
 }
 
 
 /*****************/
 App::~App()
 {
+#if HAVE_MAPPER
+    if (mMapperDevice != NULL)
+        mdev_free(mMapperDevice);
+#endif // HAVE_MAPPER
 }
 
 /*****************/
@@ -184,6 +191,11 @@ int App::init(int argc, char** argv)
         g_log(NULL, G_LOG_LEVEL_ERROR, "TCP port not available for the OSC server to launch");
         exit(1);
     }
+
+    // Libmapper
+#if HAVE_MAPPER
+    mMapperDevice = mdev_new(PACKAGE, 9600, 0);
+#endif
 
     // Configuration file needs to be loaded in a thread
     if (gConfigFile != NULL)
@@ -457,7 +469,7 @@ int App::loop()
 
                 lBufferNames.push_back(flow.actuator->getName());
 
-                // Send messages
+                // Send OSC messages
                 // Beginning of the frame
                 lo_send(flow.client->get(), "/blobserver/startFrame", "ii", frameNbr, flow.id);
 
@@ -485,9 +497,51 @@ int App::loop()
                     free(oscMsg);
                 }
 
+#ifdef HAVE_MAPPER
+                if (flow.mapperSignal.size() < nbr)
+                {
+                    for (int index = flow.mapperSignal.size(); index < nbr; ++index)
+                    {
+                        int intSize = 0;
+                        for (int i = 0; i < size; ++i)
+                        {
+                            char type = message[i + 2]->getTypeTag();
+                            if (type != atom::IntValue::TYPE_TAG && type != atom::FloatValue::TYPE_TAG)
+                                continue;
+                            intSize++;
+                        }
+
+                        char id[8];
+                        sprintf(id, "%i", index);
+                        string path = flow.actuator->getOscPath() + string(id);
+                        mapper_signal signal = mdev_add_output(mMapperDevice, path.c_str(), intSize, 'f', 0, 0, 0);
+                        flow.mapperSignal.push_back(signal);
+                    }
+                }
+
+                if (message.size() > 2)
+                for (int index = 0; index < nbr; ++index)
+                {
+                    vector<float> values;
+                    for (int i = 0; i < size; ++i)
+                    {
+                        char type = message[i + index*size + 2]->getTypeTag();
+                        if (type != atom::IntValue::TYPE_TAG && type != atom::FloatValue::TYPE_TAG)
+                            continue;
+                        values.push_back(atom::toFloat(message[i + index*size + 2]));
+                    }
+                    msig_update(flow.mapperSignal[index], values.data(), values.size(), MAPPER_NOW);
+                }
+#endif
+
                 // End of the frame
                 lo_send(flow.client->get(), "/blobserver/endFrame", "ii", frameNbr, flow.id);
             } );
+
+            // Libmapper
+#ifdef HAVE_MAPPER
+            mdev_poll(mMapperDevice, 0);
+#endif
 
             if (gBench)
                 timeSince(chronoStart, string("Benchmark - Update buffers"));
