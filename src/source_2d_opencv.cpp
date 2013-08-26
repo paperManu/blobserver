@@ -181,7 +181,6 @@ void Source_2D_OpenCV::setParameter(atom::Message pParam)
                 return;
             }
             mCamera.set(CV_CAP_PROP_GAIN, param);
-            // TODO: add the opposite conversion for LUT
             float value = (float)(mCamera.get(CV_CAP_PROP_GAIN));
             mGain = mGainLUT.inverse(value);
         }

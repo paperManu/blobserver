@@ -445,27 +445,28 @@ int App::loop()
             if (gBench)
                 timeSince(chronoStart, string("Benchmark - Update actuators"));
 
-            for_each (mFlows.begin(), mFlows.end(), [&] (Flow flow)
+            for (int f = 0; f < mFlows.size(); ++f)
             {
-                if (flow.run == false)
-                    return;
+                Flow* flow = &mFlows[f];
+                if (flow->run == false)
+                    continue;
 
                 // Get the message resulting from the detection
                 atom::Message message;
-                message = flow.actuator->getLastMessage();
+                message = flow->actuator->getLastMessage();
 
-                Capture_Ptr output = flow.actuator->getOutput();
+                Capture_Ptr output = flow->actuator->getOutput();
                 lBuffers.push_back(output);
 
 #if HAVE_SHMDATA
-                flow.sink->setCapture(output);
+                flow->sink->setCapture(output);
 #endif
 
-                lBufferNames.push_back(flow.actuator->getName());
+                lBufferNames.push_back(flow->actuator->getName());
 
                 // Send OSC messages
                 // Beginning of the frame
-                lo_send(flow.client->get(), "/blobserver/startFrame", "ii", frameNbr, flow.id);
+                lo_send(flow->client->get(), "/blobserver/startFrame", "ii", frameNbr, flow->id);
 
                 int nbr, size;
                 if (message.size() < 2)
@@ -487,14 +488,14 @@ int App::loop()
                     
                     lo_message oscMsg = lo_message_new();
                     atom::message_build_to_lo_message(msg, oscMsg);
-                    lo_send_message(flow.client->get(), flow.actuator->getOscPath().c_str(), oscMsg);
+                    lo_send_message(flow->client->get(), flow->actuator->getOscPath().c_str(), oscMsg);
                     free(oscMsg);
                 }
 
 #ifdef HAVE_MAPPER
-                if (flow.mapperSignal.size() < nbr)
+                if (flow->mapperSignal.size() < nbr)
                 {
-                    for (int index = flow.mapperSignal.size(); index < nbr; ++index)
+                    for (int index = flow->mapperSignal.size(); index < nbr; ++index)
                     {
                         int intSize = 0;
                         for (int i = 0; i < size; ++i)
@@ -506,10 +507,10 @@ int App::loop()
                         }
 
                         char id[8];
-                        sprintf(id, "_%i_%i", flow.id, index);
-                        string path = flow.actuator->getOscPath() + string(id);
+                        sprintf(id, "_%i_%i", flow->id, index);
+                        string path = flow->actuator->getOscPath() + string(id);
                         mapper_signal signal = mdev_add_output(mMapperDevice, path.c_str(), intSize, 'f', 0, 0, 0);
-                        flow.mapperSignal.push_back(signal);
+                        flow->mapperSignal.push_back(signal);
                     }
                 }
 
@@ -524,13 +525,13 @@ int App::loop()
                             continue;
                         values.push_back(atom::toFloat(message[i + index*size + 2]));
                     }
-                    msig_update(flow.mapperSignal[index], values.data(), values.size(), MAPPER_NOW);
+                    msig_update(flow->mapperSignal[index], values.data(), values.size(), MAPPER_NOW);
                 }
 #endif
 
                 // End of the frame
-                lo_send(flow.client->get(), "/blobserver/endFrame", "ii", frameNbr, flow.id);
-            } );
+                lo_send(flow->client->get(), "/blobserver/endFrame", "ii", frameNbr, flow->id);
+            }
 
             // Libmapper
 #ifdef HAVE_MAPPER

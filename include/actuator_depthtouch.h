@@ -59,7 +59,7 @@ class Actuator_DepthTouch : public Actuator
         int mLearningTime;
 
         // Internal variables
-        bool mIsLearning;
+        bool mIsLearning, mJustLearnt;
         int mLearningLeft;
 
         // Tracking and movement filtering parameters

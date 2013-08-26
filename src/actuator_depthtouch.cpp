@@ -46,6 +46,7 @@ void Actuator_DepthTouch::make()
     mLearningTime = 120;
     mLearningLeft = mLearningTime;
     mIsLearning = true;
+    mJustLearnt = false;
 }
 
 /*************/
@@ -67,13 +68,21 @@ atom::Message Actuator_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
         mBackgroundStddev = cv::Mat::zeros(input.rows, input.cols, CV_32F);
         mLearningData.clear();
         mIsLearning = true;
+        mJustLearnt = false;
         mLearningLeft = mLearningTime;
+
+        g_log(NULL, G_LOG_LEVEL_INFO, "%s - Beginning to learn the background", mClassName.c_str());
     }
 
     if (mIsLearning)
     {
         learn(input);
         return mLastMessage;
+    }
+    else if (mJustLearnt == false)
+    {
+        mJustLearnt = true;
+        g_log(NULL, G_LOG_LEVEL_INFO, "%s - Finished learning the background", mClassName.c_str());
     }
 
     // Difference to mean value
