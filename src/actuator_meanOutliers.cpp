@@ -118,7 +118,7 @@ atom::Message Actuator_MeanOutliers::detect(const vector< Capture_Ptr > pCapture
 
     // Constructing the message
     // Two first values are the number and size of each (the...) blob
-    mLastMessage = atom::createMessage("iiiiiii", 1, 5, lX, lY, lNumber, lSpeedX, lSpeedY);
+    mLastMessage = atom::createMessage("iiiiiiii", 1, 6, 0, lX, lY, lNumber, lSpeedX, lSpeedY);
 
     // Save the result in a buffer
     if (mVerbose)

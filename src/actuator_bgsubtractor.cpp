@@ -191,12 +191,12 @@ atom::Message Actuator_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
         }
 
         // Add this blob to the message
+        mLastMessage.push_back(atom::IntValue::create(lId));
         mLastMessage.push_back(atom::IntValue::create(lX));
         mLastMessage.push_back(atom::IntValue::create(lY));
         mLastMessage.push_back(atom::IntValue::create(lSize));
         mLastMessage.push_back(atom::FloatValue::create(ldX));
         mLastMessage.push_back(atom::FloatValue::create(ldY));
-        mLastMessage.push_back(atom::IntValue::create(lId));
         mLastMessage.push_back(atom::IntValue::create(lAge));
         mLastMessage.push_back(atom::IntValue::create(lLost));
     }

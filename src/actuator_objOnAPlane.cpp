@@ -211,12 +211,12 @@ atom::Message Actuator_ObjOnAPlane::detect(const vector< Capture_Ptr > pCaptures
         }
 
         // Add this blob to the message
+        mLastMessage.push_back(atom::IntValue::create(lId));
         mLastMessage.push_back(atom::IntValue::create(lX));
         mLastMessage.push_back(atom::IntValue::create(lY));
         mLastMessage.push_back(atom::IntValue::create(lSize));
         mLastMessage.push_back(atom::IntValue::create(ldX));
         mLastMessage.push_back(atom::IntValue::create(ldY));
-        mLastMessage.push_back(atom::IntValue::create(lId));
     }
 
     // Save the result in a buffer
