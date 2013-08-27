@@ -100,7 +100,9 @@ class App
         lo_server_thread mOscServer;
 
         // libmapper related
+#if HAVE_MAPPER
         mapper_device mMapperDevice;
+#endif
 
         // detection related
         std::vector<std::shared_ptr<Source>> mSources;

@@ -492,7 +492,7 @@ int App::loop()
                     free(oscMsg);
                 }
 
-#ifdef HAVE_MAPPER
+#if HAVE_MAPPER
                 if (flow->mapperSignal.size() < nbr)
                 {
                     for (int index = flow->mapperSignal.size(); index < nbr; ++index)
@@ -534,7 +534,7 @@ int App::loop()
             }
 
             // Libmapper
-#ifdef HAVE_MAPPER
+#if HAVE_MAPPER
             mdev_poll(mMapperDevice, 0);
 #endif
 
