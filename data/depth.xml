@@ -8,7 +8,7 @@
             </Param>
             <Param>
                 <Name>detectionDistance</Name>
-                <Value>5</Value>
+                <Value>30</Value>
             </Param>
             <Param>
                 <Name>stddevCoeff</Name>
@@ -20,7 +20,15 @@
             </Param>
             <Param>
                 <Name>learningTime</Name>
-                <Value>120</Value>
+                <Value>128</Value>
+            </Param>
+            <Param>
+                <Name>processNoiseCov</Name>
+                <Value>1e-8</Value>
+            </Param>
+            <Param>
+                <Name>measurementNoiseCov</Name>
+                <Value>1e-8</Value>
             </Param>
         </Actuator>
         <Source>
@@ -29,6 +37,10 @@
             <Param>
                 <Name>location</Name>
                 <Value>/tmp/cam0-depth</Value>
+            </Param>
+            <Param>
+                <Name>noiseFiltering</Name>
+                <Value>1</Value>
             </Param>
         </Source>
         <Client>
@@ -39,5 +51,18 @@
             <Address>localhost</Address>
             <Port>9002</Port>
         </Server>
+    </Flow>
+    <Flow>
+        <Actuator>
+            <Type>Actuator_FiducialTracker</Type>
+        </Actuator>
+        <Source>
+            <Type>Source_2D_Shmdata</Type>
+            <Subsource>1</Subsource>
+            <Param>
+                <Name>location</Name>
+                <Value>/tmp/cam0-rgb</Value>
+            </Param>
+        </Source>
     </Flow>
 </Blobserver>
