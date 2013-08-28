@@ -33,7 +33,7 @@ void Actuator_BgSubtractor::make()
     mOutputBuffer = cv::Mat::zeros(480, 640, CV_8UC3);
 
     mName = mClassName;
-    mOscPath = "/blobserver/bgsubtractor";
+    mOscPath = "bgsubtractor";
 
     mFilterSize = 3;
     mFilterDilateCoeff = 2;

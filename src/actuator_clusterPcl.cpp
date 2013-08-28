@@ -30,7 +30,7 @@ Actuator_ClusterPcl::Actuator_ClusterPcl(int pParam)
 void Actuator_ClusterPcl::make()
 {
     mName = mClassName;
-    mOscPath = "/blobserver/clusterPcl";
+    mOscPath = "clusterPcl";
 
     mFrameNumber = 0;
 

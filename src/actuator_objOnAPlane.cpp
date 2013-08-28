@@ -93,7 +93,7 @@ Actuator_ObjOnAPlane::Actuator_ObjOnAPlane(int pParam)
 void Actuator_ObjOnAPlane::make()
 {
     mName = mClassName;
-    mOscPath = "/blobserver/objOnAPlane";
+    mOscPath = "objOnAPlane";
 
     mMaxTrackedBlobs = 16;
     mDetectionLevel = 10.0;

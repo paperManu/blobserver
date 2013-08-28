@@ -28,7 +28,7 @@ void Actuator_FiducialTracker::make()
 
     mName = mClassName;
     // OSC path for this actuator
-    mOscPath = "/blobserver/fiducialtracker";
+    mOscPath = "fiducialtracker";
 
     mFrameNumber = 0;
 

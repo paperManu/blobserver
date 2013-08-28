@@ -1,5 +1,6 @@
 #include "actuator_depthtouch.h"
 
+#include <algorithm>
 #include <chrono>
 #include <memory>
 #include <mutex>
@@ -33,7 +34,7 @@ void Actuator_DepthTouch::make()
     mOutputBuffer = cv::Mat::zeros(480, 640, CV_8UC3);
 
     mName = mClassName;
-    mOscPath = "/blobserver/depthtouch";
+    mOscPath = "depthtouch";
 
     mFilterSize = 2;
     mDetectionDistance = 25.f;
@@ -138,6 +139,13 @@ atom::Message Actuator_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
         mBlobs[i].setParameter("measurementNoiseCov", mMeasurementNoiseCov);
     }
 
+    sort(mBlobs.begin(), mBlobs.end(), [&] (Blob2D a, Blob2D b)
+    {
+        Blob::properties propA = a.getBlob();
+        Blob::properties propB = b.getBlob();
+        return propA.size > propB.size;
+    });
+
     // Constructing the message
     mLastMessage.clear();
     mLastMessage.push_back(atom::IntValue::create((int)mBlobs.size()));
@@ -158,12 +166,12 @@ atom::Message Actuator_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
         if (mVerbose)
         {
             char lNbrStr[8];
-            sprintf(lNbrStr, "%i", lId);
+            sprintf(lNbrStr, "%i", i);
             cv::putText(touch, lNbrStr, cv::Point(lX, lY), cv::FONT_HERSHEY_COMPLEX, 0.66, cv::Scalar(128.0, 128.0, 128.0, 128.0));
         }
 
         // Add this blob to the message
-        mLastMessage.push_back(atom::IntValue::create(lId));
+        mLastMessage.push_back(atom::IntValue::create(i));
         mLastMessage.push_back(atom::IntValue::create(lX));
         mLastMessage.push_back(atom::IntValue::create(lY));
         mLastMessage.push_back(atom::FloatValue::create(ldX));
@@ -188,7 +196,7 @@ void Actuator_DepthTouch::learn(cv::Mat input)
 
     // Calculate the mean
     cv::Mat mean = cv::Mat::zeros(mLearningData[0].rows, mLearningData[1].cols, CV_32F);
-    for_each (mLearningData.begin(), mLearningData.end(), [&] (cv::Mat data)
+    for_each (mLearningData.begin(), mLearningData.end(), [&] (cv::Mat& data)
     {
         mean += data;
     });
@@ -198,10 +206,8 @@ void Actuator_DepthTouch::learn(cv::Mat input)
     cv::Mat stddev = cv::Mat::zeros(mLearningData[0].rows, mLearningData[1].cols, CV_32F);
     for_each (mLearningData.begin(), mLearningData.end(), [&] (cv::Mat& data)
     {
-        cv::Mat converted;
-        data.convertTo(converted, CV_32F);
-        cv::absdiff(mean, converted, converted);
-        cv::pow(converted, 2.0, data);
+        cv::absdiff(mean, data, data);
+        cv::pow(data, 2.0, data);
     });
     for_each (mLearningData.begin(), mLearningData.end(), [&] (cv::Mat& data)
     {

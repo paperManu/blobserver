@@ -27,7 +27,7 @@ void Actuator_MeanOutliers::make()
 
     mName = mClassName;
     // OSC path for this actuator
-    mOscPath = "/blobserver/meanOutliers";
+    mOscPath = "meanOutliers";
 
     mMeanBlob.setParameter("processNoiseCov", 1e-6);
     mMeanBlob.setParameter("measurementNoiseCov", 1e-4);

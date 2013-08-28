@@ -27,7 +27,7 @@ void Actuator_LightSpots::make()
 
     mName = mClassName;
     // OSC path for this actuator
-    mOscPath = "/blobserver/lightSpots";
+    mOscPath = "lightSpots";
 
     mProcessNoiseCov = 1e-5;
     mMeasurementNoiseCov = 1e-5;

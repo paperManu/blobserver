@@ -96,7 +96,7 @@ void Actuator_Hog::make()
     mOutputBuffer = cv::Mat::zeros(480, 640, CV_8UC3);
 
     mName = mClassName;
-    mOscPath = "/blobserver/hog";
+    mOscPath = "hog";
 
     mFilterSize = 3;
     mFilterDilateCoeff = 3;

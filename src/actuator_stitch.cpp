@@ -28,7 +28,7 @@ void Actuator_Stitch::make()
 
     mName = mClassName;
     // OSC path for this detector
-    mOscPath = "/blobserver/stitch";
+    mOscPath = "stitch";
 
     mFrameNumber = 0;
 }
