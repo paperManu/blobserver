@@ -132,9 +132,9 @@ atom::Message Actuator_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
         for (unsigned int x = 0; x < roi.cols; ++x)
             for (unsigned int y = 0; y < roi.rows; ++y)
             {
-                if (roi.at<float>(y, x) < contourMin)
+                if (roi.at<float>(y, x) < contourMin && roi.at<float>(y, x) > 0.f)
                     contourMin = roi.at<float>(y, x);
-                if (roi.at<float>(y, x) > contourMax && roi.at<float>(y, x) < MAX_DEPTH)
+                if (roi.at<float>(y, x) > contourMax && roi.at<float>(y, x) < mDetectionDistance)
                     contourMax = roi.at<float>(y, x);
             }
         // We get the mean position of points which are in the first tenth of [contourMin, contourMax]
