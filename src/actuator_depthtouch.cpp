@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -15,6 +16,8 @@ using namespace std;
 std::string Actuator_DepthTouch::mClassName = "Actuator_DepthTouch";
 std::string Actuator_DepthTouch::mDocumentation = "N/A";
 unsigned int Actuator_DepthTouch::mSourceNbr = 1;
+
+#define MAX_DEPTH 65535.f
 
 /*************/
 Actuator_DepthTouch::Actuator_DepthTouch()
@@ -95,7 +98,7 @@ atom::Message Actuator_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
 
     cv::compare(distance, 0.f, mask, cv::CMP_EQ);
     mask.convertTo(mask, CV_32F, 1.f / 255.f);
-    distance += mask * 65535.f;
+    distance += mask * MAX_DEPTH;
 
     // Comparing distance with detection distance, plus some morphological operations
     cv::Mat touch;
@@ -107,7 +110,7 @@ atom::Message Actuator_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
 
     vector< vector<cv::Point> > contours;
     cv::Mat buffer = touch.clone();
-    cv::findContours(buffer, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+    cv::findContours(buffer, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 
     vector<Blob::properties> properties;
     for (unsigned int i = 0; i < contours.size(); ++i)
@@ -115,9 +118,47 @@ atom::Message Actuator_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
         cv::Rect box = cv::boundingRect(contours[i]);
         float area = cv::contourArea(contours[i], false);
 
+        cv::Mat contourImg = cv::Mat::zeros(input.size(), CV_32F);
+        cv::drawContours(contourImg, contours, i, cv::Scalar(1.f), CV_FILLED);
+        cv::Mat inverseContour = cv::Mat::zeros(input.size(), CV_32F);
+        inverseContour = (1.f - contourImg) * MAX_DEPTH;
+        contourImg = cv::max(contourImg.mul(distance), inverseContour);
+
+        // We are looking for the extremity of the hand (ideally, the fingers)
+        // So we search the part of the contour which is the nearest to the surface
+        cv::Mat roi = contourImg(box);
+        float contourMin = MAX_DEPTH;
+        float contourMax = 0.f;
+        for (unsigned int x = 0; x < roi.cols; ++x)
+            for (unsigned int y = 0; y < roi.rows; ++y)
+            {
+                if (roi.at<float>(y, x) < contourMin)
+                    contourMin = roi.at<float>(y, x);
+                if (roi.at<float>(y, x) > contourMax && roi.at<float>(y, x) < MAX_DEPTH)
+                    contourMax = roi.at<float>(y, x);
+            }
+        // We get the mean position of points which are in the first tenth of [contourMin, contourMax]
+        contourMax = contourMin + (contourMax - contourMin) / 10.f;
+        cv::Point2f fingers;
+        fingers.x = 0.f;
+        fingers.y = 0.f;
+        float nbrPoints = 0.f;
+        for (unsigned int x = 0; x < roi.cols; ++x)
+            for (unsigned int y = 0; y < roi.cols; ++y)
+            {
+                if (roi.at<float>(y, x) < contourMax)
+                {
+                    fingers.x += (float)(x + box.x);
+                    fingers.y += (float)(y + box.y);
+                    nbrPoints++;
+                }
+            }
+        fingers.x /= nbrPoints;
+        fingers.y /= nbrPoints;
+
         Blob::properties property;
-        property.position.x = box.x + box.width / 2;
-        property.position.y = box.y + box.height / 2;
+        property.position.x = fingers.x; //box.x + box.width / 2;
+        property.position.y = fingers.y; //box.y + box.height / 2;
         property.size = area;
         property.speed.x = 0.f;
         property.speed.y = 0.f;
