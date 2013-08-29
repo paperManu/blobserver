@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.68)
 AC_INIT([BLOBSERVER],
-        [0.4.4],
+        [0.5.0],
         [http://code.sat.qc.ca/redmine/projects/blobserver/issues],
         [blobserver],
         [http://code.sat.qc.ca/redmine/projects/blobserver])
@@ -11,6 +11,10 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE()
 AC_CONFIG_HEADERS([include/config.h])
+
+AC_SUBST([LIBBLOBSERVER_SO_VERSION], [0:0:0])
+AC_SUBST([LIBBLOBSERVER_API_VERSION], [0.5])
+AC_DEFINE(LIBBLOSERVER_API_VERSION, ["0.5"], [API version])
 
 # Check for C and C++ compilers
 AC_PROG_CXX
@@ -128,6 +132,7 @@ AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([Doxyfile])])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
+    plugins/actuators/nop/Makefile
     man/Makefile
     ])
 AC_OUTPUT
