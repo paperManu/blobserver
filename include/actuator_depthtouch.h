@@ -62,13 +62,9 @@ class Actuator_DepthTouch : public Actuator
         bool mIsLearning, mJustLearnt;
         int mLearningLeft;
 
-        // Tracking and movement filtering parameters
-        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
-        int mBlobLifetime;
-        float mProcessNoiseCov, mMeasurementNoiseCov;
-
         cv::Mat mBackgroundMean;
         cv::Mat mBackgroundStddev;
+        cv::Mat mBackgroundMaxdev;
         std::vector<cv::Mat> mLearningData;
 
         // Methods

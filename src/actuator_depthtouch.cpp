@@ -40,10 +40,6 @@ void Actuator_DepthTouch::make()
     mDetectionDistance = 25.f;
     mSigmaCoeff = 20.f;
 
-    mBlobLifetime = 5;
-    mProcessNoiseCov = 1e-6;
-    mMeasurementNoiseCov = 1e-4;
-
     mLearningTime = 120;
     mLearningLeft = mLearningTime;
     mIsLearning = true;
@@ -106,8 +102,8 @@ atom::Message Actuator_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
     cv::Mat touchDistance = cv::max((mBackgroundStddev + 1.0) * mSigmaCoeff, mDetectionDistance);
     cv::compare(distance, touchDistance, touch, cv::CMP_LE);
     cv::Mat lEroded;
-    cv::erode(touch, lEroded, cv::Mat(), cv::Point(-1, -1), mFilterSize);
-    cv::dilate(lEroded, touch, cv::Mat(), cv::Point(-1, -1), mFilterSize * 2);
+    cv::erode(touch, lEroded, cv::Mat(), cv::Point(-1, -1), 3);
+    cv::dilate(lEroded, touch, cv::Mat(), cv::Point(-1, -1), mFilterSize);
 
     vector< vector<cv::Point> > contours;
     cv::Mat buffer = touch.clone();
@@ -129,38 +125,24 @@ atom::Message Actuator_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
         properties.push_back(property);
     }
 
-    // We want to track them
-    trackBlobs<Blob2D>(properties, mBlobs, mBlobLifetime);
-
-    // We make sure that the filtering parameters are set
-    for (int i = 0; i < mBlobs.size(); ++i)
+    sort(properties.begin(), properties.end(), [&] (Blob::properties a, Blob::properties b)
     {
-        mBlobs[i].setParameter("processNoiseCov", mProcessNoiseCov);
-        mBlobs[i].setParameter("measurementNoiseCov", mMeasurementNoiseCov);
-    }
-
-    sort(mBlobs.begin(), mBlobs.end(), [&] (Blob2D a, Blob2D b)
-    {
-        Blob::properties propA = a.getBlob();
-        Blob::properties propB = b.getBlob();
-        return propA.size > propB.size;
+        return a.size > b.size;
     });
 
     // Constructing the message
     mLastMessage.clear();
-    mLastMessage.push_back(atom::IntValue::create((int)mBlobs.size()));
+    mLastMessage.push_back(atom::IntValue::create((int)properties.size()));
     mLastMessage.push_back(atom::IntValue::create(5));
 
-    for(int i = 0; i < mBlobs.size(); ++i)
+    for(int i = 0; i < properties.size(); ++i)
     {
         int lX, lY, lId;
         float ldX, ldY;
-        Blob::properties properties = mBlobs[i].getBlob();
-        lX = (int)(properties.position.x);
-        lY = (int)(properties.position.y);
-        ldX = properties.speed.x;
-        ldY = properties.speed.y;
-        lId = (int)mBlobs[i].getId();
+        lX = (int)(properties[i].position.x);
+        lY = (int)(properties[i].position.y);
+        ldX = properties[i].speed.x;
+        ldY = properties[i].speed.y;
 
         // Print the blob number on the blob
         if (mVerbose)
@@ -218,7 +200,7 @@ void Actuator_DepthTouch::learn(cv::Mat input)
     // If the stddev is superior to mDetectionDistance / 3, we mark the pixel as not measured
     cv::Mat mask;
     cv::threshold(stddev, mask, mDetectionDistance / 3.0, 1.0, cv::THRESH_BINARY_INV);
-
+   
     mBackgroundMean = mean.mul(mask);
     mBackgroundStddev = stddev;
 }
@@ -241,24 +223,6 @@ void Actuator_DepthTouch::setParameter(atom::Message pMessage)
         float filterSize;
         if (readParam(pMessage, filterSize))
             mFilterSize = max(1, (int)filterSize);
-    }
-    else if (cmd == "lifetime")
-    {
-        float lifetime;
-        if (readParam(pMessage, lifetime))
-            mBlobLifetime = lifetime;
-    }
-    else if (cmd == "processNoiseCov")
-    {
-        float cov;
-        if (readParam(pMessage, cov))
-            mProcessNoiseCov = abs(cov);
-    }
-    else if (cmd == "measurementNoiseCov")
-    {
-        float cov;
-        if (readParam(pMessage, cov))
-            mMeasurementNoiseCov = abs(cov);
     }
     else if (cmd == "detectionDistance")
     {
