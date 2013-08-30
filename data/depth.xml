@@ -8,7 +8,7 @@
             </Param>
             <Param>
                 <Name>detectionDistance</Name>
-                <Value>100</Value>
+                <Value>150</Value>
             </Param>
             <Param>
                 <Name>stddevCoeff</Name>
@@ -20,7 +20,19 @@
             </Param>
             <Param>
                 <Name>learningTime</Name>
-                <Value>128</Value>
+                <Value>256</Value>
+            </Param>
+            <Param>
+                <Name>clickDistance</Name>
+                <Value>30</Value>
+            </Param>
+            <Param>
+                <Name>processNoiseCov</Name>
+                <Value>1e-7</Value>
+            </Param>
+            <Param>
+                <Name>measurementNoiseCov</Name>
+                <Value>1e-3</Value>
             </Param>
         </Actuator>
         <Source>

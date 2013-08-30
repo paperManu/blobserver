@@ -36,6 +36,16 @@
 class Actuator_DepthTouch : public Actuator
 {
     public:
+        struct Property : public Blob::properties
+        {
+            struct
+            {
+                int x;
+                int y;
+            } wrist;
+            int contact;
+        };
+
         Actuator_DepthTouch();
         Actuator_DepthTouch(int pParam);
 
@@ -57,10 +67,16 @@ class Actuator_DepthTouch : public Actuator
         float mDetectionDistance;
         float mSigmaCoeff;
         int mLearningTime;
+        float mClickDistance;
 
         // Internal variables
         bool mIsLearning, mJustLearnt;
         int mLearningLeft;
+
+        // Tracking and movement filtering parameters
+        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
+        int mBlobLifetime;
+        float mProcessNoiseCov, mMeasurementNoiseCov;
 
         cv::Mat mBackgroundMean;
         cv::Mat mBackgroundStddev;
