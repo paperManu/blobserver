@@ -31,11 +31,24 @@
 #include "atom/message.h"
 #include "opencv2/opencv.hpp"
 
+#include "abstract-factory.h"
 #include "base_objects.h"
 #include "blob.h"
 #include "capture.h"
 #include "helpers.h"
 #include "source.h"
+
+/*************/
+// Macro for registering Actuator plugins
+#define REGISTER_ACTUATOR(act) \
+extern "C" \
+{ \
+    void registerToFactory(factory::AbstractFactory<Actuator, std::string, std::string, int>& factory) \
+    { \
+        g_log(NULL, G_LOG_LEVEL_DEBUG, "Registering class %s", act::getClassName().c_str()); \
+        factory.register_class<act>(act::getClassName(), act::getDocumentation()); \
+    } \
+}
 
 /*************/
 // Class for parallel masking

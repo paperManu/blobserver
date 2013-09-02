@@ -14,7 +14,7 @@ AC_CONFIG_HEADERS([include/config.h])
 
 AC_SUBST([LIBBLOBSERVER_SO_VERSION], [0:0:0])
 AC_SUBST([LIBBLOBSERVER_API_VERSION], [0.5])
-AC_DEFINE(LIBBLOSERVER_API_VERSION, ["0.5"], [API version])
+AC_DEFINE(LIBBLOBSERVER_API_VERSION, ["0.5"], [API version])
 
 # Check for C and C++ compilers
 AC_PROG_CXX
@@ -132,7 +132,8 @@ AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([Doxyfile])])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
-    plugins/actuators/nop/Makefile
+    plugins/Makefile
+    plugins/actuators/Makefile
     man/Makefile
     ])
 AC_OUTPUT

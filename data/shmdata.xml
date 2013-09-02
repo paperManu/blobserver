@@ -1,7 +1,7 @@
 <Blobserver>
     <Flow>
         <Actuator>
-            <Type>Actuator_MeanOutliers</Type>
+            <Type>Actuator_Nop</Type>
             <Param>
                 <Name>verbose</Name>
                 <Value>0</Value>
@@ -13,31 +13,6 @@
             <Param>
                 <Name>location</Name>
                 <Value>/tmp/switcher_default_cam0_video</Value>
-            </Param>
-        </Source>
-        <Client>
-            <Address>localhost</Address>
-            <Port>9000</Port>
-        </Client>
-        <Server>
-            <Address>localhost</Address>
-            <Port>9002</Port>
-        </Server>
-    </Flow>
-    <Flow>
-        <Actuator>
-            <Type>Actuator_MeanOutliers</Type>
-            <Param>
-                <Name>verbose</Name>
-                <Value>1</Value>
-            </Param>
-        </Actuator>
-        <Source>
-            <Type>Source_2D_OpenCV</Type>
-            <Subsource>300</Subsource>
-            <Param>
-                <Name>framerate</Name>
-                <Value>30</Value>
             </Param>
         </Source>
         <Client>

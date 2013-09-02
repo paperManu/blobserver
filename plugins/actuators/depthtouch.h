@@ -18,33 +18,31 @@
  */
 
 /*
- * @actuator_fiducialtracker.h
- * The Actuator_FiducialTracker class.
+ * @actuator_depthtouch.h
+ * The Actuator_DepthTouch class.
  */
 
-#ifndef ACTUATOR_FIDUCIALTRACKER_H
-#define ACTUATOR_FIDUCIALTRACKER_H
+#ifndef DEPTHTOUCH_H
+#define DEPTHTOUCH_H
 
-#include "fidtrackX.h"
-#include "segment.h"
+#include <vector>
 
 #include "config.h"
 #include "actuator.h"
+#include "blob_2D.h"
 
-#define MAX_FIDUCIAL_COUNT  128
-
- /*************/
-// Class Actuator_Nop
-class Actuator_FiducialTracker : public Actuator
+/*************/
+// Class Actuator_DepthTouch
+class Actuator_DepthTouch : public Actuator
 {
     public:
-        Actuator_FiducialTracker();
-        Actuator_FiducialTracker(int pParam);
+        Actuator_DepthTouch();
+        Actuator_DepthTouch(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(std::vector< Capture_Ptr > pCaptures);
+        atom::Message detect(const std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
         std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
@@ -52,23 +50,32 @@ class Actuator_FiducialTracker : public Actuator
     private:
         static std::string mClassName;
         static std::string mDocumentation;
-
         static unsigned int mSourceNbr;
-        unsigned int mFrameNumber;
 
-        unsigned int mWidth, mHeight;
+        // Detection parameters
+        int mFilterSize;
+        float mDetectionDistance;
+        float mSigmaCoeff;
+        int mLearningTime;
 
-        // libfidtrack related attributes
-        ShortPoint* mDmap;
-        TreeIdMap mFidTreeidmap;
-        Segmenter mFidSegmenter;
-        FidtrackerX mFidTrackerx;
-        FiducialX mFiducials[MAX_FIDUCIAL_COUNT];
+        // Internal variables
+        bool mIsLearning, mJustLearnt;
+        int mLearningLeft;
 
-        Capture_Ptr mCapture;
+        // Tracking and movement filtering parameters
+        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
+        int mBlobLifetime;
+        float mProcessNoiseCov, mMeasurementNoiseCov;
 
+        cv::Mat mBackgroundMean;
+        cv::Mat mBackgroundStddev;
+        std::vector<cv::Mat> mLearningData;
+
+        // Methods
         void make();
-        void initFidtracker();
+        void learn(cv::Mat input);
 };
 
-#endif // ACTUATOR_NOP_H
+REGISTER_ACTUATOR(Actuator_DepthTouch)
+
+#endif // DEPTHTOUCH_H

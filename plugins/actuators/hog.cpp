@@ -1,4 +1,4 @@
-#include "actuator_hog.h"
+#include "hog.h"
 
 #include <chrono>
 #include <memory>

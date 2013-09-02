@@ -4,6 +4,7 @@
  * This file is part of blobserver.
  *
  * This program is free software: you can redistribute it and/or modify
+ *
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -18,12 +19,12 @@
  */
 
 /*
- * @actuator_nop.h
+ * @nop.h
  * The Actuator_Nop class.
  */
 
-#ifndef ACTUATOR_NOP_H
-#define ACTUATOR_NOP_H
+#ifndef NOP_H
+#define NOP_H
 
 #include "actuator.h"
 
@@ -57,4 +58,6 @@ class Actuator_Nop : public Actuator
         void make();
 };
 
-#endif // ACTUATOR_NOP_H
+REGISTER_ACTUATOR(Actuator_Nop)
+
+#endif // NOP_H

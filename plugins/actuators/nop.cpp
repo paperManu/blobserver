@@ -1,4 +1,4 @@
-#include "actuator_nop.h"
+#include "nop.h"
 
 using namespace std;
 
@@ -25,7 +25,7 @@ void Actuator_Nop::make()
 
     mName = mClassName;
     // OSC path for this actuator
-    mOscPath = "/blobserver/nop";
+    mOscPath = "nop";
 
     mFrameNumber = 0;
 }

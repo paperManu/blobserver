@@ -18,23 +18,21 @@
  */
 
 /*
- * @actuator_mainOutliers.h
- * The Actuator_MainOutliers class.
+ * @actuator_lightSpots.h
+ * The Actuator_LightSpots class.
  */
 
-#ifndef ACTUATOR_MEANOUTLIERS_H
-#define ACTUATOR_MEANOUTLIERS_H
+#ifndef LIGHTSPOTS_H
+#define LIGHTSPOTS_H
 
 #include "actuator.h"
 #include "blob_2D.h"
 
-/*************/
-// Class Actuator_MeanOutliers
-class Actuator_MeanOutliers : public Actuator
+class Actuator_LightSpots : public Actuator
 {
     public:
-        Actuator_MeanOutliers();
-        Actuator_MeanOutliers(int pParam);
+        Actuator_LightSpots();
+        Actuator_LightSpots(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -48,13 +46,18 @@ class Actuator_MeanOutliers : public Actuator
         static std::string mClassName;
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
+        
+        cv::SimpleBlobDetector* mLightBlobDetector; // OpenCV object which detects the blobs in an image
+        std::vector<Blob2D> mLightBlobs; // Vector of detected and tracked blobs
 
-        float mDetectionLevel; // Above std dev * mDetectionLevel, an object is detected
+        int mMaxTrackedBlobs;
+        float mDetectionLevel;
         int mFilterSize;
-        Blob2D mMeanBlob;
-        bool isInitialized;
+        float mProcessNoiseCov, mMeasurementNoiseCov;
 
         void make();
 };
 
-#endif // ACTUATOR_MEANOUTLIERS_H
+REGISTER_ACTUATOR(Actuator_LightSpots)
+
+#endif // LIGHTSPOTS_H

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2012 Emmanuel Durand
  *
  * This file is part of blobserver.
  *
@@ -18,26 +18,22 @@
  */
 
 /*
- * @actuator_depthtouch.h
- * The Actuator_DepthTouch class.
+ * @actuator_objOnAPlane.h
+ * The Actuator_ObjOnAPlane class.
  */
 
-#ifndef ACTUATOR_DEPTHTOUCH_H
-#define ACTUATOR_DEPTHTOUCH_H
+#ifndef OBJONAPLANE_H
+#define OBJONAPLANE_H
 
-#include <vector>
-
-#include "config.h"
+#include <memory>
 #include "actuator.h"
 #include "blob_2D.h"
 
-/*************/
-// Class Actuator_DepthTouch
-class Actuator_DepthTouch : public Actuator
+class Actuator_ObjOnAPlane : public Actuator
 {
     public:
-        Actuator_DepthTouch();
-        Actuator_DepthTouch(int pParam);
+        Actuator_ObjOnAPlane();
+        Actuator_ObjOnAPlane(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -52,28 +48,22 @@ class Actuator_DepthTouch : public Actuator
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        // Detection parameters
+        int mMaxTrackedBlobs;
+        float mDetectionLevel;
         int mFilterSize;
-        float mDetectionDistance;
-        float mSigmaCoeff;
-        int mLearningTime;
-
-        // Internal variables
-        bool mIsLearning, mJustLearnt;
-        int mLearningLeft;
-
-        // Tracking and movement filtering parameters
-        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
-        int mBlobLifetime;
         float mProcessNoiseCov, mMeasurementNoiseCov;
+        
+        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
+        int mMinArea;
 
-        cv::Mat mBackgroundMean;
-        cv::Mat mBackgroundStddev;
-        std::vector<cv::Mat> mLearningData;
+        std::vector<std::vector<cv::Vec2f>> mSpaces; // First space is the real plane
+        std::vector<cv::Mat> mMaps;
+        bool mMapsUpdated;
 
-        // Methods
-        void make();
-        void learn(cv::Mat input);
+        void make(); // Called by the constructor
+        void updateMaps(std::vector<cv::Mat> pCaptures); // Updates the space conversion maps
 };
 
-#endif // ACTUATOR_DEPTHTOUCH_H
+REGISTER_ACTUATOR(Actuator_ObjOnAPlane)
+
+ #endif // OBJONAPLANE_H

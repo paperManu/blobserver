@@ -1,4 +1,4 @@
-#include "actuator_lightSpots.h"
+#include "lightSpots.h"
 
 using namespace std;
 

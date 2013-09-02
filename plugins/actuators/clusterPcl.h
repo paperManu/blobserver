@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Emmanuel Durand
+ * Copyright (C) 2013 Emmanuel Durand
  *
  * This file is part of blobserver.
  *
@@ -18,32 +18,33 @@
  */
 
 /*
- * @actuator_nop.h
- * The Actuator_Nop class.
+ * @actuator_clusterPcl.h
+ * The Actuator_ClusterPcl class.
  */
 
-#ifndef ACTUATOR_NOP_H
-#define ACTUATOR_NOP_H
+#ifndef CLUSTERPCL_H
+#define CLUSTERPCL_H
 
+#include "config.h"
 #include "actuator.h"
 
- /*************/
-// Class Actuator_Nop
-class Actuator_Nop : public Actuator
+#if HAVE_PCL
+
+/*************/
+// Class Actuator_ClusterPcl
+class Actuator_ClusterPcl : public Actuator
 {
     public:
-        Actuator_Nop();
-        Actuator_Nop(int pParam);
+        Actuator_ClusterPcl();
+        Actuator_ClusterPcl(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(std::vector< Capture_Ptr > pCaptures);
+        atom::Message detect(std::vector<Capture_Ptr> pCaptures);
         void setParameter(atom::Message pMessage);
 
-        Capture_Ptr getOutput() const {return mCapture;}
-
-        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmAuto(filename));}
+        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<ShmImage>(new ShmImage(filename));}
 
     private:
         static std::string mClassName;
@@ -54,7 +55,14 @@ class Actuator_Nop : public Actuator
 
         Capture_Ptr mCapture;
 
+        int mMinClusterSize, mMaxClusterSize;
+        float mClusterTolerance;
+
         void make();
 };
 
-#endif // ACTUATOR_NOP_H
+REGISTER_ACTUATOR(Actuator_ClusterPcl)
+
+#endif //HAVE_PCL
+
+#endif // CLUSTERPCL_H

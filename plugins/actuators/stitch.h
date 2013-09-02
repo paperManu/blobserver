@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2013 Eva Schindling and Emmanuel Durand
  *
  * This file is part of blobserver.
  *
@@ -18,26 +18,23 @@
  */
 
 /*
- * @actuator_bgsubtractor.h
- * The Actuator_BgSubtractor class.
+ * @detector_stitch.h
+ * The Actuator_Stitch class.
  */
 
-#ifndef ACTUATOR_BGSUBTRACTOR_H
-#define ACTUATOR_BGSUBTRACTOR_H
+#ifndef STITCH_H
+#define STITCH_H
 
-#include <vector>
-
-#include "config.h"
 #include "actuator.h"
-#include "blob_2D_color.h"
+#include "base_objects.h"
 
-/*************/
-// Class Actuator_BgSubtractor
-class Actuator_BgSubtractor : public Actuator
+ /*************/
+// Class Actuator_Stitch
+class Actuator_Stitch : public Actuator
 {
     public:
-        Actuator_BgSubtractor();
-        Actuator_BgSubtractor(int pParam);
+        Actuator_Stitch();
+        Actuator_Stitch(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -52,29 +49,15 @@ class Actuator_BgSubtractor : public Actuator
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        std::vector<Blob2DColor> mBlobs; // Vector of detected and tracked blobs
+        unsigned int mFrameNumber;
 
-        // Some filtering parameters
-        int mFilterSize;
-        int mFilterDilateCoeff;
+        std::map<int, cv::Rect> mCameraCrop;
+        std::map<int, cv::Mat> mCameraPosition;
+        std::map<int, float> mCameraRotation;
 
-        // Tracking and movement filtering parameters
-        int mBlobLifetime;
-        int mKeepOldBlobs, mKeepMaxTime; // Parameters to set when we need blobs to be kept even when not detected anymore
-        float mProcessNoiseCov, mMeasurementNoiseCov;
-        float mMaxDistanceForColorDiff;
-
-        // Background subtractor, used to select window of interest
-        // to feed to the SVM
-        cv::BackgroundSubtractorMOG2 mBgSubtractor;
-
-        // Various variables
-        cv::Mat mBgSubtractorBuffer;
-        float mLearningRate, mLearningTime;
-        float mMinArea, mMaxArea;
-
-        // Methods
         void make();
 };
 
-#endif // ACTUATOR_BGSUBTRACTOR_H
+REGISTER_ACTUATOR(Actuator_Stitch)
+
+#endif // STITCH_H

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Eva Schindling and Emmanuel Durand
+ * Copyright (C) 2013 Emmanuel Durand
  *
  * This file is part of blobserver.
  *
@@ -18,28 +18,33 @@
  */
 
 /*
- * @detector_stitch.h
- * The Actuator_Stitch class.
+ * @actuator_fiducialtracker.h
+ * The Actuator_FiducialTracker class.
  */
 
-#ifndef ACTUATOR_STITCH_H
-#define ACTUATOR_STITCH_H
+#ifndef FIDUCIALTRACKER_H
+#define FIDUCIALTRACKER_H
 
+#include "fidtrackX.h"
+#include "segment.h"
+
+#include "config.h"
 #include "actuator.h"
-#include "base_objects.h"
+
+#define MAX_FIDUCIAL_COUNT  128
 
  /*************/
-// Class Actuator_Stitch
-class Actuator_Stitch : public Actuator
+// Class Actuator_Nop
+class Actuator_FiducialTracker : public Actuator
 {
     public:
-        Actuator_Stitch();
-        Actuator_Stitch(int pParam);
+        Actuator_FiducialTracker();
+        Actuator_FiducialTracker(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(const std::vector< Capture_Ptr > pCaptures);
+        atom::Message detect(std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
         std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
@@ -47,15 +52,25 @@ class Actuator_Stitch : public Actuator
     private:
         static std::string mClassName;
         static std::string mDocumentation;
-        static unsigned int mSourceNbr;
 
+        static unsigned int mSourceNbr;
         unsigned int mFrameNumber;
 
-        std::map<int, cv::Rect> mCameraCrop;
-        std::map<int, cv::Mat> mCameraPosition;
-        std::map<int, float> mCameraRotation;
+        unsigned int mWidth, mHeight;
+
+        // libfidtrack related attributes
+        ShortPoint* mDmap;
+        TreeIdMap mFidTreeidmap;
+        Segmenter mFidSegmenter;
+        FidtrackerX mFidTrackerx;
+        FiducialX mFiducials[MAX_FIDUCIAL_COUNT];
+
+        Capture_Ptr mCapture;
 
         void make();
+        void initFidtracker();
 };
 
-#endif // ACTUATOR_STITCH_H
+REGISTER_ACTUATOR(Actuator_FiducialTracker)
+
+#endif // FIDUCIALTRACKER_H

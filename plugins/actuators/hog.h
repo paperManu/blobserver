@@ -22,8 +22,8 @@
  * The Actuator_Hog class.
  */
 
-#ifndef ACTUATOR_HOG_H
-#define ACTUATOR_HOG_H
+#ifndef HOG_H
+#define HOG_H
 
 #include <vector>
 
@@ -100,4 +100,6 @@ class Actuator_Hog : public Actuator
         void updateDescriptorParams();
 };
 
-#endif // ACTUATOR_HOG_H
+REGISTER_ACTUATOR(Actuator_Hog)
+
+#endif // HOG_H

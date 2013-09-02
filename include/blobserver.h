@@ -129,6 +129,9 @@ class App
         // Factory registering
         void registerClasses();
 
+        // Plugins loader
+        void loadPlugins();
+
         // Log handler
         static void logHandler(const gchar* log_domain, GLogLevelFlags log_level, const gchar* message, gpointer user_data);
 

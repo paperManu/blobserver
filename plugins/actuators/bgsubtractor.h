@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Emmanuel Durand
+ * Copyright (C) 2013 Emmanuel Durand
  *
  * This file is part of blobserver.
  *
@@ -18,22 +18,26 @@
  */
 
 /*
- * @actuator_objOnAPlane.h
- * The Actuator_ObjOnAPlane class.
+ * @actuator_bgsubtractor.h
+ * The Actuator_BgSubtractor class.
  */
 
-#ifndef ACTUATOR_OBJONAPLANE_H
-#define ACTUATOR_OBJONAPLANE_H
+#ifndef BGSUBTRACTOR_H
+#define BGSUBTRACTOR_H
 
-#include <memory>
+#include <vector>
+
+#include "config.h"
 #include "actuator.h"
-#include "blob_2D.h"
+#include "blob_2D_color.h"
 
-class Actuator_ObjOnAPlane : public Actuator
+/*************/
+// Class Actuator_BgSubtractor
+class Actuator_BgSubtractor : public Actuator
 {
     public:
-        Actuator_ObjOnAPlane();
-        Actuator_ObjOnAPlane(int pParam);
+        Actuator_BgSubtractor();
+        Actuator_BgSubtractor(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -48,20 +52,31 @@ class Actuator_ObjOnAPlane : public Actuator
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        int mMaxTrackedBlobs;
-        float mDetectionLevel;
+        std::vector<Blob2DColor> mBlobs; // Vector of detected and tracked blobs
+
+        // Some filtering parameters
         int mFilterSize;
+        int mFilterDilateCoeff;
+
+        // Tracking and movement filtering parameters
+        int mBlobLifetime;
+        int mKeepOldBlobs, mKeepMaxTime; // Parameters to set when we need blobs to be kept even when not detected anymore
         float mProcessNoiseCov, mMeasurementNoiseCov;
-        
-        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
-        int mMinArea;
+        float mMaxDistanceForColorDiff;
 
-        std::vector<std::vector<cv::Vec2f>> mSpaces; // First space is the real plane
-        std::vector<cv::Mat> mMaps;
-        bool mMapsUpdated;
+        // Background subtractor, used to select window of interest
+        // to feed to the SVM
+        cv::BackgroundSubtractorMOG2 mBgSubtractor;
 
-        void make(); // Called by the constructor
-        void updateMaps(std::vector<cv::Mat> pCaptures); // Updates the space conversion maps
+        // Various variables
+        cv::Mat mBgSubtractorBuffer;
+        float mLearningRate, mLearningTime;
+        float mMinArea, mMaxArea;
+
+        // Methods
+        void make();
 };
 
- #endif // ACTUATOR_OBJONAPLANE_H
+REGISTER_ACTUATOR(Actuator_BgSubtractor)
+
+#endif // BGSUBTRACTOR_H
