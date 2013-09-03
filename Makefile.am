@@ -2,8 +2,8 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = \
     ext \
     man \
-	plugins \
-    src
+    src \
+	plugins
 
 if HAVE_DOXYGEN
 dist_man_MANS = $(top_builddir)/man
