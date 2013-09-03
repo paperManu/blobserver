@@ -32,7 +32,6 @@
 #include "opencv2/opencv.hpp"
 
 #include "abstract-factory.h"
-#include "blob.h"
 #include "capture.h"
 #include "helpers.h"
 #include "source.h"
@@ -48,34 +47,6 @@ extern "C" \
         factory.register_class<act>(act::getClassName(), act::getDocumentation()); \
     } \
 }
-
-/*************/
-// Class for parallel masking
-template <typename PixType>
-class Parallel_Mask : public cv::ParallelLoopBody
-{
-    public:
-        Parallel_Mask(cv::Mat* buffer, cv::Mat* mask):
-            _buffer(buffer), _mask(mask) {}
-
-        void operator()(const cv::Range& r) const
-        {
-            PixType* buffer = &(_buffer->at<PixType>(r.start, 0));
-            PixType* mask = &(_mask->at<uchar>(r.start, 0));
-            for (int y = r.start; y != r.end; ++y, buffer += _buffer->cols*sizeof(PixType), mask += _mask->cols*sizeof(uchar))
-            {
-                for (int x = 0; x < _buffer->cols; ++x)
-                {
-                    if (*(mask + x*sizeof(uchar)) == 0)
-                        *(buffer + x*sizeof(PixType)) = PixType(0);
-                }
-            }
-        }
-
-    private:
-        cv::Mat* _buffer;
-        cv::Mat* _mask;
-};
 
 /*************/
 //! Base Actuator class, from which all actuators derive
@@ -174,143 +145,5 @@ class Actuator
 
         cv::Mat mSourceMask, mMask;
 };
-
-/*************/
-// Useful functions
-// trackBlobs is used to keep track of blobs through frames
-/*************/
-template<class T>
-class BlobPair
-{
-    public:
-        BlobPair(T* current, Blob::properties* measure):
-            _current(current), _measure(measure)
-        {
-            _dist = _current->getDistanceFromPrediction(*_measure);
-        }
-
-        T* getCurrent() const {return _current;}
-        Blob::properties* getMeasure() const {return _measure;}
-
-        bool operator< (const BlobPair<T>& second) const
-        {
-            if (this->_dist > second.getDist())
-                return true;
-            else
-                return false;
-        }
-
-        float getDist() const {return _dist;}
-
-    private:
-        T* _current;
-        Blob::properties* _measure;
-        float _dist;
-};
-
-/*************/
-template<class T>
-void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs, int pLifetime = 30, int pKeepOldBlobs = 0, int pKeepMaxTime = 0)
-{
-    // First we update all the previous blobs we detected,
-    // and keep their predicted new position
-    for(int i = 0; i < pBlobs.size(); ++i)
-        if (pBlobs[i].getLifetime() > 0)
-            pBlobs[i].predict();
-    
-    // Then we compare all these prediction with real measures and
-    // associate them together
-    std::vector< BlobPair<T> > lPairs;
-    if(pBlobs.size() != 0)
-    {
-        std::vector<BlobPair<T> > lSearchPairs;
-
-        // Compute the squared distance between all new blobs, and all tracked ones
-        for (int i = 0; i < pProperties.size(); ++i)
-        {
-            for (int j = 0; j < pBlobs.size(); ++j)
-            {
-                BlobPair<T> lPair(&pBlobs[j], &pProperties[i]);
-                lSearchPairs.push_back(lPair);
-            }
-        }
-
-        // We loop through the pairs to find the closest ones
-        while (lSearchPairs.size())
-        {
-            std::make_heap(lSearchPairs.begin(), lSearchPairs.end());
-            // Get the nearest new blob
-            std::pop_heap(lSearchPairs.begin(), lSearchPairs.end());
-            BlobPair<T> nearest = lSearchPairs.back();
-            lSearchPairs.pop_back();
-            lPairs.push_back(nearest);
-
-            // Delete pairs with the same current blob
-            // as well as pairs with the same new blob
-            for (int j = 0; j < lSearchPairs.size();)
-            {
-                if (lSearchPairs[j].getCurrent() == nearest.getCurrent())
-                    lSearchPairs.erase(lSearchPairs.begin() + j);
-                else if (lSearchPairs[j].getMeasure() == nearest.getMeasure())
-                    lSearchPairs.erase(lSearchPairs.begin() + j);
-                else
-                    j++;
-            }
-        }
-    }
-
-    // We update the blobs which we were able to track
-    for (int i = 0; i < lPairs.size(); ++i)
-    {
-        lPairs[i].getCurrent()->setNewMeasures(*(lPairs[i].getMeasure()));
-        lPairs[i].getCurrent()->renewLifetime();
-    }
-    // We delete the blobs we were not able to track
-    // (unless we want to keep all blobs)
-    for (int i = 0; i < pBlobs.size();)
-    {
-        bool isIn = false;
-        for (int j = 0; j < lPairs.size(); ++j)
-        {
-            if (lPairs[j].getCurrent() == &pBlobs[i])
-                isIn = true;
-        }
-
-        if (pBlobs[i].getLifetime() > 0)
-            pBlobs[i].getOlder();
-
-        if (!isIn)
-        {
-            pBlobs[i].reduceLifetime();
-            if (pBlobs[i].getLifetime() < 0 && (pBlobs[i].getAge() < pKeepOldBlobs || pKeepOldBlobs == 0)
-                || pBlobs[i].getLostDuration() > pKeepMaxTime && pKeepMaxTime > 0)
-            {
-                pBlobs.erase(pBlobs.begin() + i);
-            }
-            else
-                i++;
-        }
-        else
-            i++;
-    }
-    // And we create new blobs for the new objects detected
-    for (int i = 0; i < pProperties.size(); ++i)
-    {
-        bool isIn = false;
-        for (int j = 0; j < lPairs.size(); ++j)
-        {
-            if (lPairs[j].getMeasure() == &pProperties[i])
-                isIn = true;
-        }
-
-        if (!isIn)
-        {
-            T newBlob;
-            newBlob.init(pProperties[i]);
-            newBlob.setLifetime(pLifetime);
-            pBlobs.push_back(newBlob);
-        }
-    }
-}
 
 #endif // ACTUATOR_H

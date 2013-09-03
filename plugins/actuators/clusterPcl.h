@@ -30,6 +30,8 @@
 
 #if HAVE_PCL
 
+#include "capture_pcl.h"
+
 /*************/
 // Class Actuator_ClusterPcl
 class Actuator_ClusterPcl : public Actuator

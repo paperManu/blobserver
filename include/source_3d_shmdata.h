@@ -33,6 +33,7 @@
 #include "config.h"
 
 #if HAVE_PCL && HAVE_SHMDATA
+#include "capture_pcl.h"
 #include "constants.h"
 #include "helpers.h"
 #include "shmpointcloud.h"

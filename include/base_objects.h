@@ -25,6 +25,7 @@
 #ifndef BASE_OBJECTS_H
 #define BASE_OBJECTS_H
 
+#include <glib.h>
 #include <opencv2/opencv.hpp>
 #include <lo/lo.h>
 
@@ -34,6 +35,7 @@
 #include <shmdata/any-data-writer.h>
 #endif
 #if HAVE_PCL
+#include "capture_pcl.h"
 #include "shmpointcloud.h"
 #endif
 

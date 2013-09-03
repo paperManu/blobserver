@@ -26,8 +26,7 @@ libactuatorarmpcl_la_CXXFLAGS = \
 	$(GLIB_CFLAGS) \
 	$(OPENCV_CFLAGS) \
 	$(LIBATOM_CFLAGS) \
-	$(PCL_CFLAGS) \
-	$(SHMDATA_CFLAGS)
+	$(PCL_CFLAGS)
 
 libactuatorarmpcl_la_LIBADD = \
     $(PCL_LIBS)
@@ -40,9 +39,7 @@ libactuatorbgsubtractor_la_SOURCES = \
 libactuatorbgsubtractor_la_CXXFLAGS = \
 	$(GLIB_CFLAGS) \
 	$(OPENCV_CFLAGS) \
-	$(LIBATOM_CFLAGS) \
-	$(PCL_CFLAGS) \
-	$(SHMDATA_CFLAGS)
+	$(LIBATOM_CFLAGS)
 
 #-------------#
 if PCL
@@ -53,8 +50,7 @@ libactuatorclusterpcl_la_CXXFLAGS = \
 	$(GLIB_CFLAGS) \
 	$(OPENCV_CFLAGS) \
 	$(LIBATOM_CFLAGS) \
-	$(PCL_CFLAGS) \
-	$(SHMDATA_CFLAGS)
+	$(PCL_CFLAGS)
 
 libactuatorclusterpcl_la_LDFLAGS = \
 	$(PCL_LIBS)
@@ -67,9 +63,7 @@ libactuatordepthtouch_la_SOURCES = \
 libactuatordepthtouch_la_CXXFLAGS = \
 	$(GLIB_CFLAGS) \
 	$(OPENCV_CFLAGS) \
-	$(LIBATOM_CFLAGS) \
-	$(PCL_CFLAGS) \
-	$(SHMDATA_CFLAGS)
+	$(LIBATOM_CFLAGS)
 
 #-------------#
 libactuatorfiducialtracker_la_SOURCES = \
@@ -79,9 +73,7 @@ libactuatorfiducialtracker_la_CXXFLAGS = \
 	-I$(top_srcdir)/ext/libfidtrack \
 	$(GLIB_CFLAGS) \
 	$(OPENCV_CFLAGS) \
-	$(LIBATOM_CFLAGS) \
-	$(PCL_CFLAGS) \
-	$(SHMDATA_CFLAGS)
+	$(LIBATOM_CFLAGS)
 
 # External libs, compiled along blobserver
 libactuatorfiducialtracker_la_SOURCES += \
@@ -102,9 +94,7 @@ libactuatorhog_la_SOURCES = \
 libactuatorhog_la_CXXFLAGS = \
 	$(GLIB_CFLAGS) \
 	$(OPENCV_CFLAGS) \
-	$(LIBATOM_CFLAGS) \
-	$(PCL_CFLAGS) \
-	$(SHMDATA_CFLAGS)
+	$(LIBATOM_CFLAGS)
 
 libactuatorhog_la_LDFLAGS = \
 	-lopencv_ml
@@ -116,9 +106,7 @@ libactuatorlightspots_la_SOURCES = \
 libactuatorlightspots_la_CXXFLAGS = \
 	$(GLIB_CFLAGS) \
 	$(OPENCV_CFLAGS) \
-	$(LIBATOM_CFLAGS) \
-	$(PCL_CFLAGS) \
-	$(SHMDATA_CFLAGS)
+	$(LIBATOM_CFLAGS)
 
 libactuatorlightspots_la_LDFLAGS = \
 	-lopencv_features2d
@@ -130,9 +118,7 @@ libactuatormeanoutliers_la_SOURCES = \
 libactuatormeanoutliers_la_CXXFLAGS = \
 	$(GLIB_CFLAGS) \
 	$(OPENCV_CFLAGS) \
-	$(LIBATOM_CFLAGS) \
-	$(PCL_CFLAGS) \
-	$(SHMDATA_CFLAGS)
+	$(LIBATOM_CFLAGS)
 
 #-------------#
 libactuatornop_la_SOURCES = \
@@ -141,9 +127,7 @@ libactuatornop_la_SOURCES = \
 libactuatornop_la_CXXFLAGS = \
 	$(GLIB_CFLAGS) \
 	$(OPENCV_CFLAGS) \
-	$(LIBATOM_CFLAGS) \
-	$(PCL_CFLAGS) \
-	$(SHMDATA_CFLAGS)
+	$(LIBATOM_CFLAGS)
 
 #-------------#
 libactuatorobjonaplane_la_SOURCES = \
@@ -152,9 +136,7 @@ libactuatorobjonaplane_la_SOURCES = \
 libactuatorobjonaplane_la_CXXFLAGS = \
 	$(GLIB_CFLAGS) \
 	$(OPENCV_CFLAGS) \
-	$(LIBATOM_CFLAGS) \
-	$(PCL_CFLAGS) \
-	$(SHMDATA_CFLAGS)
+	$(LIBATOM_CFLAGS)
 
 #-------------#
 libactuatorstitch_la_SOURCES = \
@@ -163,7 +145,5 @@ libactuatorstitch_la_SOURCES = \
 libactuatorstitch_la_CXXFLAGS = \
 	$(GLIB_CFLAGS) \
 	$(OPENCV_CFLAGS) \
-	$(LIBATOM_CFLAGS) \
-	$(PCL_CFLAGS) \
-	$(SHMDATA_CFLAGS)
+	$(LIBATOM_CFLAGS)
 

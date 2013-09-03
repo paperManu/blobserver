@@ -18,42 +18,33 @@
  */
 
 /*
- * @capture.h
- * The Capture base class.
+ * @capture_pcl.h
+ * The pcl related Capture classes.
  */
 
-#ifndef CAPTURE_H
-#define CAPTURE_H
+#ifndef CAPTURE_PCL
+#define CAPTURE_PCL
 
-#include <memory>
-#include <opencv2/opencv.hpp>
+#include "capture.h"
 
-/*************/
-class Capture
-{
-    public:
-        Capture() {};
-        ~Capture() {};
-
-        virtual std::string type() {};
-};
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 
 /*************/
-class Capture_2D_Mat : public Capture
+class Capture_3D_PclRgba : public Capture
 {
     public:
-        Capture_2D_Mat() {};
-        Capture_2D_Mat(cv::Mat input) {mBuffer = input;}
+        Capture_3D_PclRgba() {};
+        Capture_3D_PclRgba(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr input) {mPcl = input;}
 
-        cv::Mat& get() {return mBuffer;}
+        pcl::PointCloud<pcl::PointXYZRGBA>::Ptr get() {return mPcl;}
 
-        std::string type() {return std::string("Capture_2D_Mat");}
+        std::string type() {return std::string("Capture_3D_Pcl");}
 
     private:
-        cv::Mat mBuffer;
+        pcl::PointCloud<pcl::PointXYZRGBA>::Ptr mPcl;
 };
 
-typedef std::shared_ptr<Capture> Capture_Ptr;
-typedef std::shared_ptr<Capture_2D_Mat> Capture_2D_Mat_Ptr;
+typedef std::shared_ptr<Capture_3D_PclRgba> Capture_3D_PclRgba_Ptr;
 
-#endif // CAPTURE_H
+#endif // CAPTURE_PCL

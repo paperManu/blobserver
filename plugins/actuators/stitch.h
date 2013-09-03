@@ -26,7 +26,6 @@
 #define STITCH_H
 
 #include "actuator.h"
-#include "base_objects.h"
 
  /*************/
 // Class Actuator_Stitch
