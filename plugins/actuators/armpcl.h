@@ -44,8 +44,6 @@ class Actuator_ArmPcl : public Actuator
         atom::Message detect(std::vector<Capture_Ptr> pCaptures);
         void setParameter(atom::Message pMessage);
 
-        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<ShmImage>(new ShmImage(filename));}
-
     private:
         static std::string mClassName;
         static std::string mDocumentation;
@@ -60,6 +58,8 @@ class Actuator_ArmPcl : public Actuator
 
         void make();
 };
+
+REGISTER_ACTUATOR(Actuator_ArmPcl)
 
 #endif //HAVE_PCL
 

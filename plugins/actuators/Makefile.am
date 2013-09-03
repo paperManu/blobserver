@@ -13,7 +13,24 @@ plugins_LTLIBRARIES = \
 
 if PCL
 plugins_LTLIBRARIES += \
+    libactuatorarmpcl.la \
 	libactuatorclusterpcl.la
+endif
+
+#-------------#
+if PCL
+libactuatorarmpcl_la_SOURCES = \
+	armpcl.cpp
+
+libactuatorarmpcl_la_CXXFLAGS = \
+	$(GLIB_CFLAGS) \
+	$(OPENCV_CFLAGS) \
+	$(LIBATOM_CFLAGS) \
+	$(PCL_CFLAGS) \
+	$(SHMDATA_CFLAGS)
+
+libactuatorarmpcl_la_LIBADD = \
+    $(PCL_LIBS)
 endif
 
 #-------------#

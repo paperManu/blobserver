@@ -1,4 +1,4 @@
-#include "actuator_armpcl.h"
+#include "armpcl.h"
 
 using namespace std;
 
@@ -29,7 +29,7 @@ Actuator_ArmPcl::Actuator_ArmPcl(int pParam)
 void Actuator_ArmPcl::make()
 {
     mName = mClassName;
-    mOscPath = "clusterPcl";
+    mOscPath = "armPcl";
 
     mFrameNumber = 0;
 
