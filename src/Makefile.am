@@ -17,6 +17,7 @@ blobserver_SOURCES = \
     configurator.cpp \
     descriptor_hog.cpp \
     actuator.cpp \
+    actuator_armpcl.cpp \
     actuator_bgsubtractor.cpp \
     actuator_clusterPcl.cpp \
 	actuator_depthtouch.cpp \
@@ -48,6 +49,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/creator.h \
     $(top_srcdir)/include/descriptor_hog.h \
     $(top_srcdir)/include/actuator.h \
+    $(top_srcdir)/include/actuator_armpcl.h \
     $(top_srcdir)/include/actuator_bgsubtractor.h \
     $(top_srcdir)/include/actuator_clusterPcl.h \
     $(top_srcdir)/include/actuator_depthtouch.h \

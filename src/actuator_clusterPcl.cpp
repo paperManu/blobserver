@@ -4,8 +4,6 @@ using namespace std;
 
 #if HAVE_PCL
 
-#include <pcl/io/pcd_io.h>
-#include <pcl/io/ply_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/segmentation/extract_clusters.h>
@@ -104,10 +102,10 @@ atom::Message Actuator_ClusterPcl::detect(vector<Capture_Ptr> pCaptures)
     mLastMessage.push_back(atom::IntValue::create(4));
     for (int i = 0; i < clusterPositions.size(); i++)
     {
+        mLastMessage.push_back(atom::IntValue::create(i));
         mLastMessage.push_back(atom::FloatValue::create(clusterPositions[i].x));
         mLastMessage.push_back(atom::FloatValue::create(clusterPositions[i].y));
         mLastMessage.push_back(atom::FloatValue::create(clusterPositions[i].z));
-        mLastMessage.push_back(atom::IntValue::create(i));
     }
 
     return mLastMessage;

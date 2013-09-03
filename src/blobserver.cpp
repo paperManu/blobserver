@@ -36,6 +36,7 @@
 #include "source_2d_shmdata.h"
 #include "source_3d_shmdata.h"
 
+#include "actuator_armpcl.h"
 #include "actuator_bgsubtractor.h"
 #include "actuator_clusterPcl.h"
 #include "actuator_depthtouch.h"
@@ -319,6 +320,8 @@ int App::parseArgs(int argc, char** argv)
 void App::registerClasses()
 {
     // Register actuators
+    mActuatorFactory.register_class<Actuator_ArmPcl>(Actuator_ArmPcl::getClassName(),
+        Actuator_ArmPcl::getDocumentation());
     mActuatorFactory.register_class<Actuator_BgSubtractor>(Actuator_BgSubtractor::getClassName(),
         Actuator_BgSubtractor::getDocumentation());
     mActuatorFactory.register_class<Actuator_DepthTouch>(Actuator_DepthTouch::getClassName(),
