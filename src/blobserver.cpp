@@ -22,31 +22,20 @@
  * The main program from the blobserver suite.
  */
 
+#include <chrono>
 #include <ctime>
+#include <dlfcn.h>
 #include <iostream>
 #include <iomanip>
 #include <limits>
 #include <stdio.h>
 #include <stdlib.h>
-#include <chrono>
 
 #include "blobserver.h"
 
 #include "source_2d_opencv.h"
 #include "source_2d_shmdata.h"
 #include "source_3d_shmdata.h"
-
-#include "actuator_armpcl.h"
-#include "actuator_bgsubtractor.h"
-#include "actuator_clusterPcl.h"
-#include "actuator_depthtouch.h"
-#include "actuator_fiducialtracker.h"
-#include "actuator_hog.h"
-#include "actuator_lightSpots.h"
-#include "actuator_meanOutliers.h"
-#include "actuator_nop.h"
-#include "actuator_objOnAPlane.h"
-#include "actuator_stitch.h"
 
 using namespace std;
 
@@ -133,15 +122,15 @@ int App::init(int argc, char** argv)
     g_log_set_handler(LOG_BROADCAST, (GLogLevelFlags)(G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_WARNING | G_LOG_LEVEL_ERROR | G_LOG_FLAG_FATAL),
                       logHandler, this);
 
-    // Register source and actuator classes
-    registerClasses();
-
     gPort = (gchar*)"9002";
 
     // Parse arguments
     int ret = parseArgs(argc, argv);
     if(ret)
         return ret;
+
+    // Register source and actuator classes
+    registerClasses();
 
     // Initialize OSC
     int lNetProto;
@@ -319,32 +308,6 @@ int App::parseArgs(int argc, char** argv)
 /*****************/
 void App::registerClasses()
 {
-    // Register actuators
-    mActuatorFactory.register_class<Actuator_BgSubtractor>(Actuator_BgSubtractor::getClassName(),
-        Actuator_BgSubtractor::getDocumentation());
-    mActuatorFactory.register_class<Actuator_DepthTouch>(Actuator_DepthTouch::getClassName(),
-        Actuator_DepthTouch::getDocumentation());
-    mActuatorFactory.register_class<Actuator_FiducialTracker>(Actuator_FiducialTracker::getClassName(),
-        Actuator_FiducialTracker::getDocumentation());
-    mActuatorFactory.register_class<Actuator_Hog>(Actuator_Hog::getClassName(),
-        Actuator_Hog::getDocumentation());
-    mActuatorFactory.register_class<Actuator_LightSpots>(Actuator_LightSpots::getClassName(),
-        Actuator_LightSpots::getDocumentation());
-    mActuatorFactory.register_class<Actuator_MeanOutliers>(Actuator_MeanOutliers::getClassName(),
-        Actuator_MeanOutliers::getDocumentation());
-    mActuatorFactory.register_class<Actuator_Nop>(Actuator_Nop::getClassName(),
-        Actuator_Nop::getDocumentation());
-    mActuatorFactory.register_class<Actuator_ObjOnAPlane>(Actuator_ObjOnAPlane::getClassName(),
-        Actuator_ObjOnAPlane::getDocumentation());
-    mActuatorFactory.register_class<Actuator_Stitch>(Actuator_Stitch::getClassName(),
-        Actuator_Stitch::getDocumentation());
-#if HAVE_PCL
-    mActuatorFactory.register_class<Actuator_ArmPcl>(Actuator_ArmPcl::getClassName(),
-        Actuator_ArmPcl::getDocumentation());
-    mActuatorFactory.register_class<Actuator_ClusterPcl>(Actuator_ClusterPcl::getClassName(),
-        Actuator_ClusterPcl::getDocumentation());
-#endif // HAVE_PCL
-
     // Register sources
     mSourceFactory.register_class<Source_2D_OpenCV>(Source_2D_OpenCV::getClassName(),
         Source_2D_OpenCV::getDocumentation());
@@ -356,6 +319,52 @@ void App::registerClasses()
     mSourceFactory.register_class<Source_3D_Shmdata>(Source_3D_Shmdata::getClassName(),
         Source_3D_Shmdata::getDocumentation());
 #endif // HAVE_PCL && HAVE_SHMDATA
+
+    loadPlugins();
+}
+
+/*************/
+void App::loadPlugins()
+{
+
+    string prefix = string(LIBDIR) + string("/blobserver-") + string(LIBBLOBSERVER_API_VERSION) + string("/");
+    GError* error;
+    GDir* dir = g_dir_open(prefix.c_str(), 0, &error);
+    if (dir == NULL)
+    {
+        g_log(NULL, G_LOG_LEVEL_WARNING, "No plugin directory at path %s", prefix.c_str());
+        return;
+    }
+
+    char* filename = (char*)g_dir_read_name(dir);
+    while (filename != NULL)
+    {
+        string strFilename = string(filename);
+        if (strFilename.substr(strFilename.size() - 3, strFilename.size()) == string(".so"))
+        {
+            g_log(NULL, G_LOG_LEVEL_DEBUG, "Found lib %s", strFilename.c_str());
+
+            string path = prefix + strFilename;
+            void *handler = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+            if (handler == NULL)
+            {
+                char* error = dlerror();
+                g_log(NULL, G_LOG_LEVEL_WARNING, "%s - %s", __FUNCTION__, error);
+            }
+            else
+            {
+                void* registerToFactory = dlsym(handler, "registerToFactory");
+                if (registerToFactory == NULL)
+                    g_log(NULL, G_LOG_LEVEL_WARNING, "%s - %s", __FUNCTION__, dlerror());
+                else
+                {
+                    typedef void (*func)(factory::AbstractFactory<Actuator, string, string, int>&);
+                    ((func)registerToFactory)(mActuatorFactory);
+                }
+            }
+        }
+        filename = (char*)g_dir_read_name(dir);
+    }
 }
 
 /*************/
@@ -1010,7 +1019,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         sprintf(shmFile, "/tmp/blobserver_output_%i", flow.id);
 
 #if HAVE_SHMDATA
-        flow.sink = actuator->getShmObject(shmFile);
+        flow.sink.reset(new ShmAuto(shmFile));
 #endif
 
         vector<shared_ptr<Source>>::const_iterator source;

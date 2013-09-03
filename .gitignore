@@ -1,7 +1,11 @@
 *.1
+*.lo
+*.la
 *.o
 *.swp
 *~
+.deps
+.libs
 Makefile
 Makefile.in
 aclocal.m4

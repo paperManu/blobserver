@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Emmanuel Durand
+ * Copyright (C) 2013 Emmanuel Durand
  *
  * This file is part of blobserver.
  *
@@ -18,22 +18,36 @@
  */
 
 /*
- * @actuator_objOnAPlane.h
- * The Actuator_ObjOnAPlane class.
+ * @actuator_depthtouch.h
+ * The Actuator_DepthTouch class.
  */
 
-#ifndef ACTUATOR_OBJONAPLANE_H
-#define ACTUATOR_OBJONAPLANE_H
+#ifndef DEPTHTOUCH_H
+#define DEPTHTOUCH_H
 
-#include <memory>
+#include <vector>
+
+#include "config.h"
 #include "actuator.h"
 #include "blob_2D.h"
 
-class Actuator_ObjOnAPlane : public Actuator
+/*************/
+// Class Actuator_DepthTouch
+class Actuator_DepthTouch : public Actuator
 {
     public:
-        Actuator_ObjOnAPlane();
-        Actuator_ObjOnAPlane(int pParam);
+        struct Property : public Blob::properties
+        {
+            struct
+            {
+                int x;
+                int y;
+            } wrist;
+            int contact;
+        };
+
+        Actuator_DepthTouch();
+        Actuator_DepthTouch(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -41,27 +55,37 @@ class Actuator_ObjOnAPlane : public Actuator
         atom::Message detect(const std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
-        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
-
     private:
         static std::string mClassName;
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        int mMaxTrackedBlobs;
-        float mDetectionLevel;
+        // Detection parameters
         int mFilterSize;
-        float mProcessNoiseCov, mMeasurementNoiseCov;
-        
+        float mDetectionDistance;
+        float mSigmaCoeff;
+        int mLearningTime;
+        float mClickDistance;
+
+        // Internal variables
+        bool mIsLearning, mJustLearnt;
+        int mLearningLeft;
+
+        // Tracking and movement filtering parameters
         std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
-        int mMinArea;
+        int mBlobLifetime;
+        float mProcessNoiseCov, mMeasurementNoiseCov;
 
-        std::vector<std::vector<cv::Vec2f>> mSpaces; // First space is the real plane
-        std::vector<cv::Mat> mMaps;
-        bool mMapsUpdated;
+        cv::Mat mBackgroundMean;
+        cv::Mat mBackgroundStddev;
+        cv::Mat mBackgroundMaxdev;
+        std::vector<cv::Mat> mLearningData;
 
-        void make(); // Called by the constructor
-        void updateMaps(std::vector<cv::Mat> pCaptures); // Updates the space conversion maps
+        // Methods
+        void make();
+        void learn(cv::Mat input);
 };
 
- #endif // ACTUATOR_OBJONAPLANE_H
+REGISTER_ACTUATOR(Actuator_DepthTouch)
+
+#endif // DEPTHTOUCH_H

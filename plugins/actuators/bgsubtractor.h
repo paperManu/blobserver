@@ -18,36 +18,26 @@
  */
 
 /*
- * @actuator_depthtouch.h
- * The Actuator_DepthTouch class.
+ * @actuator_bgsubtractor.h
+ * The Actuator_BgSubtractor class.
  */
 
-#ifndef ACTUATOR_DEPTHTOUCH_H
-#define ACTUATOR_DEPTHTOUCH_H
+#ifndef BGSUBTRACTOR_H
+#define BGSUBTRACTOR_H
 
 #include <vector>
 
 #include "config.h"
 #include "actuator.h"
-#include "blob_2D.h"
+#include "blob_2D_color.h"
 
 /*************/
-// Class Actuator_DepthTouch
-class Actuator_DepthTouch : public Actuator
+// Class Actuator_BgSubtractor
+class Actuator_BgSubtractor : public Actuator
 {
     public:
-        struct Property : public Blob::properties
-        {
-            struct
-            {
-                int x;
-                int y;
-            } wrist;
-            int contact;
-        };
-
-        Actuator_DepthTouch();
-        Actuator_DepthTouch(int pParam);
+        Actuator_BgSubtractor();
+        Actuator_BgSubtractor(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -55,37 +45,36 @@ class Actuator_DepthTouch : public Actuator
         atom::Message detect(const std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
-        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
-
     private:
         static std::string mClassName;
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        // Detection parameters
-        int mFilterSize;
-        float mDetectionDistance;
-        float mSigmaCoeff;
-        int mLearningTime;
-        float mClickDistance;
+        std::vector<Blob2DColor> mBlobs; // Vector of detected and tracked blobs
 
-        // Internal variables
-        bool mIsLearning, mJustLearnt;
-        int mLearningLeft;
+        // Some filtering parameters
+        int mFilterSize;
+        int mFilterDilateCoeff;
 
         // Tracking and movement filtering parameters
-        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
         int mBlobLifetime;
+        int mKeepOldBlobs, mKeepMaxTime; // Parameters to set when we need blobs to be kept even when not detected anymore
         float mProcessNoiseCov, mMeasurementNoiseCov;
+        float mMaxDistanceForColorDiff;
 
-        cv::Mat mBackgroundMean;
-        cv::Mat mBackgroundStddev;
-        cv::Mat mBackgroundMaxdev;
-        std::vector<cv::Mat> mLearningData;
+        // Background subtractor, used to select window of interest
+        // to feed to the SVM
+        cv::BackgroundSubtractorMOG2 mBgSubtractor;
+
+        // Various variables
+        cv::Mat mBgSubtractorBuffer;
+        float mLearningRate, mLearningTime;
+        float mMinArea, mMaxArea;
 
         // Methods
         void make();
-        void learn(cv::Mat input);
 };
 
-#endif // ACTUATOR_DEPTHTOUCH_H
+REGISTER_ACTUATOR(Actuator_BgSubtractor)
+
+#endif // BGSUBTRACTOR_H

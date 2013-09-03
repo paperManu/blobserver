@@ -22,8 +22,8 @@
  * The Actuator_Stitch class.
  */
 
-#ifndef ACTUATOR_STITCH_H
-#define ACTUATOR_STITCH_H
+#ifndef STITCH_H
+#define STITCH_H
 
 #include "actuator.h"
 #include "base_objects.h"
@@ -42,8 +42,6 @@ class Actuator_Stitch : public Actuator
         atom::Message detect(const std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
-        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
-
     private:
         static std::string mClassName;
         static std::string mDocumentation;
@@ -58,4 +56,6 @@ class Actuator_Stitch : public Actuator
         void make();
 };
 
-#endif // ACTUATOR_STITCH_H
+REGISTER_ACTUATOR(Actuator_Stitch)
+
+#endif // STITCH_H

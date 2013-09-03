@@ -2,6 +2,7 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = \
     ext \
     man \
+	plugins \
     src
 
 if HAVE_DOXYGEN

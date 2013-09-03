@@ -31,11 +31,23 @@
 #include "atom/message.h"
 #include "opencv2/opencv.hpp"
 
-#include "base_objects.h"
+#include "abstract-factory.h"
 #include "blob.h"
 #include "capture.h"
 #include "helpers.h"
 #include "source.h"
+
+/*************/
+// Macro for registering Actuator plugins
+#define REGISTER_ACTUATOR(act) \
+extern "C" \
+{ \
+    void registerToFactory(factory::AbstractFactory<Actuator, std::string, std::string, int>& factory) \
+    { \
+        g_log(NULL, G_LOG_LEVEL_DEBUG, "Registering class %s", act::getClassName().c_str()); \
+        factory.register_class<act>(act::getClassName(), act::getDocumentation()); \
+    } \
+}
 
 /*************/
 // Class for parallel masking
@@ -139,11 +151,6 @@ class Actuator
          * \brief Gets the resulting image from the actuator.
          */
         virtual Capture_Ptr getOutput() const {return Capture_2D_Mat_Ptr(new Capture_2D_Mat(mOutputBuffer.clone()));}
-
-        /**
-         * \brief Returns an object which is a shmwriter able to handle the output of the given actuator
-         */
-        virtual std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new Shm());}
 
     protected:
         cv::Mat mOutputBuffer; //!< The output buffer, resulting from the detection

@@ -12,6 +12,10 @@ AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE()
 AC_CONFIG_HEADERS([include/config.h])
 
+AC_SUBST([LIBBLOBSERVER_SO_VERSION], [0:0:0])
+AC_SUBST([LIBBLOBSERVER_API_VERSION], [0.5])
+AC_DEFINE(LIBBLOBSERVER_API_VERSION, ["0.5"], [API version])
+
 # Check for C and C++ compilers
 AC_PROG_CXX
 AM_PROG_CC_C_O
@@ -130,6 +134,8 @@ AC_CONFIG_FILES([
     ext/Makefile
     ext/libfidtrack/Makefile
     src/Makefile
+    plugins/Makefile
+    plugins/actuators/Makefile
     man/Makefile
     ])
 AC_OUTPUT

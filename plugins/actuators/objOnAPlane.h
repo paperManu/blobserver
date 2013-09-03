@@ -18,23 +18,22 @@
  */
 
 /*
- * @actuator_mainOutliers.h
- * The Actuator_MainOutliers class.
+ * @actuator_objOnAPlane.h
+ * The Actuator_ObjOnAPlane class.
  */
 
-#ifndef ACTUATOR_MEANOUTLIERS_H
-#define ACTUATOR_MEANOUTLIERS_H
+#ifndef OBJONAPLANE_H
+#define OBJONAPLANE_H
 
+#include <memory>
 #include "actuator.h"
 #include "blob_2D.h"
 
-/*************/
-// Class Actuator_MeanOutliers
-class Actuator_MeanOutliers : public Actuator
+class Actuator_ObjOnAPlane : public Actuator
 {
     public:
-        Actuator_MeanOutliers();
-        Actuator_MeanOutliers(int pParam);
+        Actuator_ObjOnAPlane();
+        Actuator_ObjOnAPlane(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
@@ -42,19 +41,27 @@ class Actuator_MeanOutliers : public Actuator
         atom::Message detect(const std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
-        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
-
     private:
         static std::string mClassName;
         static std::string mDocumentation;
         static unsigned int mSourceNbr;
 
-        float mDetectionLevel; // Above std dev * mDetectionLevel, an object is detected
+        int mMaxTrackedBlobs;
+        float mDetectionLevel;
         int mFilterSize;
-        Blob2D mMeanBlob;
-        bool isInitialized;
+        float mProcessNoiseCov, mMeasurementNoiseCov;
+        
+        std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
+        int mMinArea;
 
-        void make();
+        std::vector<std::vector<cv::Vec2f>> mSpaces; // First space is the real plane
+        std::vector<cv::Mat> mMaps;
+        bool mMapsUpdated;
+
+        void make(); // Called by the constructor
+        void updateMaps(std::vector<cv::Mat> pCaptures); // Updates the space conversion maps
 };
 
-#endif // ACTUATOR_MEANOUTLIERS_H
+REGISTER_ACTUATOR(Actuator_ObjOnAPlane)
+
+ #endif // OBJONAPLANE_H

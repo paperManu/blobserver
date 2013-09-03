@@ -22,8 +22,8 @@
  * The Actuator_Hog class.
  */
 
-#ifndef ACTUATOR_HOG_H
-#define ACTUATOR_HOG_H
+#ifndef HOG_H
+#define HOG_H
 
 #include <vector>
 
@@ -45,8 +45,6 @@ class Actuator_Hog : public Actuator
 
         atom::Message detect(const std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
-
-        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmImage(filename));}
 
     private:
         static std::string mClassName;
@@ -100,4 +98,6 @@ class Actuator_Hog : public Actuator
         void updateDescriptorParams();
 };
 
-#endif // ACTUATOR_HOG_H
+REGISTER_ACTUATOR(Actuator_Hog)
+
+#endif // HOG_H

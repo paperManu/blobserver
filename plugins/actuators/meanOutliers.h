@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Emmanuel Durand
+ * Copyright (C) 2012 Emmanuel Durand
  *
  * This file is part of blobserver.
  *
@@ -18,49 +18,43 @@
  */
 
 /*
- * @actuator_clusterPcl.h
- * The Actuator_ClusterPcl class.
+ * @actuator_mainOutliers.h
+ * The Actuator_MainOutliers class.
  */
 
-#ifndef ACTUATOR_CLUSTERPCL_H
-#define ACTUATOR_CLUSTERPCL_H
+#ifndef MEANOUTLIERS_H
+#define MEANOUTLIERS_H
 
-#include "config.h"
 #include "actuator.h"
-
-#if HAVE_PCL
+#include "blob_2D.h"
 
 /*************/
-// Class Actuator_ClusterPcl
-class Actuator_ClusterPcl : public Actuator
+// Class Actuator_MeanOutliers
+class Actuator_MeanOutliers : public Actuator
 {
     public:
-        Actuator_ClusterPcl();
-        Actuator_ClusterPcl(int pParam);
+        Actuator_MeanOutliers();
+        Actuator_MeanOutliers(int pParam);
 
         static std::string getClassName() {return mClassName;}
         static std::string getDocumentation() {return mDocumentation;}
 
-        atom::Message detect(std::vector<Capture_Ptr> pCaptures);
+        atom::Message detect(const std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
-
-        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<ShmImage>(new ShmImage(filename));}
 
     private:
         static std::string mClassName;
         static std::string mDocumentation;
-
         static unsigned int mSourceNbr;
-        unsigned int mFrameNumber;
 
-        Capture_Ptr mCapture;
-
-        int mMinClusterSize, mMaxClusterSize;
-        float mClusterTolerance;
+        float mDetectionLevel; // Above std dev * mDetectionLevel, an object is detected
+        int mFilterSize;
+        Blob2D mMeanBlob;
+        bool isInitialized;
 
         void make();
 };
 
-#endif //HAVE_PCL
+REGISTER_ACTUATOR(Actuator_MeanOutliers)
 
-#endif // ACTUATOR_CLUSTERPCL_H
+#endif // MEANOUTLIERS_H
