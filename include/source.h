@@ -32,7 +32,6 @@
 #include <glib.h>
 #include <atom/message.h>
 
-#include "base_objects.h"
 #include "capture.h"
 #include "helpers.h"
 
