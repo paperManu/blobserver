@@ -345,7 +345,12 @@ void App::loadPlugins()
             g_log(NULL, G_LOG_LEVEL_DEBUG, "Found lib %s", strFilename.c_str());
 
             string path = prefix + strFilename;
-            void *handler = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+            void* handler;
+            if (gDebug)
+                handler = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
+            else
+                handler = dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL);
+
             if (handler == NULL)
             {
                 char* error = dlerror();
