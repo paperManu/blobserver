@@ -127,6 +127,8 @@ AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([Doxyfile])])
 
 AC_CONFIG_FILES([
     Makefile
+    ext/Makefile
+    ext/libfidtrack/Makefile
     src/Makefile
     man/Makefile
     ])

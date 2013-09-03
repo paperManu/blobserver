@@ -320,8 +320,6 @@ int App::parseArgs(int argc, char** argv)
 void App::registerClasses()
 {
     // Register actuators
-    mActuatorFactory.register_class<Actuator_ArmPcl>(Actuator_ArmPcl::getClassName(),
-        Actuator_ArmPcl::getDocumentation());
     mActuatorFactory.register_class<Actuator_BgSubtractor>(Actuator_BgSubtractor::getClassName(),
         Actuator_BgSubtractor::getDocumentation());
     mActuatorFactory.register_class<Actuator_DepthTouch>(Actuator_DepthTouch::getClassName(),
@@ -341,6 +339,8 @@ void App::registerClasses()
     mActuatorFactory.register_class<Actuator_Stitch>(Actuator_Stitch::getClassName(),
         Actuator_Stitch::getDocumentation());
 #if HAVE_PCL
+    mActuatorFactory.register_class<Actuator_ArmPcl>(Actuator_ArmPcl::getClassName(),
+        Actuator_ArmPcl::getDocumentation());
     mActuatorFactory.register_class<Actuator_ClusterPcl>(Actuator_ClusterPcl::getClassName(),
         Actuator_ClusterPcl::getDocumentation());
 #endif // HAVE_PCL
