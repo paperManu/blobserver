@@ -40,7 +40,7 @@ void Actuator_DepthTouch::make()
     mOscPath = "depthtouch";
 
     mFilterSize = 2;
-    mDetectionDistance = 25.f;
+    mDetectionDistance = 100.f;
     mSigmaCoeff = 20.f;
     mClickDistance = 20.f;
 

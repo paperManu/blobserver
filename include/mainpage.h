@@ -41,9 +41,11 @@
  * - any source compatible with OpenCV
  * - shmdata sources
  *
- * Some parameters are available for all kind of sources, none if these transformations are activated by default:
+ * Some parameters are available for all kind of 2D sources, none if these transformations are activated by default:
  * - mask (string): file path to the image file to use as a mask
  * - autoExposure (int[7]): parameters for auto exposure, measured in a specified area. Parameters are: [x] [y] [width] [height] [target] [margin] [updateStep%].
+ * - exposureLUT (float[2 + i*2]): specify a LUT for the exposure. Parameters are: [number of keys] [interpolation type] [[in key] [out key]]. Interpolation should currently be set to 0
+ * - gainLUT (float[2 + i*2]): specify a LUT for the gain. Parameters are: [number of keys] [interpolation type] [[in key] [out key]]. Interpolation should currently be set to 0
  * - scale (float, default 1.0): apply scaling on the image
  * - rotation (float): apply rotation on the image, in degrees
  * - noiseFiltering (int, default 0): set to 1 to activate noise filtering
@@ -74,7 +76,15 @@
  * 
  * Available parameters:
  * - location (string): file path to the shmdata
- * - cameraNumber (int): index of the shmdata, this can be used to access multiple times to the same shmdata
+ * - cameraNumber (int): index of the shmdata, this can be used to access multiple times the same shmdata
+ *
+ * \subsection source_3d_shmdata_sec shmdata 3D sources (Source_3D_Shmdata)
+ *
+ * This source is a 3D source (so none of the parameters specific to 2D sources are availables), and it outputs point clouds.
+ *
+ * Available parameters:
+ * - location (string): file path to the shmdata
+ * - cameraNumber (int): index of the shmdata, this can be used to access multiple times the same shmdata
  * 
  **************
  * \section actuators_sec List of actuators
@@ -83,7 +93,7 @@
  *
  * This actuator detects objects based on a model of the background which uses mixture of gaussians. It is mostly based on the implementation from OpenCV (http://docs.opencv.org/modules/video/doc/motion_analysis_and_object_tracking.html?#BackgroundSubtractorMOG2%20:%20public%20BackgroundSubtractor).
  * 
- * Number of source(s) needed: 1
+ * Number of source(s) needed: 1 Source_2D
 
  * Available parameters:
  * - filterSize (int, default 3): size of the morphologicial filter used to filter noise.
@@ -100,18 +110,28 @@
  * - name: bgsubtractor
  * - values: X(int) Y(int) Size(int) dX(float) dY(float) Id(int) Age(int) lostDuration(int)
  *
+ * \subsection actuator_clusterpcl_sec Clusters of point clouds (Actuator_ClusterPcl)
+ *
+ * This actuator outputs the number of distinct clusters it can find in the input point cloud
+ *
+ * Available parameters:
+ * - minClusterSize (int, default 50): minimum number of points for a cluster to be kept
+ * - maxClusterSize (int, default 25000): maximum number of points for a cluster to be kept
+ * - clusterTolerance (float, default 0.03): maximum distance between two points to consider them as neighbours
+ *
  * \subsection actuator_depthtouch_sec Adding touch interaction to surfaces using depth map (Actuator_DepthTouch)
  *
  * This actuator uses an input depth map (16 bits single channel image) to create a model of the targeted surface. After the model is created, it detects any object coming close to the surface, depending on the parameters. This means that objects passing in front of the surface are not detected unless their depth is close to the original surface.
  * 
- * Number of source(s) needed: 1
+ * Number of source(s) needed: 1 Source_2D
 
  * Available parameters:
  * - filterSize (int, default 3): size of the morphologicial filter used to filter noise.
  * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
  * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
  * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
- * - detectionDistance (float, default 25): maximum distance (in mm) for the detection to happen
+ * - detectionDistance (float, default 100): maximum distance (in mm) for the detection to happen
+ * - clickDistance (float, default 20): minimum distance (in mm) for a contact to be detected
  * - stddevCoeff (float, default 20): coefficient applied to the standard deviation map of the original depth map. If the resulting value is greater than detectionDistance, this value is used
  * - learningTime (int, defaut 60): number of frames to use to create the model
  * - learn (no parameter): send this message through OSC to restart the learning process
