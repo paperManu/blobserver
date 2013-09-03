@@ -37,17 +37,6 @@
 #include "source_2d_shmdata.h"
 #include "source_3d_shmdata.h"
 
-//#include "actuator_bgsubtractor.h"
-//#include "actuator_clusterPcl.h"
-//#include "actuator_depthtouch.h"
-//#include "actuator_fiducialtracker.h"
-//#include "actuator_hog.h"
-//#include "actuator_lightSpots.h"
-//#include "actuator_meanOutliers.h"
-//#include "actuator_nop.h"
-//#include "actuator_objOnAPlane.h"
-//#include "actuator_stitch.h"
-
 using namespace std;
 
 static gboolean gVersion = FALSE;
@@ -319,30 +308,6 @@ int App::parseArgs(int argc, char** argv)
 /*****************/
 void App::registerClasses()
 {
-    // Register actuators
-    //mActuatorFactory.register_class<Actuator_BgSubtractor>(Actuator_BgSubtractor::getClassName(),
-    //    Actuator_BgSubtractor::getDocumentation());
-    //mActuatorFactory.register_class<Actuator_DepthTouch>(Actuator_DepthTouch::getClassName(),
-    //    Actuator_DepthTouch::getDocumentation());
-    //mActuatorFactory.register_class<Actuator_FiducialTracker>(Actuator_FiducialTracker::getClassName(),
-    //    Actuator_FiducialTracker::getDocumentation());
-    //mActuatorFactory.register_class<Actuator_Hog>(Actuator_Hog::getClassName(),
-    //    Actuator_Hog::getDocumentation());
-    //mActuatorFactory.register_class<Actuator_LightSpots>(Actuator_LightSpots::getClassName(),
-    //    Actuator_LightSpots::getDocumentation());
-    //mActuatorFactory.register_class<Actuator_MeanOutliers>(Actuator_MeanOutliers::getClassName(),
-    //    Actuator_MeanOutliers::getDocumentation());
-    //mActuatorFactory.register_class<Actuator_Nop>(Actuator_Nop::getClassName(),
-    //    Actuator_Nop::getDocumentation());
-    //mActuatorFactory.register_class<Actuator_ObjOnAPlane>(Actuator_ObjOnAPlane::getClassName(),
-    //    Actuator_ObjOnAPlane::getDocumentation());
-    //mActuatorFactory.register_class<Actuator_Stitch>(Actuator_Stitch::getClassName(),
-    //    Actuator_Stitch::getDocumentation());
-#if HAVE_PCL
-    //mActuatorFactory.register_class<Actuator_ClusterPcl>(Actuator_ClusterPcl::getClassName(),
-    //    Actuator_ClusterPcl::getDocumentation());
-#endif // HAVE_PCL
-
     // Register sources
     mSourceFactory.register_class<Source_2D_OpenCV>(Source_2D_OpenCV::getClassName(),
         Source_2D_OpenCV::getDocumentation());
@@ -1054,7 +1019,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         sprintf(shmFile, "/tmp/blobserver_output_%i", flow.id);
 
 #if HAVE_SHMDATA
-        flow.sink = actuator->getShmObject(shmFile);
+        flow.sink.reset(new ShmAuto(shmFile));
 #endif
 
         vector<shared_ptr<Source>>::const_iterator source;

@@ -2,7 +2,6 @@ pluginsdir = $(prefix)/lib/blobserver-@LIBBLOBSERVER_API_VERSION@
 
 plugins_LTLIBRARIES = \
 	libactuatorbgsubtractor.la \
-	libactuatorclusterpcl.la \
 	libactuatordepthtouch.la \
 	libactuatorfiducialtracker.la \
 	libactuatorhog.la \
@@ -11,6 +10,11 @@ plugins_LTLIBRARIES = \
 	libactuatornop.la \
 	libactuatorobjonaplane.la \
 	libactuatorstitch.la
+
+if PCL
+plugins_LTLIBRARIES += \
+	libactuatorclusterpcl.la
+endif
 
 #-------------#
 libactuatorbgsubtractor_la_SOURCES = \
@@ -24,6 +28,7 @@ libactuatorbgsubtractor_la_CXXFLAGS = \
 	$(SHMDATA_CFLAGS)
 
 #-------------#
+if PCL
 libactuatorclusterpcl_la_SOURCES = \
 	clusterPcl.cpp
 
@@ -36,6 +41,7 @@ libactuatorclusterpcl_la_CXXFLAGS = \
 
 libactuatorclusterpcl_la_LDFLAGS = \
 	$(PCL_LIBS)
+endif
 
 #-------------#
 libactuatordepthtouch_la_SOURCES = \

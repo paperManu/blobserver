@@ -44,8 +44,6 @@ class Actuator_Nop : public Actuator
 
         Capture_Ptr getOutput() const {return mCapture;}
 
-        std::shared_ptr<Shm> getShmObject(const char* filename) const {return std::shared_ptr<Shm>(new ShmAuto(filename));}
-
     private:
         static std::string mClassName;
         static std::string mDocumentation;
