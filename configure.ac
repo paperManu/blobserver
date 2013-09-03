@@ -131,6 +131,7 @@ AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([Doxyfile])])
 
 AC_CONFIG_FILES([
     Makefile
+    blobserver.pc
     ext/Makefile
     ext/libfidtrack/Makefile
     src/Makefile

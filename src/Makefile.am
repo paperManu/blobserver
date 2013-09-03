@@ -25,23 +25,27 @@ blobserver_SOURCES = \
     source_3d_shmdata.cpp \
     threadPool.cpp
 
+blobserverdir = $(prefix)/include/blobserver-@LIBBLOBSERVER_API_VERSION@
+
+blobserver_HEADERS = \
+    $(top_srcdir)/include/actuator.h \
+    $(top_srcdir)/include/blob.h \
+    $(top_srcdir)/include/blob_2D.h \
+    $(top_srcdir)/include/blob_2D_color.h \
+    $(top_srcdir)/include/capture.h \
+	$(top_srcdir)/include/helpers.h \
+    $(top_srcdir)/include/source.h
+
 noinst_HEADERS = \
     $(top_srcdir)/include/abstract-factory.h \
     $(top_srcdir)/include/abstract-factory_spec.h \
     $(top_srcdir)/include/base_objects.h \
-    $(top_srcdir)/include/blob.h \
-    $(top_srcdir)/include/blob_2D.h \
-    $(top_srcdir)/include/blob_2D_color.h \
     $(top_srcdir)/include/blobserver.h \
     $(top_srcdir)/include/configurator.h \
-    $(top_srcdir)/include/capture.h \
     $(top_srcdir)/include/constants.h \
     $(top_srcdir)/include/creator.h \
-    $(top_srcdir)/include/actuator.h \
 	$(top_srcdir)/include/hdribuilder.h \
-	$(top_srcdir)/include/helpers.h \
 	$(top_srcdir)/include/shmpointcloud.h \
-    $(top_srcdir)/include/source.h \
     $(top_srcdir)/include/source_2d.h \
     $(top_srcdir)/include/source_2d_opencv.h \
     $(top_srcdir)/include/source_2d_shmdata.h \

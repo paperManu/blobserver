@@ -5,6 +5,9 @@ SUBDIRS = \
     src \
 	plugins
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = blobserver.pc
+
 if HAVE_DOXYGEN
 dist_man_MANS = $(top_builddir)/man
 $(top_srcdir)/man: doxyfile.stamp
