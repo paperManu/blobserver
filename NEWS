@@ -1,8 +1,23 @@
 Blobserver release notes
 ========================
 
-Blobserver 0.4.4 (2013-xx-xx)
+Blobserver 0.6.1 (2013-XX-XX)
 -----------------------------
+
+Blobserver 0.6.0 (2013-09-03)
+-----------------------------
+New features:
+* Added support for libmapper
+* Added LUT, used for exposure and gain in Source_2D
+* Refactored the code to support any kind of data
+* Added support for point clouds
+* Added error logging
+* Added --framerate option to control update rate
+
+Other:
+* Improved YUV compatiblity
+* Renamed Detector to Actuator (more general)
+* Corrected some memory leaks
 
 Blobserver 0.4.3 (2013-06-17)
 -----------------------------

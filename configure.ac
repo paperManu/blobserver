@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.68)
 AC_INIT([BLOBSERVER],
-        [0.4.4],
+        [0.6.1],
         [http://code.sat.qc.ca/redmine/projects/blobserver/issues],
         [blobserver],
         [http://code.sat.qc.ca/redmine/projects/blobserver])
@@ -127,6 +127,8 @@ AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([Doxyfile])])
 
 AC_CONFIG_FILES([
     Makefile
+    ext/Makefile
+    ext/libfidtrack/Makefile
     src/Makefile
     man/Makefile
     ])

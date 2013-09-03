@@ -46,6 +46,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/blobserver.h \
     $(top_srcdir)/include/configurator.h \
     $(top_srcdir)/include/capture.h \
+    $(top_srcdir)/include/constants.h \
     $(top_srcdir)/include/creator.h \
     $(top_srcdir)/include/descriptor_hog.h \
     $(top_srcdir)/include/actuator.h \
@@ -94,7 +95,7 @@ noinst_HEADERS += \
     $(top_srcdir)/ext/libfidtrack/treeidmap.h
 
 blobserver_CXXFLAGS = \
-    -I../ext/libfidtrack \
+    -I$(top_srcdir)/ext/libfidtrack \
     $(GLIB_CFLAGS) \
     $(OPENCV_CFLAGS) \
     $(LIBLO_CFLAGS) \
