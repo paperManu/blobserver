@@ -28,12 +28,14 @@
 #include <opencv2/opencv.hpp>
 #include <lo/lo.h>
 
+#include "capture.h"
 #include "config.h"
 #if HAVE_SHMDATA
 #include <shmdata/any-data-writer.h>
 #endif
-#include "source.h"
-#include "detector.h"
+#if HAVE_PCL
+#include "shmpointcloud.h"
+#endif
 
 /*************/
 // lo_address in an object
@@ -54,15 +56,66 @@ class OscClient
         lo_address mAddress;
 };
 
+/*************/
+// LookupTable objects
+class LookupTable
+{
+    public:
+        enum interpolation
+        {
+            linear = 0
+        };
+        LookupTable();
+        LookupTable(interpolation inter, std::vector< std::vector<float> > keys);
+        void set(interpolation inter, std::vector< std::vector<float> > keys);
+        bool isSet() {return mIsSet;}
+
+        float operator[](const float& value);
+        float inverse(const float& value);
+        bool isOutOfRange() {return mOutOfRange;}
+
+    private:
+        bool mIsSet;
+        interpolation mInterpolation;
+        float mStart[2], mEnd[2];
+        std::vector< std::vector<float> > mKeys;
+        bool mOutOfRange;
+};
+
 #if HAVE_SHMDATA
 /*************/
+// Generic Shmdata writer class
+class Shm
+{
+    public:
+        virtual void setCapture(Capture_Ptr& capture, const unsigned long long timestamp = 0) {};
+
+    private:
+        shmdata_any_writer_t* _writer;
+        std::string _filename;
+};
+
+/*************/
+// Class which auto-selects the shm type
+class ShmAuto : public Shm
+{
+    public:
+        ShmAuto(const char* filename);
+        void setCapture(Capture_Ptr& capture, const unsigned long long timestamp = 0);
+
+    private:
+        std::shared_ptr<Shm> mShm;
+        std::string mFilename;
+};
+
+/*************/
 // Simple class to send image through shm
-class ShmImage
+class ShmImage : public Shm
 {
     public:
         ShmImage(const char* filename);
         ~ShmImage();
-        void setImage(cv::Mat& image, const unsigned long long timestamp = 0);
+        void setCapture(Capture_Ptr& capture, const unsigned long long timestamp = 0);
 
     private:
         shmdata_any_writer_t* _writer;
@@ -75,18 +128,18 @@ class ShmImage
 };
 #endif // HAVE_SHMDATA
 
+#if HAVE_PCL
 /*************/
-// Struct to contain a complete flow, from capture to client
-struct Flow
+// Class to write a PCL through shm
+class ShmPcl : public Shm
 {
-    std::vector<std::shared_ptr<Source>> sources;
-    std::shared_ptr<Detector> detector;
-#if HAVE_SHMDATA
-    std::shared_ptr<ShmImage> shm;
-#endif
-    std::shared_ptr<OscClient> client;
-    unsigned int id;
-    bool run;
+    public:
+        ShmPcl(const char* filename);
+        void setCapture(Capture_Ptr& capture, const unsigned long long timestamp = 0);
+
+    private:
+        std::shared_ptr< ShmPointCloud<pcl::PointXYZRGBA> > _writer;
 };
+#endif // HAVE_PCL
 
 #endif // BASE_OBJECTS_H

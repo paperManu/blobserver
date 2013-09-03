@@ -38,18 +38,24 @@ bool readParam(const atom::Message pParam, T& pValue, int pIndex = 1)
     auto tag = pParam[pIndex].get()->getTypeTag();
     if (tag == atom::FloatValue::TYPE_TAG)
     {
+        if (typeid(pValue) != typeid(float))
+            return false;
         float value;
         value = atom::FloatValue::convert(pParam[pIndex])->getFloat();
         reinterpret_cast<float&>(pValue) = value;
     }
     else if (tag == atom::IntValue::TYPE_TAG)
     {
+        if (typeid(pValue) != typeid(int))
+            return false;
         int value;
         value = atom::IntValue::convert(pParam[pIndex])->getInt();
         reinterpret_cast<int&>(pValue) = value;
     }
     else if (tag == atom::StringValue::TYPE_TAG)
     {
+        if (typeid(pValue) != typeid(std::string))
+            return false;
         std::string value;
         value = atom::StringValue::convert(pParam[pIndex])->getString();
         reinterpret_cast<std::string&>(pValue) = value;

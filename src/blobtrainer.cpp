@@ -20,7 +20,7 @@
 /**
  * @blobtrainer.cpp
  * This small utility is used to create models needed by the SVM classifier
- * used in some detectors.
+ * used in some actuators.
  */
 
 #include <chrono>

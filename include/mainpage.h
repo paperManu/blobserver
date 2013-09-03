@@ -30,9 +30,9 @@
  **************
  * \section intro_sec What is Blobserver
  * 
- * Blobserver is an OSC-based server aimed at detecting entities (objects / people / light / ...), in any compatible image flow. Its structure is so that it should be relatively easy to add new detectors as well as new light sources. As of yet, configuration and communication with Blobserver is done entirely through OSC messaging. Some kind of configuration file will be added soon to simplify the setup and usability, especially for permanent installations.
+ * Blobserver is an OSC-based server aimed at detecting entities (objects / people / light / ...), in any compatible image flow. Its structure is so that it should be relatively easy to add new actuators as well as new image sources. As of yet, configuration and communication with Blobserver is done entirely through OSC messaging. Some kind of configuration file will be added soon to simplify the setup and usability, especially for permanent installations.
  * 
- * Blobserver is built around the concept of flow. A flow is the association of a detector and as many sources as needed for it to work correctly. At each frame, all the flows are evaluated, and the various objects detected are sent through OSC to the corresponding clients.
+ * Blobserver is built around the concept of flow. A flow is the association of a actuator and as many sources as needed for it to work correctly. At each frame, all the flows are evaluated, and the various objects detected are sent through OSC to the corresponding clients.
  * 
  **************
  * \section sources_sec List of compatible sources
@@ -41,19 +41,22 @@
  * - any source compatible with OpenCV
  * - shmdata sources
  *
- * Some parameters are available for all kind of sources, none if these transformations are activated by default:
+ * Some parameters are available for all kind of 2D sources, none if these transformations are activated by default:
  * - mask (string): file path to the image file to use as a mask
- * - autoExposure (int[6]): parameters for auto exposure, measured in a specified area. Parameters are: [x] [y] [width] [height] [target] [margin].
+ * - autoExposure (int[7]): parameters for auto exposure, measured in a specified area. Parameters are: [x] [y] [width] [height] [target] [margin] [updateStep%].
+ * - exposureLUT (float[2 + i*2]): specify a LUT for the exposure. Parameters are: [number of keys] [interpolation type] [[in key] [out key]]. Interpolation should currently be set to 0
+ * - gainLUT (float[2 + i*2]): specify a LUT for the gain. Parameters are: [number of keys] [interpolation type] [[in key] [out key]]. Interpolation should currently be set to 0
  * - scale (float, default 1.0): apply scaling on the image
  * - rotation (float): apply rotation on the image, in degrees
  * - noiseFiltering (int, default 0): set to 1 to activate noise filtering
  * - distortion (int[3]): distortion correction (see http://wiki.panotools.org/Lens_correction_model). Parameters are: [a] [b] [c]
+ * - fisheye (float[2]): fisheye correction (see http://wiki.panotools.org/Fisheye_Projection). Parameters are, in pixels: [fisheyeFocal] [rectilinearFocal] 
  * - vignetting (int[3]): correction of the vignetting (see http://lensfun.berlios.de/lens-calibration/lens-vignetting.html). Parameters are: [k1] [k2] [k3]
  * - iccInputProfile (string): file path to an ICC profile (for color correction)
  * - hdri (int[3]): activates the creation of a HDR image. Parameters are: [startExposure] [stepSize] [nbrSteps].
  * - save (int[2] string): activates the automatic save of grabs. Parameters are: [activation] [period] [filename] 
  * 
- * \subsection source_opencv_sec OpenCV sources (Source_OpenCV)
+ * \subsection source_2d_opencv_sec OpenCV 2D sources (Source_2D_OpenCV)
  * 
  * Note that OpenCV must have been compiled with the desired camera support.
  * 
@@ -69,44 +72,66 @@
  * - whiteBalanceBlue (int): coefficient applied to the blue channel, multiplied by a value dependent of the camera model
  * - iso (int): link speed to set for firewire cameras
  * 
- * \subsection source_shmdata_sec shmdata sources (Source_Shmdata)
+ * \subsection source_2d_shmdata_sec shmdata 2D sources (Source_2D_Shmdata)
  * 
  * Available parameters:
  * - location (string): file path to the shmdata
- * - cameraNumber (int): index of the shmdata, this can be used to access multiple times to the same shmdata
+ * - cameraNumber (int): index of the shmdata, this can be used to access multiple times the same shmdata
+ *
+ * \subsection source_3d_shmdata_sec shmdata 3D sources (Source_3D_Shmdata)
+ *
+ * This source is a 3D source (so none of the parameters specific to 2D sources are availables), and it outputs point clouds.
+ *
+ * Available parameters:
+ * - location (string): file path to the shmdata
+ * - cameraNumber (int): index of the shmdata, this can be used to access multiple times the same shmdata
  * 
  **************
- * \section detectors_sec List of detectors
+ * \section actuators_sec List of actuators
  * 
- * \subsection detector_bgsubtractor_sec Background subtractor using mixtures of gaussians as models (Detector_BgSubtractor)
+ * \subsection actuator_bgsubtractor_sec Background subtractor using mixtures of gaussians as models (Actuator_BgSubtractor)
  *
- * This detector detects objects based on a model of the background which uses mixture of gaussians. It is mostly based on the implementation from OpenCV (http://docs.opencv.org/modules/video/doc/motion_analysis_and_object_tracking.html?#BackgroundSubtractorMOG2%20:%20public%20BackgroundSubtractor).
+ * This actuator detects objects based on a model of the background which uses mixture of gaussians. It is mostly based on the implementation from OpenCV (http://docs.opencv.org/modules/video/doc/motion_analysis_and_object_tracking.html?#BackgroundSubtractorMOG2%20:%20public%20BackgroundSubtractor).
  * 
- * Number of source(s) needed: 1
+ * Number of source(s) needed: 1 Source_2D
 
  * Available parameters:
  * - filterSize (int, default 3): size of the morphologicial filter used to filter noise.
+ * - filterDilateCoeff (int, default 2): coefficient applied to filterSize value for dilation phase of the morphological operation
+ * - learningTime (int, default 300): number of frames for a pixel to be considered background
  * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
+ * - keepOldBlobs (int[2], default [0]): parameters to not delete blobs which have disappeared. Parameters are: [minAgeToKeep] [maxTimeToKeep]
  * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
  * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
+ * - maxDistanceForColorDiff (float, default 16): maximum distance beyond which the color of blobs is not considered for tracking.
  * - area (int[2], default 0 65535): minimum and maximum areas of the detected objects.
  *
  * OSC output:
  * - name: bgsubtractor
- * - values: X(int) Y(int) Size(int) dX(float) dY(float) Id(int)
+ * - values: X(int) Y(int) Size(int) dX(float) dY(float) Id(int) Age(int) lostDuration(int)
  *
- * \subsection detector_depthtouch_sec Adding touch interaction to surfaces using depth map (Detector_DepthTouch)
+ * \subsection actuator_clusterpcl_sec Clusters of point clouds (Actuator_ClusterPcl)
  *
- * This detector uses an input depth map (16 bits single channel image) to create a model of the targeted surface. After the model is created, it detects any object coming close to the surface, depending on the parameters. This means that objects passing in front of the surface are not detected unless their depth is close to the original surface.
+ * This actuator outputs the number of distinct clusters it can find in the input point cloud
+ *
+ * Available parameters:
+ * - minClusterSize (int, default 50): minimum number of points for a cluster to be kept
+ * - maxClusterSize (int, default 25000): maximum number of points for a cluster to be kept
+ * - clusterTolerance (float, default 0.03): maximum distance between two points to consider them as neighbours
+ *
+ * \subsection actuator_depthtouch_sec Adding touch interaction to surfaces using depth map (Actuator_DepthTouch)
+ *
+ * This actuator uses an input depth map (16 bits single channel image) to create a model of the targeted surface. After the model is created, it detects any object coming close to the surface, depending on the parameters. This means that objects passing in front of the surface are not detected unless their depth is close to the original surface.
  * 
- * Number of source(s) needed: 1
+ * Number of source(s) needed: 1 Source_2D
 
  * Available parameters:
  * - filterSize (int, default 3): size of the morphologicial filter used to filter noise.
  * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
  * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
  * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
- * - detectionDistance (float, default 25): maximum distance (in mm) for the detection to happen
+ * - detectionDistance (float, default 100): maximum distance (in mm) for the detection to happen
+ * - clickDistance (float, default 20): minimum distance (in mm) for a contact to be detected
  * - stddevCoeff (float, default 20): coefficient applied to the standard deviation map of the original depth map. If the resulting value is greater than detectionDistance, this value is used
  * - learningTime (int, defaut 60): number of frames to use to create the model
  * - learn (no parameter): send this message through OSC to restart the learning process
@@ -115,9 +140,9 @@
  * - name: depthtouch
  * - values: X(int) Y(int) dX(float) dY(float) Id(int)
  *
- * \subsection detector_hog_sec Histogram of Oriented Gradients (Detector_Hog)
+ * \subsection actuator_hog_sec Histogram of Oriented Gradients (Actuator_Hog)
  *
- * This detector searches for objects corresponding to the model trained with blobtrainer.
+ * This actuator searches for objects corresponding to the model trained with blobtrainer.
  *
  * Number of source(s) needed: 1
  *
@@ -133,6 +158,7 @@
  * - bins (int, default 9): number of orientations to consider
  * - margin (float, default 0.0): margin to the hyperplane to add to the detection (higher = less false positives and less hit rate)
  * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
+ * - keepOldBlobs (int[2], default [0]): parameters to not delete blobs which have disappeared. Parameters are: [minAgeToKeep] [maxTimeToKeep]
  * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
  * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.
  * - saveSamples (int, default 0): if set to 1, saves detected samples older than saveSamplesAge
@@ -140,9 +166,9 @@
  *
  * OSC output:
  * - name: hog
- * - values: X(int) Y(int) dX(int) dY(int) Id(int)
+ * - values: X(int) Y(int) dX(int) dY(int) Id(int) Age(int) lostDuration(int)
  * 
- * \subsection detector_lightspot_sec Light spots (Detector_LightSpots)
+ * \subsection actuator_lightspot_sec Light spots (Actuator_LightSpots)
  * 
  * Detects the brightest spots in an input image, i.e. light from a torchlight, and outputs the resulting blobs' size, position and ID.
  * 
@@ -158,9 +184,9 @@
  * - name: lightSpots
  * - values: X(int) Y(int) Size(int) dX(int) dY(int) Id(int)
  * 
- * \subsection detector_mean_outliers_sec Mean outliers (Detector_MeanOutliers)
+ * \subsection actuator_mean_outliers_sec Mean outliers (Actuator_MeanOutliers)
  * 
- * This detector is a generalization of the Lightspots detector, except that it does not only detect blobs brighter that the mean, but any blob which is far from the mean value of the current frame.
+ * This actuator is a generalization of the Lightspots actuator, except that it does not only detect blobs brighter that the mean, but any blob which is far from the mean value of the current frame.
  * 
  * Number of source(s) needed: 1
  * 
@@ -174,9 +200,9 @@
  * - name: meanOutliers
  * - values: X(int) Y(int) Size(int) dX(int) dY(int)
  *
- * \subsection detector_objonaplane_sec Objects on a plane (Detector_ObjOnAPlane)
+ * \subsection actuator_objonaplane_sec Objects on a plane (Actuator_ObjOnAPlane)
  *
- * This detector is specificaly designed to detect objects placed on a planar surface, by comparing images from two or more cameras. These cameras should be calibrated geometrically and colorimetrically to get optimal results. Note that this detector is still in development. Cameras are calibrated by specifying to all of them the coordinates, in the image space, of a set of fixed points in the real space.
+ * This actuator is specificaly designed to detect objects placed on a planar surface, by comparing images from two or more cameras. These cameras should be calibrated geometrically and colorimetrically to get optimal results. Note that this actuator is still in development. Cameras are calibrated by specifying to all of them the coordinates, in the image space, of a set of fixed points in the real space.
  *
  * Number of source(s) needed: 2+
  *
@@ -191,6 +217,16 @@
  * - minBlobArea (int, default 32): minimum size of a blob to not be considered as noise.
  * - maxTrackedBlobs (int, default 16): maximum number of blobs to track
  *
+ * \subsection actuator_stitch_sec Stitching (Actuator_Stitch)
+ * 
+ * This actuator stitches any number of 2D images into one, according to the input parameters.
+ *
+ * Number of source(s) needed: 1+
+ *
+ * Available parameters:
+ * - cropInput (int[5], no default): crop parameters for the source given by the first value. Parameters are: [sourceIndex] [x] [y] [width] [height]
+ * - transform (float[4], no default): translation and rotation parameters for the given source. Parameters are: [sourceIndex] [x] [y] [angle in degree]
+ *
  **************
  * \section howto_xml_sec How to use Blobserver - Configuration through a XML file
  * 
@@ -199,8 +235,8 @@
  * \code
  * <Blobserver>
  *     <Flow>
- *         <Detector>
- *             <Type>Detector_Type</Type>
+ *         <Actuator>
+ *             <Type>Actuator_Type</Type>
  *             <Param>
  *                 <Name>Param_1</Name>
  *                 <Value>value</Value>
@@ -212,7 +248,7 @@
  *             <Param>
  *                 ...
  *             </Param>
- *         </Detector>
+ *         </Actuator>
  *         <Source>
  *             <Type>Source_Type</Type>
  *             <Subsource>nbr</Subsource>
@@ -271,18 +307,18 @@
  * - client (string): ip address or network name for the client Blobserver sends messages to.
  * - port (integer): TCP port the messages will be sent to.
  * 
- * \subsection howto_osc_connect_sec /blobserver/connect client detector source subsource source subsource ...
+ * \subsection howto_osc_connect_sec /blobserver/connect client actuator source subsource source subsource ...
  * 
  * Ex.:
  * <pre>
- * /blobserver/connect localhost Detector_MeanOutliers Source_OpenCV 300
+ * /blobserver/connect localhost Actuator_MeanOutliers Source_OpenCV 300
  * </pre>
  * 
  * Sets up a new flow, and specifies the source(s) to use as its input.
  * 
  * Parameters:
  * - client (string): ip address or network name of the client to which OSC messages will be sent.
- * - detector (string): name of the detector we want to use
+ * - actuator (string): name of the actuator we want to use
  * - source (string): name of one of the sources we want to use
  * - subsource (integer): index of the subsource we want to use (0 for default)
  * 
@@ -312,9 +348,9 @@
  * If all went well, returns the following message:
  * <pre>/blobserver/disconnect "Disconnected"</pre>
  * 
- * \subsection howto_osc_setparameter_sec /blobserver/setParameter client index "Detector" parameter values
+ * \subsection howto_osc_setparameter_sec /blobserver/setParameter client index "Actuator" parameter values
  * 
- * Sets the given values for the specified parameter of the detector with the given index.
+ * Sets the given values for the specified parameter of the actuator with the given index.
  * 
  * Parameter:
  * - client (string): ip address or network name for the client Blobserver sends messages to.
@@ -347,9 +383,9 @@
  * 
  * Returns an error message if things went wrong.
  * 
- * \subsection howto_osc_getparameter_sec /blobserver/getParameter client index "Detector" parameter
+ * \subsection howto_osc_getparameter_sec /blobserver/getParameter client index "Actuator" parameter
  * 
- * Returns the value(s) for the given parameter of the given detector:
+ * Returns the value(s) for the given parameter of the given actuator:
  * 
  * Parameters:
  * - client (string): ip address or network name for the client Blobserver sends messages to.
@@ -358,7 +394,7 @@
  * 
  * \subsection howto_osc_getparameter2_sec /blobserver/getParameter client index "Sources" srcIndex parameter
  * 
- * Return the value(s) for the given parameter of the given source from the given detector.
+ * Return the value(s) for the given parameter of the given source from the given actuator.
  * 
  * Parameters:
  * - client (string): ip address or network name for the client Blobserver sends messages to.
@@ -366,10 +402,10 @@
  * - srcIndex (integer): index of the source in the flow
  * - parameter (string): name of the parameter
  * 
- * \subsection howto_osc_detectors_sec /blobserver/detectors client
+ * \subsection howto_osc_actuators_sec /blobserver/actuators client
  * 
- * Returns a list of the available detectors, in the form of the following message:
- * <pre>/blobserver/detectors "Detector_1" "Detector_2" ...</pre>
+ * Returns a list of the available actuators, in the form of the following message:
+ * <pre>/blobserver/actuators "Actuator_1" "Actuator_2" ...</pre>
  * 
  * Parameters:
  * - client (string): ip address or network name for the client Blobserver sends messages to.
@@ -394,8 +430,8 @@
  **************
  * \section howto_messages_sec How to use Blobserver - Detection related messages
  * 
- * During each iteration of the main loop, detected objects are sent through OSC to all clients which subscribed to each flow. Messages can vary depending on the detector used, and you should report to the section dedicated to this detector for further information. Anyway, these messages have the following general form:
- * <pre>/blobserver/[detector_name] [values]</pre>
+ * During each iteration of the main loop, detected objects are sent through OSC to all clients which subscribed to each flow. Messages can vary depending on the actuator used, and you should report to the section dedicated to this actuator for further information. Anyway, these messages have the following general form:
+ * <pre>/blobserver/[actuator_name] [values]</pre>
  */
 
 #endif // MAINPAGE_H

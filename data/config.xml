@@ -1,10 +1,10 @@
 <Blobserver>
     <Flow>
-        <Detector>
-            <Type>Detector_Nop</Type>
-        </Detector>
+        <Actuator>
+            <Type>Actuator_Nop</Type>
+        </Actuator>
         <Source>
-            <Type>Source_OpenCV</Type>
+            <Type>Source_2D_OpenCV</Type>
             <Subsource>300</Subsource>
             <Param>
                 <Name>framerate</Name>
@@ -25,6 +25,10 @@
             <Param>
                 <Name>exposureTime</Name>
                 <Value>500</Value>
+            </Param>
+            <Param>
+                <Name>autoExposure</Name>
+                <Value>300 200 80 40 127 32 0.05</Value>
             </Param>
             <Param>
                 <Name>whiteBalanceRed</Name>

@@ -1,9 +1,143 @@
 #include "base_objects.h"
 
+#include <algorithm>
+#include <chrono>
+#include <limits>
+
 using namespace std;
+
+/*************/
+// LookupTable
+LookupTable::LookupTable()
+{
+    mIsSet = false;
+
+    mStart[0] = numeric_limits<float>::max();
+    mEnd[0] = numeric_limits<float>::min();
+
+    mOutOfRange = true;
+}
+
+/*************/
+LookupTable::LookupTable(interpolation inter, vector< vector<float> > keys)
+{
+    set(inter, keys);
+}
+
+/*************/
+void LookupTable::set(interpolation inter, vector< vector<float> > keys)
+{
+    mInterpolation = inter; 
+    mKeys = keys;
+    sort(mKeys.begin(), mKeys.end(), [] (vector<float> a, vector<float> b)
+    {
+        return a[0] < b[0];
+    });
+
+    mStart[0] = (*(mKeys.begin()))[0];
+    mStart[1] = (*(mKeys.begin()))[1];
+    mEnd[0] = (*(mKeys.end() - 1))[0];
+    mEnd[1] = (*(mKeys.end() - 1))[1];
+
+    mOutOfRange = true;
+    mIsSet = true;
+}
+
+/*************/
+float LookupTable::operator[](const float& value)
+{
+    mOutOfRange = true;
+    if (mInterpolation == interpolation::linear)
+    {
+        if (value < mStart[0])
+            return value;
+        if (value > mEnd[0])
+            return value;
+
+        mOutOfRange = false;
+
+        if (value == mStart[0])
+            return mStart[1];
+        if (value == mEnd[0])
+            return mEnd[1];
+
+        vector<float> a;
+        a.push_back(value);
+        auto upper = upper_bound(mKeys.begin(), mKeys.end(), a, [] (vector<float> a, vector<float> b)
+        {
+            return a[0] < b[0];
+        });
+        auto lower = upper - 1;
+
+        float ratio = (a[0] - (*lower)[0]) / ((*upper)[0] - (*lower)[0]);
+        float result = (*lower)[1] + ratio * ((*upper)[1] - (*lower)[1]);
+        return result;
+    }
+}
+
+/*************/
+float LookupTable::inverse(const float& value)
+{
+    mOutOfRange = true;
+    if (mInterpolation == interpolation::linear)
+    {
+        if (value < mStart[1])
+            return value;
+        if (value > mEnd[1])
+            return value;
+
+        mOutOfRange = false;
+
+        if (value == mStart[1])
+            return mStart[0];
+        if (value == mEnd[1])
+            return mEnd[0];
+
+        vector<float> a;
+        a.push_back(0.f);
+        a.push_back(value);
+        auto upper = upper_bound(mKeys.begin(), mKeys.end(), a, [] (vector<float> a, vector<float> b)
+        {
+            return a[1] < b[1];
+        });
+        auto lower = upper - 1;
+
+        float ratio = (a[1] - (*lower)[1]) / ((*upper)[1] - (*lower)[1]);
+        float result = (*lower)[0] + ratio * ((*upper)[0] - (*lower)[0]);
+        return result;
+    }
+
+}
+
+/*************/
+// ShmAuto
+ShmAuto::ShmAuto(const char* filename)
+{
+    mFilename = filename;
+}
+
+/*************/
+void ShmAuto::setCapture(Capture_Ptr& capture, const unsigned long long timestamp)
+{
+    if (dynamic_pointer_cast<Capture_2D_Mat>(capture).get() != NULL)
+    {
+        if (dynamic_pointer_cast<ShmImage>(mShm).get() == NULL)
+            mShm.reset(new ShmImage(mFilename.c_str()));
+        mShm->setCapture(capture);
+    }
+#if HAVE_PCL
+    else if (dynamic_pointer_cast<Capture_3D_PclRgba>(capture).get() != NULL)
+    {
+        if (dynamic_pointer_cast<ShmPcl>(mShm).get() == NULL)
+            mShm.reset(new ShmPcl(mFilename.c_str()));
+        mShm->setCapture(capture);
+    }
+#endif // HAVE_PCL
+}
 
 #if HAVE_SHMDATA
 /*************/
+// ShmImage
 ShmImage::ShmImage(const char* filename):
     _writer(NULL),
     _startTime(0)
@@ -21,8 +155,16 @@ ShmImage::~ShmImage()
 }
 
 /*************/
-void ShmImage::setImage(cv::Mat& image, const unsigned long long timestamp)
+void ShmImage::setCapture(Capture_Ptr& capture, const unsigned long long timestamp)
 {
+    Capture_2D_Mat_Ptr capture2D = dynamic_pointer_cast<Capture_2D_Mat>(capture);
+    if (capture2D.get() == NULL)
+    {
+        g_log(NULL, G_LOG_LEVEL_WARNING, "ShmImage: Wrong type of Capture received");
+        return;
+    }
+    cv::Mat image = capture2D->get();
+
     if (_width != image.cols || _height != image.rows || _type != image.type())
         if (!init(image.cols, image.rows, image.type()))
             return;
@@ -102,3 +244,18 @@ bool ShmImage::init(const unsigned int width, const unsigned int height, int typ
     return true;
 }
 #endif // HAVE_SHMDATA
+
+#if HAVE_PCL
+/*************/
+ShmPcl::ShmPcl(const char* filename)
+{
+    _writer.reset(new ShmPointCloud<pcl::PointXYZRGBA>(filename, true));
+}
+
+/*************/
+void ShmPcl::setCapture(Capture_Ptr& capture, const unsigned long long timestamp)
+{
+    Capture_3D_PclRgba_Ptr capture3d = dynamic_pointer_cast<Capture_3D_PclRgba>(capture);
+    _writer->setCloud(capture3d->get(), false, timestamp);
+}
+#endif //HAVE_PCL

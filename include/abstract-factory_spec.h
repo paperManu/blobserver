@@ -27,79 +27,77 @@
 
 namespace factory 
 {
-  
-  template <typename T, typename Key, typename Doc, typename Arg>
+    template <typename T, typename Key, typename Doc, typename Arg>
     template <class U> void 
     AbstractFactory<T,  Key, Doc, Arg>::register_class (Key Id, Doc doc)
-  {
-    Creator<T,Arg>* Fn = (Creator<T,Arg>*)new DerivedCreator<U,Arg>();
-    constructor_map_[Id] = Fn;
-    constructor_names_.push_back (Id);
-    classes_documentation_[Id] = doc;
-  }
+    {
+        Creator<T,Arg>* Fn = (Creator<T,Arg>*)new DerivedCreator<U,Arg>();
+        constructor_map_[Id] = Fn;
+        constructor_names_.push_back (Id);
+        classes_documentation_[Id] = doc;
+    }
 
-  template <typename T, typename Key, typename Doc, typename Arg>
+    template <typename T, typename Key, typename Doc, typename Arg>
     std::vector<Key> 
     AbstractFactory<T, Key, Doc, Arg>::get_keys ()
-  {
-    return constructor_names_;
-  }
+    {
+        return constructor_names_;
+    }
 
-  template <typename T, typename Key, typename Doc, typename Arg>
+    template <typename T, typename Key, typename Doc, typename Arg>
     std::vector<Doc> 
     AbstractFactory<T, Key, Doc, Arg>::get_classes_documentation ()
-  {
-    std::vector<Doc> tmp;
-    typename std::map<Key, Doc>::iterator i = classes_documentation_.begin();
-    while (i != classes_documentation_.end())
-      {
-	tmp.push_back ((*i).second);
-	++i;
-      }
-    return tmp;
-  }
-    
-  template <typename T, typename Key, typename Doc, typename Arg>
+    {
+        std::vector<Doc> tmp;
+        typename std::map<Key, Doc>::iterator i = classes_documentation_.begin();
+        while (i != classes_documentation_.end())
+        {
+          tmp.push_back ((*i).second);
+          ++i;
+        }
+        return tmp;
+    }
+      
+    template <typename T, typename Key, typename Doc, typename Arg>
     bool 
     AbstractFactory<T, Key, Doc, Arg>::key_exists(Key Id)
     {
-      return ( constructor_map_.find(Id) != constructor_map_.end() );
+        return ( constructor_map_.find(Id) != constructor_map_.end() );
     }
 
-  template <typename T, typename Key, typename Doc, typename Arg>
+    template <typename T, typename Key, typename Doc, typename Arg>
     std::shared_ptr<T> 
     AbstractFactory<T, Key, Doc, Arg>::create(Key Id)
-  {
-    std::shared_ptr<T> pointer;
-	
-    if ( constructor_map_.find(Id) != constructor_map_.end() ) 
-      pointer.reset (constructor_map_[Id]->Create());
-	
-    return pointer;
-  }
+    {
+        std::shared_ptr<T> pointer;
+        if ( constructor_map_.find(Id) != constructor_map_.end() ) 
+          pointer.reset (constructor_map_[Id]->Create());
+      
+        return pointer;
+    }
 
-  template <typename T, typename Key, typename Doc, typename Arg>
+    template <typename T, typename Key, typename Doc, typename Arg>
     std::shared_ptr<T> 
     AbstractFactory<T, Key, Doc, Arg>::create(Key Id, Arg arg)
-  {
-    std::shared_ptr<T> pointer;
-	
-    if ( constructor_map_.find(Id) != constructor_map_.end() ) 
-      pointer.reset (constructor_map_[Id]->Create(arg));
-	
-    return pointer;
-  }
+    {
+        std::shared_ptr<T> pointer;
+        
+        if ( constructor_map_.find(Id) != constructor_map_.end() ) 
+            pointer.reset (constructor_map_[Id]->Create(arg));
+        
+        return pointer;
+    }
 
-  template <typename T, typename Key, typename Doc, typename Arg>
+    template <typename T, typename Key, typename Doc, typename Arg>
     AbstractFactory<T, Key, Doc, Arg>::~AbstractFactory()
-  {
-    typename std::map<Key, Creator<T,Arg>*>::iterator i = constructor_map_.begin();
-    while (i != constructor_map_.end())
-      {
-	delete (*i).second;
-	++i;
-      }
-  }
+    {
+        typename std::map<Key, Creator<T,Arg>*>::iterator i = constructor_map_.begin();
+        while (i != constructor_map_.end())
+        {
+          delete (*i).second;
+          ++i;
+        }
+    }
  
 } // end of namespace
 

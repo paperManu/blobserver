@@ -1,5 +1,7 @@
 #include "blob_2D.h"
 
+using namespace std;
+
 /*************/
 Blob2D::Blob2D()
 {
@@ -55,6 +57,23 @@ Blob::properties Blob2D::predict()
     cv::Mat lPrediction;
     properties lProperties;
 
+    // If no new measure was set, we update the position with
+    // predicted values. This is needed to keep some coherency
+    // to the speed value.
+    if (updated == false)
+    {
+        cv::Mat lPrediction = cv::Mat::zeros(3, 1, CV_32F);
+        lPrediction.at<float>(0) = mPrediction.position.x;
+        lPrediction.at<float>(1) = mPrediction.position.y;
+        lPrediction.at<float>(2) = mPrediction.size;
+
+        mFilter.correct(lPrediction);
+
+        mProperties.position.x = mPrediction.position.x;
+        mProperties.position.y = mPrediction.position.y;
+        mProperties.size = mPrediction.size;
+    }
+
     lPrediction = mFilter.predict();
 
     mPrediction.position.x = lPrediction.at<float>(0);
@@ -90,8 +109,7 @@ void Blob2D::setNewMeasures(properties pNewBlob)
 float Blob2D::getDistanceFromPrediction(properties pBlob)
 {
     float distance = pow(pBlob.position.x - mPrediction.position.x, 2.0)
-        + pow(pBlob.position.y - mPrediction.position.y, 2.0)
-        + pow(pBlob.size - mPrediction.size, 2.0);
+        + pow(pBlob.position.y - mPrediction.position.y, 2.0);
 
     return distance;
 }

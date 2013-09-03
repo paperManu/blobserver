@@ -3,6 +3,7 @@
 #include <cstring>
 #include <sstream>
 #include <atom/osc.h>
+#include <glib.h>
 
 using namespace std;
 
@@ -22,16 +23,16 @@ Configurator::~Configurator()
 }
 
 /*************/
-void Configurator::loadXML(const char* filename)
+void Configurator::loadXML(const char* filename, bool distant)
 {
-    cout << "Attempting to read XML file " << filename << endl;
+    g_log(NULL, G_LOG_LEVEL_INFO, "%s::%s - Attempting to read XML file %s", __FILE__, __FUNCTION__, filename);
 
     xmlDocPtr doc;
     doc = xmlReadFile(filename, NULL, 0);
 
     if (doc == NULL)
     {
-        cout << "Failed to parse " << filename << endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s - Failed to parse %s", __FILE__, __FUNCTION__, filename);
         return;
     }
 
@@ -39,7 +40,7 @@ void Configurator::loadXML(const char* filename)
     cur = xmlDocGetRootElement(doc);
     if (cur == NULL || cur->xmlChildrenNode == NULL)
     {
-        cout << "Document seems to be empty" << endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s - Configuration file seems to be empty", __FILE__, __FUNCTION__);
         return;
     }
 
@@ -49,10 +50,10 @@ void Configurator::loadXML(const char* filename)
     {
         if (!xmlStrcmp(cur->name, (const xmlChar*)"Flow"))
         {
-            bool error = loadFlow(doc, cur);
+            bool error = loadFlow(doc, cur, distant);
             if (error)
             {
-                cout << "An error has been detected while parsing file " << filename << endl;
+                g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s - An error has been detected while parsing file %s", __FILE__, __FUNCTION__, filename);
             }
         }
 
@@ -61,7 +62,7 @@ void Configurator::loadXML(const char* filename)
 }
 
 /*************/
-bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
+bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool distant)
 {
     bool error = false;
     xmlNodePtr lCur;
@@ -88,20 +89,20 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
     {
         lCur = cur->xmlChildrenNode;
 
-        // We need to get the detector name, as well as information about sources
+        // We need to get the actuator name, as well as information about sources
         // to create the flow (before any change of parameters)
-        string detector;
+        string actuator;
         vector<string> sources;
         vector<int> subsources;
-        string client, server;
+        string client, realClient, server;
         string serverPort;
-        int clientPort;
+        int clientPort = 0;
 
         while (lCur != NULL)
         {
-            if (!xmlStrcmp(lCur->name, (const xmlChar*)"Detector"))
+            if (!xmlStrcmp(lCur->name, (const xmlChar*)"Actuator"))
             {
-                detector = getStringValueFrom(doc, lCur, (const xmlChar*)"Type");
+                actuator = getStringValueFrom(doc, lCur, (const xmlChar*)"Type");
             }
             else if (!xmlStrcmp(lCur->name, (const xmlChar*)"Source"))
             {
@@ -110,7 +111,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
             }
             else if (!xmlStrcmp(lCur->name, (const xmlChar*)"Client"))
             {
-                client = getStringValueFrom(doc, lCur, (const xmlChar*)"Address");
+                realClient = getStringValueFrom(doc, lCur, (const xmlChar*)"Address");
                 clientPort = getIntValueFrom(doc, lCur, (const xmlChar*)"Port");
             }
             else if (!xmlStrcmp(lCur->name, (const xmlChar*)"Server"))
@@ -124,7 +125,11 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
 
 
         // Create a new client for the specified server
-        checkString(client, string("127.0.0.1"));
+        checkString(realClient, string("127.0.0.1"));
+        if (distant)
+            client = realClient;
+        else
+            client = string("127.0.0.1");
         checkInt(clientPort, 9000);
         checkString(server, string("127.0.0.1"));
         checkString(serverPort, string("9002"));
@@ -156,7 +161,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
         {
             atom::Message message;
             message.push_back(atom::StringValue::create(client.c_str()));
-            message.push_back(atom::StringValue::create(detector.c_str()));
+            message.push_back(atom::StringValue::create(actuator.c_str()));
             for (int i = 0; i < sources.size(); ++i)
             {
                 if (sources[i] == string(""))
@@ -204,7 +209,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
 
             while (lCur != NULL)
             {
-                if (!xmlStrcmp(lCur->name, (const xmlChar*)"Detector"))
+                if (!xmlStrcmp(lCur->name, (const xmlChar*)"Actuator"))
                 {
                     if (lCur->xmlChildrenNode != NULL)
                     {
@@ -220,7 +225,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
                                     atom::Message message;
                                     message.push_back(atom::StringValue::create(simpleFlow.address.c_str()));
                                     message.push_back(atom::IntValue::create(simpleFlow.id));
-                                    message.push_back(atom::StringValue::create((const char*)"Detector"));
+                                    message.push_back(atom::StringValue::create((const char*)"Actuator"));
                                     message.push_back(atom::StringValue::create(paramName.c_str()));
                                     for (int i = 0; i < values.size(); ++i)
                                         message.push_back(values[i]);
@@ -290,8 +295,8 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur)
         nanosleep(&nap, NULL);
 
         {
-            // We change the client port from the one used for configuration to the specified one
-            lo_send(address->get(), "/blobserver/changePort", "si", client.c_str(), clientPort);
+            // We change the client ip and port from the one used for configuration to the specified one
+            lo_send(address->get(), "/blobserver/changeIp", "ssi", "127.0.0.1", realClient.c_str(), clientPort);
 
             // Now we can start the flow
             atom::Message message;
@@ -446,7 +451,7 @@ void Configurator::checkInt(int& value, const int defaultValue)
 /*************/
 void Configurator::oscError(int num, const char* msg, const char* path)
 {
-    std::cout << "liblo server error " << num << endl;
+    g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s - liblo server error %i", __FILE__, __FUNCTION__, num);
 }
 
 /*************/
@@ -456,7 +461,7 @@ int Configurator::oscGenericHandler(const char* path, const char* types, lo_arg*
 
     if(object->mVerbose)
     {
-        std::cout << "Unhandled message received:" << std::endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s - Unhandled message received", __FILE__, __FUNCTION__);
 
         for(int i = 0; i < argc; ++i)
         {
@@ -479,7 +484,7 @@ int Configurator::oscHandlerConnect(const char* path, const char* types, lo_arg*
 
     if (message.size() < 2)
     {
-        cout << "Error detected in the connect result." << endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s - Error detected in the connect result: message is too short to be well formed", __FILE__, __FUNCTION__);
         return 1;
     }
     
@@ -487,7 +492,7 @@ int Configurator::oscHandlerConnect(const char* path, const char* types, lo_arg*
     {
         // Error detected when trying to create flow
         string error = atom::toString(message[1]);
-        cout << error << endl;
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s - %s", __FILE__, __FUNCTION__, error.c_str());
         return 1;
     }
 
