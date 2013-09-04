@@ -56,6 +56,7 @@ class Actuator_ArmPcl : public Actuator
         Capture_Ptr mCapture;
 
         int mNeighboursNbr;
+        float mMaxDistanceFromMean;
         int mMinClusterSize, mMaxClusterSize;
         float mClusterTolerance;
 

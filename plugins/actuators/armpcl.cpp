@@ -8,7 +8,7 @@ using namespace std;
 #include <pcl/kdtree/kdtree.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/filters/radius_outlier_removal.h>
 
 std::string Actuator_ArmPcl::mClassName = "Actuator_ArmPcl";
 std::string Actuator_ArmPcl::mDocumentation = "N/A";
@@ -35,6 +35,8 @@ void Actuator_ArmPcl::make()
     mFrameNumber = 0;
 
     mNeighboursNbr = 100;
+    mMaxDistanceFromMean = 1.f;
+
     mMinClusterSize = 50;
     mMaxClusterSize = 25000;
     mClusterTolerance = 0.03;
@@ -94,18 +96,18 @@ atom::Message Actuator_ArmPcl::detect(vector<Capture_Ptr> pCaptures)
         else
             dist = sqrtf(pow(point.x - mean(0), 2.0) + pow(point.y - mean(1), 2.0));
 
-        if (dist > maxDistance)
+        if (dist > maxDistance && dist < mMaxDistanceFromMean)
         {
             maxIndex = i;
             maxDistance = dist;
         }
     }
 
-    pcl::search::KdTree<pcl::PointXYZRGBA> tree;
-    tree.setInputCloud(pcl);
+    pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGBA>());
+    tree->setInputCloud(pcl);
     vector<int> indices(maxIndex);
     vector<float> squaredDistances(maxIndex);
-    tree.nearestKSearch(pcl->at(maxIndex), mNeighboursNbr, indices, squaredDistances);
+    tree->nearestKSearch(pcl->at(maxIndex), mNeighboursNbr, indices, squaredDistances);
 
     pcl::PointXYZ meanPoint;
     meanPoint.x = meanPoint.y = meanPoint.z = 0.f;
