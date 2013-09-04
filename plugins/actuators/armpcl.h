@@ -46,6 +46,8 @@ class Actuator_ArmPcl : public Actuator
         atom::Message detect(std::vector<Capture_Ptr> pCaptures);
         void setParameter(atom::Message pMessage);
 
+        Capture_Ptr getOutput() const;
+
     private:
         static std::string mClassName;
         static std::string mDocumentation;
@@ -54,11 +56,11 @@ class Actuator_ArmPcl : public Actuator
         unsigned int mFrameNumber;
 
         Capture_Ptr mCapture;
+        int mOutputType;
 
         int mNeighboursNbr;
         float mMaxDistanceFromMean;
-        int mMinClusterSize, mMaxClusterSize;
-        float mClusterTolerance;
+        int mMainAxis;
 
         void make();
 };

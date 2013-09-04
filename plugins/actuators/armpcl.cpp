@@ -34,12 +34,11 @@ void Actuator_ArmPcl::make()
 
     mFrameNumber = 0;
 
-    mNeighboursNbr = 100;
-    mMaxDistanceFromMean = 1.f;
+    mOutputType = 0;
 
-    mMinClusterSize = 50;
-    mMaxClusterSize = 25000;
-    mClusterTolerance = 0.03;
+    mNeighboursNbr = 200;
+    mMaxDistanceFromMean = 1.f;
+    mMainAxis = 0;
 }
 
 /*************/
@@ -78,21 +77,23 @@ atom::Message Actuator_ArmPcl::detect(vector<Capture_Ptr> pCaptures)
     pca.project(*pcl.get(), projection);
 
     // We check which axis is the main one from the eigenvectors.
-    int mainAxis = 0;
-    if (eigenVectors(0, 1) > eigenVectors(0, 0) && eigenVectors(0, 1) > eigenVectors(0, 2))
+    int mainAxis = mMainAxis;
+    if (eigenVectors(0, 1) > eigenVectors(0, 0) && eigenVectors(0, 1) > eigenVectors(0, 2) && mainAxis == -1)
         mainAxis = 1;
-    else if (eigenVectors(0, 2) > eigenVectors(0, 0) && eigenVectors(0, 2) > eigenVectors(0, 1))
+    else if (eigenVectors(0, 2) > eigenVectors(0, 0) && eigenVectors(0, 2) > eigenVectors(0, 1) && mainAxis == -1)
         mainAxis = 2;
+    else if (mainAxis == -1)
+        mainAxis = 0;
     
     float maxDistance = 0.f, dist;
     int maxIndex;
-    for (int i = 0; i < pcl->size(); ++i)
+    for (int i = 0; i < pcl->points.size(); ++i)
     {
         pcl::PointXYZRGBA point = pcl->at(i);
         if (mainAxis == 0)
             dist = sqrtf(pow(point.y - mean(1), 2.0) + pow(point.z - mean(2), 2.0));
         else if (mainAxis == 1)
-            dist = sqrtf(pow(point.x - mean(0), 2.0) + pow(point.z - mean(2), 2.0));
+            dist = sqrtf(pow(point.z - mean(2), 2.0) + pow(point.x - mean(0), 2.0));
         else
             dist = sqrtf(pow(point.x - mean(0), 2.0) + pow(point.y - mean(1), 2.0));
 
@@ -121,12 +122,33 @@ atom::Message Actuator_ArmPcl::detect(vector<Capture_Ptr> pCaptures)
     meanPoint.y /= indices.size();
     meanPoint.z /= indices.size();
 
+    // Draw the directions in a cv::Mat
     cv::Mat output = cv::Mat::zeros(mOutputBuffer.size(), CV_8UC3);
     cv::Point2f center(mOutputBuffer.cols / 2, mOutputBuffer.rows / 2);
-    cv::Point2f direction(mOutputBuffer.cols / 2 + meanPoint.y * 128, mOutputBuffer.rows / 2 + meanPoint.z * 128);
-    cv::line(output, center, direction, cv::Scalar(255), 3);
+    cv::Point2f direction1(mOutputBuffer.cols / 2 + meanPoint.x * 128, mOutputBuffer.rows / 2 + meanPoint.y * 128);
+    cv::Point2f direction2(mOutputBuffer.cols / 2 + meanPoint.y * 128, mOutputBuffer.rows / 2 + meanPoint.z * 128);
+    cv::Point2f direction3(mOutputBuffer.cols / 2 + meanPoint.z * 128, mOutputBuffer.rows / 2 + meanPoint.x * 128);
+    cv::line(output, center, direction1, cv::Scalar(255, 0, 0), 2);
+    cv::line(output, center, direction2, cv::Scalar(0, 255, 0), 2);
+    cv::line(output, center, direction3, cv::Scalar(0, 0, 255), 2);
     mOutputBuffer = output;
 
+    // Also, output a cloud which contains the mean and the arm
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr arm(new pcl::PointCloud<pcl::PointXYZRGBA>());
+    for (int i = 0; i < indices.size(); ++i)
+        arm->points.push_back(pcl->at(indices[i]));
+    pcl::PointXYZRGBA centerPoint;
+    centerPoint.x = mean(0);
+    centerPoint.y = mean(1);
+    centerPoint.z = mean(2);
+    centerPoint.r = 255;
+    centerPoint.g = centerPoint.b = 0;
+    arm->points.push_back(centerPoint);
+
+    Capture_3D_PclRgba_Ptr capture(new Capture_3D_PclRgba(arm));
+    mCapture = capture;
+
+    // Lastly, create the message
     mLastMessage.clear();
     mLastMessage.push_back(atom::IntValue::create(1));
     mLastMessage.push_back(atom::IntValue::create(4));
@@ -151,26 +173,41 @@ void Actuator_ArmPcl::setParameter(atom::Message pMessage)
         return;
     }
 
-    if (cmd == "minClusterSize")
+    if (cmd == "outputType")
+    {
+        float type;
+        if (readParam(pMessage, type))
+            mOutputType = min(1, max(0, (int)type));
+    }
+    if (cmd == "neighboursNbr")
     {
         float size;
         if (readParam(pMessage, size))
-            mMinClusterSize = max(1, (int)size);
+            mNeighboursNbr = max(1, (int)size);
     }
-    if (cmd == "maxClusterSize")
+    if (cmd == "maxDistanceFromMean")
     {
-        float size;
-        if (readParam(pMessage, size))
-            mMaxClusterSize = max(1, (int)size);
+        float dist;
+        if (readParam(pMessage, dist))
+            mMaxDistanceFromMean = max(0.1f, dist);
     }
-    if (cmd == "clusterTolerance")
+    if (cmd == "mainAxis")
     {
-        float tol;
-        if (readParam(pMessage, tol))
-            mClusterTolerance = max((float)1e-3, tol);
+        float axis;
+        if (readParam(pMessage, axis))
+            mMainAxis = max(2, min(-1, (int)axis));
     }
 
     setBaseParameter(pMessage);
+}
+
+/*************/
+Capture_Ptr Actuator_ArmPcl::getOutput() const
+{
+    if (mOutputType == 0)
+        return Capture_2D_Mat_Ptr(new Capture_2D_Mat(mOutputBuffer.clone()));
+    else if (mOutputType == 1)
+        return mCapture;
 }
 
 #endif //HAVE_PCL
