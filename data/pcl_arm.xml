@@ -2,6 +2,18 @@
     <Flow>
         <Actuator>
             <Type>Actuator_ArmPcl</Type>
+            <Param>
+                <Name>outputType</Name>
+                <Value>1</Value>
+            </Param>
+            <Param>
+                <Name>maxDistanceFromMean</Name>
+                <Value>0.7</Value>
+            </Param>
+            <Param>
+                <Name>mainAxis</Name>
+                <Value>0</Value>
+            </Param>
         </Actuator>
         <Source>
             <Type>Source_3D_Shmdata</Type>

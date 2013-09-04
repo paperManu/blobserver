@@ -37,7 +37,7 @@ void Actuator_ArmPcl::make()
     mOutputType = 0;
 
     mNeighboursNbr = 200;
-    mMaxDistanceFromMean = 1.f;
+    mMaxDistanceFromMean = 0.7f;
     mMainAxis = 0;
 }
 
@@ -195,7 +195,7 @@ void Actuator_ArmPcl::setParameter(atom::Message pMessage)
     {
         float axis;
         if (readParam(pMessage, axis))
-            mMainAxis = max(2, min(-1, (int)axis));
+            mMainAxis = min(2, max(-1, (int)axis));
     }
 
     setBaseParameter(pMessage);
