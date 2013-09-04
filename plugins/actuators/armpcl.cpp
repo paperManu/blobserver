@@ -86,7 +86,7 @@ atom::Message Actuator_ArmPcl::detect(vector<Capture_Ptr> pCaptures)
         mainAxis = 0;
     
     float maxDistance = 0.f, dist;
-    int maxIndex;
+    int maxIndex = 0;
     for (int i = 0; i < pcl->points.size(); ++i)
     {
         pcl::PointXYZRGBA point = pcl->at(i);
