@@ -123,30 +123,36 @@ atom::Message Actuator_ArmPcl::detect(vector<Capture_Ptr> pCaptures)
     meanPoint.z /= indices.size();
 
     // Draw the directions in a cv::Mat
-    cv::Mat output = cv::Mat::zeros(mOutputBuffer.size(), CV_8UC3);
-    cv::Point2f center(mOutputBuffer.cols / 2, mOutputBuffer.rows / 2);
-    cv::Point2f direction1(mOutputBuffer.cols / 2 + meanPoint.x * 128, mOutputBuffer.rows / 2 + meanPoint.y * 128);
-    cv::Point2f direction2(mOutputBuffer.cols / 2 + meanPoint.y * 128, mOutputBuffer.rows / 2 + meanPoint.z * 128);
-    cv::Point2f direction3(mOutputBuffer.cols / 2 + meanPoint.z * 128, mOutputBuffer.rows / 2 + meanPoint.x * 128);
-    cv::line(output, center, direction1, cv::Scalar(255, 0, 0), 2);
-    cv::line(output, center, direction2, cv::Scalar(0, 255, 0), 2);
-    cv::line(output, center, direction3, cv::Scalar(0, 0, 255), 2);
-    mOutputBuffer = output;
+    if (mOutputType == 0)
+    {
+        cv::Mat output = cv::Mat::zeros(mOutputBuffer.size(), CV_8UC3);
+        cv::Point2f center(mOutputBuffer.cols / 2, mOutputBuffer.rows / 2);
+        cv::Point2f direction1(mOutputBuffer.cols / 2 + meanPoint.x * 128, mOutputBuffer.rows / 2 + meanPoint.y * 128);
+        cv::Point2f direction2(mOutputBuffer.cols / 2 + meanPoint.y * 128, mOutputBuffer.rows / 2 + meanPoint.z * 128);
+        cv::Point2f direction3(mOutputBuffer.cols / 2 + meanPoint.z * 128, mOutputBuffer.rows / 2 + meanPoint.x * 128);
+        cv::line(output, center, direction1, cv::Scalar(255, 0, 0), 2);
+        cv::line(output, center, direction2, cv::Scalar(0, 255, 0), 2);
+        cv::line(output, center, direction3, cv::Scalar(0, 0, 255), 2);
+        mOutputBuffer = output;
+    }
 
     // Also, output a cloud which contains the mean and the arm
-    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr arm(new pcl::PointCloud<pcl::PointXYZRGBA>());
-    for (int i = 0; i < indices.size(); ++i)
-        arm->points.push_back(pcl->at(indices[i]));
-    pcl::PointXYZRGBA centerPoint;
-    centerPoint.x = mean(0);
-    centerPoint.y = mean(1);
-    centerPoint.z = mean(2);
-    centerPoint.r = 255;
-    centerPoint.g = centerPoint.b = 0;
-    arm->points.push_back(centerPoint);
+    if (mOutputType == 1)
+    {
+        pcl::PointCloud<pcl::PointXYZRGBA>::Ptr arm(new pcl::PointCloud<pcl::PointXYZRGBA>());
+        for (int i = 0; i < indices.size(); ++i)
+            arm->points.push_back(pcl->at(indices[i]));
+        pcl::PointXYZRGBA centerPoint;
+        centerPoint.x = mean(0);
+        centerPoint.y = mean(1);
+        centerPoint.z = mean(2);
+        centerPoint.r = 255;
+        centerPoint.g = centerPoint.b = 0;
+        arm->points.push_back(centerPoint);
 
-    Capture_3D_PclRgba_Ptr capture(new Capture_3D_PclRgba(arm));
-    mCapture = capture;
+        Capture_3D_PclRgba_Ptr capture(new Capture_3D_PclRgba(arm));
+        mCapture = capture;
+    }
 
     // Lastly, create the message
     mLastMessage.clear();
