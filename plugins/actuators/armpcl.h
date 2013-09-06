@@ -61,6 +61,9 @@ class Actuator_ArmPcl : public Actuator
         int mNeighboursNbr;
         float mMaxDistanceFromMean;
         int mMainAxis;
+       
+        float mMaxManhattanDistance;
+        int mMinCloudSize;
 
         void make();
 };

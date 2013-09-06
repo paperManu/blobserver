@@ -5,6 +5,7 @@ using namespace std;
 #if HAVE_PCL
 
 #include <pcl/common/pca.h>
+#include <pcl/filters/crop_box.h>
 #include <pcl/kdtree/kdtree.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -39,6 +40,9 @@ void Actuator_ArmPcl::make()
     mNeighboursNbr = 200;
     mMaxDistanceFromMean = 0.7f;
     mMainAxis = 0;
+
+    mMaxManhattanDistance = 0.1;
+    mMinCloudSize = 50;
 }
 
 /*************/
@@ -110,17 +114,37 @@ atom::Message Actuator_ArmPcl::detect(vector<Capture_Ptr> pCaptures)
     vector<float> squaredDistances(maxIndex);
     tree->nearestKSearch(pcl->at(maxIndex), mNeighboursNbr, indices, squaredDistances);
 
+    // We get rid of points which are too far away from the first one
+    pcl::CropBox<pcl::PointXYZRGBA> boxFilter;
+    Eigen::Vector4f minPoint, maxPoint;
+    minPoint(0) = pcl->at(maxIndex).x - mMaxManhattanDistance;
+    minPoint(1) = pcl->at(maxIndex).y - mMaxManhattanDistance;
+    minPoint(2) = pcl->at(maxIndex).z - mMaxManhattanDistance;
+    maxPoint(0) = pcl->at(maxIndex).x + mMaxManhattanDistance;
+    maxPoint(1) = pcl->at(maxIndex).y + mMaxManhattanDistance;
+    maxPoint(2) = pcl->at(maxIndex).z + mMaxManhattanDistance;
+    boxFilter.setMin(minPoint);
+    boxFilter.setMax(maxPoint);
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr armCloud(new pcl::PointCloud<pcl::PointXYZRGBA>(*pcl.get(), indices));
+    boxFilter.setInputCloud(armCloud);
+    pcl::PointCloud<pcl::PointXYZRGBA> armCloudFiltered;
+    boxFilter.filter(armCloudFiltered);
+
+    // If the resulting cloud is too small, that means the farthest point was some "noise"
+    if (armCloudFiltered.points.size() < mMinCloudSize)
+        return mLastMessage;
+
     pcl::PointXYZ meanPoint;
     meanPoint.x = meanPoint.y = meanPoint.z = 0.f;
-    for (int i = 0; i < indices.size(); ++i)
+    for (int i = 0; i < armCloudFiltered.points.size(); ++i)
     {
-        meanPoint.x += pcl->at(indices[i]).x - mean(0);
-        meanPoint.y += pcl->at(indices[i]).y - mean(1);
-        meanPoint.z += pcl->at(indices[i]).z - mean(2);
+        meanPoint.x += armCloudFiltered.at(i).x - mean(0);
+        meanPoint.y += armCloudFiltered.at(i).y - mean(1);
+        meanPoint.z += armCloudFiltered.at(i).z - mean(2);
     }
-    meanPoint.x /= indices.size();
-    meanPoint.y /= indices.size();
-    meanPoint.z /= indices.size();
+    meanPoint.x /= armCloudFiltered.points.size();
+    meanPoint.y /= armCloudFiltered.points.size();
+    meanPoint.z /= armCloudFiltered.points.size();
 
     // Draw the directions in a cv::Mat
     if (mOutputType == 0)
@@ -202,6 +226,18 @@ void Actuator_ArmPcl::setParameter(atom::Message pMessage)
         float axis;
         if (readParam(pMessage, axis))
             mMainAxis = min(2, max(-1, (int)axis));
+    }
+    if (cmd == "maxManhattanDistance")
+    {
+        float dist;
+        if (readParam(pMessage, dist))
+            mMaxManhattanDistance = max(0.f, dist);
+    }
+    if (cmd == "minCloudSize")
+    {
+        float nbr;
+        if (readParam(pMessage, nbr))
+            mMinCloudSize = max(0, (int)nbr);
     }
 
     setBaseParameter(pMessage);
