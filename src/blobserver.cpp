@@ -571,15 +571,15 @@ int App::loop()
                     cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255.0));
                 cv::imshow("blobserver", displayMat);
             }
-        }
 
-        char lKey = cv::waitKey(1);
-        if(lKey == 27) // Escape
-            mRun = false;
-        if(lKey == 'w')
-        {
-            lSourceNumber = (lSourceNumber+1)%lBuffers.size();
-            g_log(NULL, G_LOG_LEVEL_INFO, "Buffer displayed: %s", lBufferNames[lSourceNumber].c_str());
+            char lKey = cv::waitKey(1);
+            if(lKey == 27) // Escape
+                mRun = false;
+            if(lKey == 'w')
+            {
+                lSourceNumber = (lSourceNumber+1)%lBuffers.size();
+                g_log(NULL, G_LOG_LEVEL_INFO, "Buffer displayed: %s", lBufferNames[lSourceNumber].c_str());
+            }
         }
 
         unsigned long long chronoEnd = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
