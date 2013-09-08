@@ -64,7 +64,8 @@ blobserver_CXXFLAGS = \
     $(XML2_CFLAGS)
 
 blobserver_LDFLAGS = \
-	-rdynamic
+	-rdynamic \
+	-ldl
 
 blobserver_LDADD = \
     $(GLIB_LIBS) \
