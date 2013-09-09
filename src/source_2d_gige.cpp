@@ -415,6 +415,35 @@ void Source_2D_Gige::streamCb(void* user_data, ArvStreamCallbackType type, ArvBu
             source->mBuffer = img;
             source->mUpdated = true;
         }
+        else
+        {
+            string msg;
+            switch (buffer->status)
+            {
+            case ARV_BUFFER_STATUS_SUCCESS:
+                msg = "the buffer is cleared";
+                break;
+            case ARV_BUFFER_STATUS_TIMEOUT:
+                msg = "timeout was reached before all packets are received";
+                break;
+            case ARV_BUFFER_STATUS_MISSING_PACKETS:
+                msg = "stream has missing packets";
+                break;
+            case ARV_BUFFER_STATUS_WRONG_PACKET_ID:
+                msg = "stream has packet with wrong id";
+                break;
+            case ARV_BUFFER_STATUS_SIZE_MISMATCH:
+                msg = "the received image didn't fit in the buffer data space";
+                break;
+            case ARV_BUFFER_STATUS_FILLING:
+                msg = "the image is currently being filled";
+                break;
+            case ARV_BUFFER_STATUS_ABORTED:
+                msg = "the filling was aborted before completion";
+                break;
+            }
+            g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Error in the received packet: %s", source->mClassName.c_str(), msg.c_str());
+        }
         arv_stream_push_buffer(source->mStream, buffer);
     }
 }
