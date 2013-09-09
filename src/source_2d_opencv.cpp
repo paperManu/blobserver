@@ -177,7 +177,7 @@ void Source_2D_OpenCV::setParameter(atom::Message pParam)
             float param = mGainLUT[paramValue];
             if (mGainLUT.isOutOfRange())
             {
-                g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Exposure value out of bounds", mClassName.c_str());
+                g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Gain value out of bounds", mClassName.c_str());
                 return;
             }
             mCamera.set(CV_CAP_PROP_GAIN, param);

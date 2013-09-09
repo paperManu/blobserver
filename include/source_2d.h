@@ -160,8 +160,6 @@ class Source_2D : public Source
         unsigned int getChannels() const {return mChannels;}
 
     protected:
-
-
         MatBuffer mBuffer; //!< Image buffer
         cv::Mat mCorrectedBuffer; //!< Corrected image buffer
 

@@ -1,7 +1,8 @@
 AM_CPPFLAGS = \
 	-DLIBDIR=\"$(libdir)\" \
     -I$(top_srcdir)/include \
-    -DG_LOG_DOMAIN=""
+    -DG_LOG_DOMAIN="" \
+    -DG_DISABLE_CHECKS
 
 bin_PROGRAMS = \
     blobserver \
@@ -20,6 +21,7 @@ blobserver_SOURCES = \
 	hdribuilder.cpp \
     source.cpp \
     source_2d.cpp \
+    source_2d_gige.cpp \
     source_2d_opencv.cpp \
     source_2d_shmdata.cpp \
     source_3d_shmdata.cpp \
@@ -47,12 +49,14 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/hdribuilder.h \
 	$(top_srcdir)/include/shmpointcloud.h \
     $(top_srcdir)/include/source_2d.h \
+    $(top_srcdir)/include/source_2d_gige.h \
     $(top_srcdir)/include/source_2d_opencv.h \
     $(top_srcdir)/include/source_2d_shmdata.h \
     $(top_srcdir)/include/source_3d_shmdata.h \
     $(top_srcdir)/include/threadPool.h
 
 blobserver_CXXFLAGS = \
+    $(ARAVIS_CFLAGS) \
     $(GLIB_CFLAGS) \
     $(OPENCV_CFLAGS) \
     $(LIBLO_CFLAGS) \
@@ -68,6 +72,7 @@ blobserver_LDFLAGS = \
 	-ldl
 
 blobserver_LDADD = \
+    $(ARAVIS_LIBS) \
     $(GLIB_LIBS) \
     $(OPENCV_LIBS) \
     $(LIBLO_LIBS) \

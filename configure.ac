@@ -110,6 +110,11 @@ PKG_CHECK_MODULES([MAPPER], libmapper-0,
     AC_DEFINE([HAVE_MAPPER], [1], [Defined to 1 if libmapper is detected]),
     AC_DEFINE([HAVE_MAPPER], [0], [Defined to 0 if libmapper is detected]))
 
+# Aravis / Genicam / Gige cameras
+PKG_CHECK_MODULES([ARAVIS], aravis-0.4,
+    AC_DEFINE([HAVE_ARAVIS], [1], [Defined to 1 if aravis is detected]),
+    AC_DEFINE([HAVE_ARAVIS], [0], [Defined to 0 if aravis is detected]))
+
 # GNU help2man creates man pages from --help output; in many cases, this
 # is sufficient, and obviates the need to maintain man pages separately.
 # However, this means invoking executables, which we generally cannot do
