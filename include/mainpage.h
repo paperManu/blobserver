@@ -72,6 +72,23 @@
  * - whiteBalanceBlue (int): coefficient applied to the blue channel, multiplied by a value dependent of the camera model
  * - iso (int): link speed to set for firewire cameras
  * 
+ * \subsection source_2d_gige_sec Gigabit ethernet cameras (Source_2D_Gige)
+ *
+ * This source is available only of blobserver was compiled with Aravis support (https://wiki.gnome.org/Aravis).
+ * Most of the following parameters have no default but are dependent of the previous state of the camera.
+ *
+ * Available parameters:
+ * - raw (int): if set to 1, the image is grabbed as a RAW image (i.e before Bayer conversion). Bayer conversion is then done by blobserver.
+ * - width (int): desired width of the capture
+ * - height (int): desired height of the capture
+ * - offsetX (int): offset of the capture along X axis
+ * - offsetY (int): offset of the capture along Y axis
+ * - binning (int): number of pixels, on both axis, which are merged together (useful to get higher sensitivity, but lower resolution)
+ * - invertRGB (int): if set to 1, a conversion from BGR to RGB is done
+ * - framerate (float): framerate of the capture
+ * - exposureTime (float): time of the exposure, in us
+ * - gain (float): gain applied to the sensor, in dB
+ *
  * \subsection source_2d_shmdata_sec shmdata 2D sources (Source_2D_Shmdata)
  * 
  * Available parameters:
