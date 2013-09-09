@@ -201,6 +201,32 @@ void Source_2D_Gige::setParameter(atom::Message pParam)
         allocateStream();
         arv_camera_start_acquisition(mCamera);
     }
+    else if (paramName == "offsetX")
+    {
+        arv_camera_stop_acquisition(mCamera);
+        int x, y, width, height;
+        arv_camera_get_region(mCamera, &x, &y, &width, &height);
+        arv_camera_set_region(mCamera, value, y, width, height);
+        arv_camera_get_region(mCamera, &x, &y, &width, &height);
+        mWidth = width;
+        mHeight = height;
+
+        allocateStream();
+        arv_camera_start_acquisition(mCamera);
+    }
+    else if (paramName == "offsetY")
+    {
+        arv_camera_stop_acquisition(mCamera);
+        int x, y, width, height;
+        arv_camera_get_region(mCamera, &x, &y, &width, &height);
+        arv_camera_set_region(mCamera, x, value, width, height);
+        arv_camera_get_region(mCamera, &x, &y, &width, &height);
+        mWidth = width;
+        mHeight = height;
+
+        allocateStream();
+        arv_camera_start_acquisition(mCamera);
+    }
     else if (paramName == "binning")
     {
         if (value < 1.f)
