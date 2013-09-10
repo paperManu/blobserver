@@ -106,6 +106,20 @@
  **************
  * \section actuators_sec List of actuators
  * 
+ * \subsection actuator_armpcl_sec Detection of one's arm in his point cloud (Actuator_ArmPcl)
+ *
+ * This actuator detects the arm (or rather, the farthest part of the body) in a point cloud representing the body of one person. The position of the arm is the outputted.
+ *
+ * Number of source(s) needed: 1 Source_3D
+ *
+ * Available parameters:
+ * - outputType (int, default 0): selects the type of visual output. 0 is for a 2D representation of the direction pointed by the arm, 1 for the point cloud of the arm
+ * - neighboursNbr (int, default 200): maximum number of neighbouring points to keep in the detection
+ * - maxDistanceFromMean (float, default 0.7): maximum distance where to search for the arm. Used to get rid of noise (usually farther than the arm in the cloud)
+ * - mainAxis (int, default 0): specifies the main axis (meaning the axis of the body). 0, 1, 2 are for X, Y, Z. -1 is for autodetection
+ * - maxManhattanDistance (float, default 0.1): maximum distance between the center of the arm's cloud and its neighbours
+ * - minCloudSize (int, default 50): if the number of points in the cloud is lower than this value, the position is not outputted (used to get rid of noise)
+ *
  * \subsection actuator_bgsubtractor_sec Background subtractor using mixtures of gaussians as models (Actuator_BgSubtractor)
  *
  * This actuator detects objects based on a model of the background which uses mixture of gaussians. It is mostly based on the implementation from OpenCV (http://docs.opencv.org/modules/video/doc/motion_analysis_and_object_tracking.html?#BackgroundSubtractorMOG2%20:%20public%20BackgroundSubtractor).
@@ -130,6 +144,8 @@
  * \subsection actuator_clusterpcl_sec Clusters of point clouds (Actuator_ClusterPcl)
  *
  * This actuator outputs the number of distinct clusters it can find in the input point cloud
+ *
+ * Number of source(s) needed: 1 Source_3D
  *
  * Available parameters:
  * - minClusterSize (int, default 50): minimum number of points for a cluster to be kept
@@ -161,7 +177,7 @@
  *
  * This actuator searches for objects corresponding to the model trained with blobtrainer.
  *
- * Number of source(s) needed: 1
+ * Number of source(s) needed: 1 Source_2D
  *
  * Available parameters:
  * - modelFilename (string): path to the file model
@@ -189,7 +205,7 @@
  * 
  * Detects the brightest spots in an input image, i.e. light from a torchlight, and outputs the resulting blobs' size, position and ID.
  * 
- * Number of source(s) needed: 1
+ * Number of source(s) needed: 1 Source_2D
  * 
  * Available parameters: 
  * - detectionLevel (int, default 2): minimum level (as a multiple of the standard deviation) to consider a point as a light spot.
@@ -205,7 +221,7 @@
  * 
  * This actuator is a generalization of the Lightspots actuator, except that it does not only detect blobs brighter that the mean, but any blob which is far from the mean value of the current frame.
  * 
- * Number of source(s) needed: 1
+ * Number of source(s) needed: 1 Source_2D
  * 
  * Available parameters:
  * - detectionLevel (int, default 2): minimum level (as a multiple of the standard deviation) to consider a point as a light spot.
@@ -221,7 +237,7 @@
  *
  * This actuator is specificaly designed to detect objects placed on a planar surface, by comparing images from two or more cameras. These cameras should be calibrated geometrically and colorimetrically to get optimal results. Note that this actuator is still in development. Cameras are calibrated by specifying to all of them the coordinates, in the image space, of a set of fixed points in the real space.
  *
- * Number of source(s) needed: 2+
+ * Number of source(s) needed: 2+ Source_2D
  *
  * Available parameters:
  * - addSpace (float[4+]): adds the coordinates of the plane for the next input source (depending on which spaces have been given yet). All points are given in the input image space.
@@ -238,7 +254,7 @@
  * 
  * This actuator stitches any number of 2D images into one, according to the input parameters.
  *
- * Number of source(s) needed: 1+
+ * Number of source(s) needed: 1+ Source_2D
  *
  * Available parameters:
  * - cropInput (int[5], no default): crop parameters for the source given by the first value. Parameters are: [sourceIndex] [x] [y] [width] [height]
