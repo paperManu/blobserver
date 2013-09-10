@@ -29,6 +29,8 @@ void Source_2D_Gige::make(int pParam)
     mStream = NULL;
 
     mInvertRGB = false;
+
+    mConvertedFrame = cv::Mat::zeros(480, 640, CV_8UC3);
 }
 
 /*************/
@@ -110,12 +112,50 @@ bool Source_2D_Gige::disconnect()
 }
 
 /*************/
-cv::Mat Source_2D_Gige::retrieveRawFrame()
+bool Source_2D_Gige::grabFrame()
 {
     // If in-camera autoexposure is on, this needs to be done at each frame
     mExposureTime = arv_camera_get_exposure_time(mCamera);
     
-    return mBuffer.get().clone();
+    cv::Mat img = mBuffer.get().clone();
+    if (mInvertRGB && mChannels == 3)
+    {
+        cv::Mat inverted = cv::Mat::zeros(img.size(), img.type());
+        cv::cvtColor(img, inverted, CV_BGR2RGB);
+        img = inverted;
+    }
+    else if (mBayer && mChannels == 1)
+    {
+        cv::Mat bayer = cv::Mat::zeros(img.size(), CV_8UC3);
+        switch (arv_camera_get_pixel_format(mCamera))
+        {
+        case ARV_PIXEL_FORMAT_BAYER_BG_8:
+            cvtColor(img, bayer, CV_BayerBG2RGB);
+            break;
+        case ARV_PIXEL_FORMAT_BAYER_GB_8:
+            cvtColor(img, bayer, CV_BayerGB2RGB);
+            break;
+        case ARV_PIXEL_FORMAT_BAYER_RG_8:
+            cvtColor(img, bayer, CV_BayerRG2RGB);
+            break;
+        case ARV_PIXEL_FORMAT_BAYER_GR_8:
+            cvtColor(img, bayer, CV_BayerGR2RGB);
+            break;
+        }
+        img = bayer;
+    }
+
+    {
+        lock_guard<mutex> lock(mFrameMutex);
+        mConvertedFrame = img;
+    }
+}
+
+/*************/
+cv::Mat Source_2D_Gige::retrieveRawFrame()
+{
+    lock_guard<mutex> lock(mFrameMutex);
+    return mConvertedFrame.clone();
 }
 
 /*************/
@@ -385,33 +425,6 @@ void Source_2D_Gige::streamCb(void* user_data, ArvStreamCallbackType type, ArvBu
                 img = cv::Mat::zeros(source->mHeight, source->mWidth, CV_8U);
 
             memcpy(img.data, buffer->data, buffer->width * buffer->height * ARV_PIXEL_FORMAT_BIT_PER_PIXEL(buffer->pixel_format) / 8);
-
-            if (source->mInvertRGB && source->mChannels == 3)
-            {
-                cv::Mat inverted = cv::Mat::zeros(img.size(), img.type());
-                cv::cvtColor(img, inverted, CV_BGR2RGB);
-                img = inverted;
-            }
-            else if (source->mBayer && source->mChannels == 1)
-            {
-                cv::Mat bayer = cv::Mat::zeros(img.size(), CV_8UC3);
-                switch (arv_camera_get_pixel_format(source->mCamera))
-                {
-                case ARV_PIXEL_FORMAT_BAYER_BG_8:
-                    cvtColor(img, bayer, CV_BayerBG2RGB);
-                    break;
-                case ARV_PIXEL_FORMAT_BAYER_GB_8:
-                    cvtColor(img, bayer, CV_BayerGB2RGB);
-                    break;
-                case ARV_PIXEL_FORMAT_BAYER_RG_8:
-                    cvtColor(img, bayer, CV_BayerRG2RGB);
-                    break;
-                case ARV_PIXEL_FORMAT_BAYER_GR_8:
-                    cvtColor(img, bayer, CV_BayerGR2RGB);
-                    break;
-                }
-                img = bayer;
-            }
             source->mBuffer = img;
             source->mUpdated = true;
         }

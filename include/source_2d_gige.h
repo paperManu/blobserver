@@ -31,6 +31,7 @@
 #if HAVE_ARAVIS
 
 #include <arv.h>
+#include <mutex>
 
 class Source_2D_Gige : public Source_2D
 {
@@ -43,6 +44,7 @@ class Source_2D_Gige : public Source_2D
         static std::string getDocumentation() {return mDocumentation;}
 
         atom::Message getSubsources() const; 
+        virtual bool grabFrame();
 
         bool connect();
         bool disconnect();
@@ -55,14 +57,16 @@ class Source_2D_Gige : public Source_2D
         static std::string mClassName;
         static std::string mDocumentation;
 
+        cv::Mat mConvertedFrame;
+        std::mutex mFrameMutex;
+
         ArvCamera* mCamera;
         ArvStream* mStream;
 
         bool mInvertRGB, mBayer;
 
-        void make(int pParam);
-
         // Methods
+        void make(int pParam);
         void allocateStream();
         static void streamCb(void* user_data, ArvStreamCallbackType type, ArvBuffer* buffer);
 };
