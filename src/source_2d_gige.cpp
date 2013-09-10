@@ -446,6 +446,24 @@ void Source_2D_Gige::streamCb(void* user_data, ArvStreamCallbackType type, ArvBu
         }
         arv_stream_push_buffer(source->mStream, buffer);
     }
+    else
+    {
+        switch (type)
+        {
+        case ARV_STREAM_CALLBACK_TYPE_INIT:
+            g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Stream callback: thread initialization", source->mClassName.c_str());
+            break;
+        case ARV_STREAM_CALLBACK_TYPE_EXIT:
+            g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Stream callback: thread end", source->mClassName.c_str());
+            break;
+        //case ARV_STREAM_CALLBACK_TYPE_START_BUFFER:
+        //    g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Stream callback: buffer filling start", source->mClassName.c_str());
+        //    break;
+        //case ARV_STREAM_CALLBACK_TYPE_BUFFER_DONE:
+        //    g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Stream callback: buffer filled", source->mClassName.c_str());
+        //    break;
+        }
+    }
 }
 
 #endif // HAVE_ARAVIS

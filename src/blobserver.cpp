@@ -377,6 +377,8 @@ void App::loadPlugins()
         }
         filename = (char*)g_dir_read_name(dir);
     }
+
+    g_dir_close(dir);
 }
 
 /*************/
