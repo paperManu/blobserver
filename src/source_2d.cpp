@@ -402,11 +402,6 @@ atom::Message Source_2D::getBaseParameter(atom::Message pParam) const
 /************/
 float Source_2D::getEV()
 {
-    // Update the exposure time in case it changes automatically
-    atom::Message msg;
-    msg.push_back(atom::StringValue::create("exposureTime"));
-    setParameter(msg);
-
     return log2(mAperture*mAperture*(1/mExposureTime)*100/mISO)-mGain/6.f;
 }
 
@@ -688,7 +683,7 @@ void Source_2D::createHdri(cv::Mat& pImg)
     // Change the exposure time for the next frame
     if (ldriCount < mHdriSteps)
     {
-        message.push_back(atom::FloatValue::create(mExposureParam*pow(2.0, mHdriStepSize)));
+        message.push_back(atom::FloatValue::create(mExposureTime*pow(2.0, mHdriStepSize)));
         pImg.create(480, 640, CV_32FC3);
     }
     else

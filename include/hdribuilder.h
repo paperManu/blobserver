@@ -72,9 +72,6 @@ class HdriBuilder
         // Returns the coefficient to apply to a 8u value
         // according to a gaussian curve centered on 127
         float getGaussian(unsigned char pValue) const;
-    
-        // Orders the LDRi from the most to least exposed
-        void orderLDRi();
 };
 
 #endif // HDRIBUILDER_H

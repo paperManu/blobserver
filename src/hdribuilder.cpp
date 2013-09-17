@@ -76,7 +76,10 @@ bool HdriBuilder::computeHDRI()
     mHDRi.create(mLDRi[0].image.rows, mLDRi[0].image.cols, CV_32FC3);
 
     // Ordering images
-    orderLDRi();
+    sort(mLDRi.begin(), mLDRi.end(), [&] (LDRi a, LDRi b)
+    {
+        return a.EV > b.EV;
+    });
 
     // Calculation of each HDR pixel
     for(unsigned int x=0; x<(unsigned int)mHDRi.cols; x++)
@@ -163,28 +166,4 @@ float HdriBuilder::getGaussian(unsigned char pValue) const
     lValue /= 1/(lSigma*2*M_PI);
 
     return lValue;
-}
-
-/*************/
-void HdriBuilder::orderLDRi()
-{
-    if(mLDRi.size() == 0)
-    {
-        return;
-    }
-
-    LDRi lTempLDRi;
-
-    for(unsigned int i=0; i<(unsigned int)mLDRi.size(); i++)
-    {
-        for(unsigned int j=i+1; j<(unsigned int)mLDRi.size(); j++)
-        {
-            if(mLDRi[j].EV < mLDRi[i].EV)
-            {
-                lTempLDRi = mLDRi[j];
-                mLDRi.erase(mLDRi.begin()+j);
-                mLDRi.insert(mLDRi.begin()+i, lTempLDRi);
-            }
-        }
-    }
 }
