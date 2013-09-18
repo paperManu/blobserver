@@ -75,7 +75,7 @@ Capture_Ptr Source_2D::retrieveFrame()
     if (mUpdated)
     {
         cv::Mat buffer = retrieveRawFrame();
-        
+
         if (mAutoExposureRoi.width != 0 && mAutoExposureRoi.height != 0)
             applyAutoExposure(buffer);
         if (mMask.total() != 0)
@@ -662,8 +662,6 @@ void Source_2D::applyAutoExposure(cv::Mat& pImg)
 /*************/
 void Source_2D::createHdri(cv::Mat& pImg)
 {
-    // TODO: make this work even if cameras dont send the right exposure value
-
     static int ldriCount = -1;
     // If we just started HDRI capture, we need to set the exposure to the start value
     atom::Message message;

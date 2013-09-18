@@ -217,6 +217,11 @@ bool ShmImage::init(const unsigned int width, const unsigned int height, int typ
         sprintf(buffer, "video/x-raw-gray,bpp=%i,endianness=1234,depth=%i,width=%i,height=%i,framerate=30/1", 16, 16, width, height);
         _bpp = 16;
     }
+    else if (type == CV_32FC3)
+    {
+        sprintf(buffer, "video/x-raw-rgb,bpp=%i,endianness=4321,depth=%i,width=%i,height=%i,framerate=30/1", 96, 96, width, height);
+        _bpp = 96;
+    }
     else
     {
         return false;

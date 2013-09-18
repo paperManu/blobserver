@@ -12,7 +12,7 @@
             </Param>
             <Param>
                 <Name>iso</Name>
-                <Value>800</Value>
+                <Value>400</Value>
             </Param>
             <Param>
                 <Name>width</Name>
@@ -44,7 +44,7 @@
             </Param>
             <Param>
                 <Name>hdri</Name>
-                <Value>12 1.0 4</Value>
+                <Value>50 1.0 4</Value>
             </Param>
         </Source>
         <Client>
