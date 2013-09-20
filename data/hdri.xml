@@ -4,23 +4,27 @@
             <Type>Actuator_Nop</Type>
         </Actuator>
         <Source>
-            <Type>Source_2D_OpenCV</Type>
-            <Subsource>300</Subsource>
+            <Type>Source_2D_Gige</Type>
+            <Subsource>0</Subsource>
             <Param>
                 <Name>framerate</Name>
                 <Value>15</Value>
             </Param>
             <Param>
-                <Name>iso</Name>
-                <Value>400</Value>
+                <Name>raw</Name>
+                <Value>1</Value>
+            </Param>
+            <Param>
+                <Name>binning</Name>
+                <Value>2</Value>
             </Param>
             <Param>
                 <Name>width</Name>
-                <Value>640</Value>
+                <Value>800</Value>
             </Param>
             <Param>
                 <Name>height</Name>
-                <Value>480</Value>
+                <Value>600</Value>
             </Param>
             <Param>
                 <Name>exposureTime</Name>
@@ -44,7 +48,7 @@
             </Param>
             <Param>
                 <Name>hdri</Name>
-                <Value>50 1.0 4</Value>
+                <Value>1000 2.0 4 4</Value>
             </Param>
         </Source>
         <Client>

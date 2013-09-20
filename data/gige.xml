@@ -28,7 +28,7 @@
             </Param>
             <Param>
                 <Name>gain</Name>
-                <Value>0</Value>
+                <Value>6</Value>
             </Param>
             <Param>
                 <Name>invertRGB</Name>
@@ -36,7 +36,7 @@
             </Param>
             <Param>
                 <Name>framerate</Name>
-                <Value>30</Value>
+                <Value>15</Value>
             </Param>
         </Source>
         <Client>

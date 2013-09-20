@@ -78,7 +78,7 @@ bool HdriBuilder::computeHDRI()
     // Ordering images
     sort(mLDRi.begin(), mLDRi.end(), [&] (LDRi a, LDRi b)
     {
-        return a.EV > b.EV;
+        return a.EV < b.EV;
     });
 
     // Calculation of each HDR pixel

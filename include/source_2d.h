@@ -217,7 +217,7 @@ class Source_2D : public Source
         // HDRi builder
         HdriBuilder mHdriBuilder;
         float mHdriStartExposure, mHdriStepSize;
-        int mHdriSteps;
+        int mHdriSteps, mHdriFrameSkip;
 
         // Color correction
         cmsHTRANSFORM mICCTransform;

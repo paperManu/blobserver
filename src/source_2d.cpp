@@ -333,7 +333,7 @@ void Source_2D::setBaseParameter(atom::Message pParam)
     }
     else if (paramName == "hdri")
     {
-        if (pParam.size() != 4)
+        if (pParam.size() != 5)
             return;
 
         try
@@ -341,6 +341,7 @@ void Source_2D::setBaseParameter(atom::Message pParam)
             mHdriStartExposure = atom::toFloat(pParam[1]);
             mHdriStepSize = atom::toFloat(pParam[2]);
             mHdriSteps = atom::toInt(pParam[3]);
+            mHdriFrameSkip = atom::toInt(pParam[4]);
         }
         catch (atom::BadTypeTagError error)
         {
@@ -402,7 +403,7 @@ atom::Message Source_2D::getBaseParameter(atom::Message pParam) const
 /************/
 float Source_2D::getEV()
 {
-    return log2(mAperture*mAperture*(1/mExposureTime)*100/mISO)-mGain/6.f;
+    return log2(mAperture*mAperture*(1000.f/mExposureTime)*100/mISO)-mGain/6.f;
 }
 
 /************/
@@ -663,6 +664,7 @@ void Source_2D::applyAutoExposure(cv::Mat& pImg)
 void Source_2D::createHdri(cv::Mat& pImg)
 {
     static int ldriCount = -1;
+    static int skipFrame = 0;
     // If we just started HDRI capture, we need to set the exposure to the start value
     atom::Message message;
     message.push_back(atom::StringValue::create("exposureTime"));
@@ -675,8 +677,16 @@ void Source_2D::createHdri(cv::Mat& pImg)
     }
 
     // Add current frame to the HdriBuilder
-    mHdriBuilder.addLDR(&pImg, getEV());
-    ldriCount++;
+    if (skipFrame == 0)
+    {
+        g_log(NULL, G_LOG_LEVEL_INFO, "%s - Exposure value for source %i : %f", mClassName.c_str(), mId, getEV());
+        mHdriBuilder.addLDR(&pImg, getEV());
+        ldriCount++;
+    }
+
+    skipFrame = (skipFrame + 1) % mHdriFrameSkip;
+    if (skipFrame != 1)
+        return;
 
     // Change the exposure time for the next frame
     if (ldriCount < mHdriSteps)
@@ -689,9 +699,19 @@ void Source_2D::createHdri(cv::Mat& pImg)
         mHdriBuilder.computeHDRI();
         pImg = mHdriBuilder.getHDRI();
 
+        float maxValue = 0.f;
+        for (int x = 0; x < pImg.cols; ++x)
+            for (int y = 0; y < pImg.rows; ++y)
+                maxValue = max(maxValue, pImg.at<cv::Vec3f>(y, x)[0]);
+
+        //cv::Mat hsv = cv::Mat::zeros(pImg.size(), CV_8UC3);
+        //pImg.convertTo(hsv, CV_8UC3, 10.f * 255.f / maxValue);
+        //cv::imshow("hsv", hsv);
+
         message.push_back(atom::FloatValue::create(mHdriStartExposure));
         ldriCount = 0;
     }
+
     setParameter(message);
 }
 
