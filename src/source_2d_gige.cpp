@@ -115,7 +115,7 @@ bool Source_2D_Gige::disconnect()
 bool Source_2D_Gige::grabFrame()
 {
     // If in-camera autoexposure is on, this needs to be done at each frame
-    mExposureTime = arv_camera_get_exposure_time(mCamera);
+    mExposureTime = arv_camera_get_exposure_time(mCamera) / 1e6;
     
     cv::Mat img = mBuffer.get().clone();
     if (mInvertRGB && mChannels == 3)
@@ -300,15 +300,15 @@ void Source_2D_Gige::setParameter(atom::Message pParam)
     {
         double min, max;
         arv_camera_get_exposure_time_bounds(mCamera, &min, &max);
-        if (value < min || value > max)
+        if (value*1e6 < min || value*1e6 > max)
         {
-            g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Exposure value out of bounds: [%f, %f]", mClassName.c_str(), min, max);
+            g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Exposure value out of bounds: [%f, %f]", mClassName.c_str(), min / 1e6, max / 1e6);
             return;
         }
 
         arv_camera_set_exposure_time_auto(mCamera, ARV_AUTO_OFF);
-        arv_camera_set_exposure_time(mCamera, value);
-        mExposureTime = arv_camera_get_exposure_time(mCamera);
+        arv_camera_set_exposure_time(mCamera, value * 1e6);
+        mExposureTime = arv_camera_get_exposure_time(mCamera) / 1e6;
         mExposureParam = value;
     }
     else if (paramName == "gain")

@@ -48,7 +48,7 @@
             </Param>
             <Param>
                 <Name>hdri</Name>
-                <Value>1000 2.0 4 4</Value>
+                <Value>0.001 2.0 4 4</Value>
             </Param>
         </Source>
         <Client>

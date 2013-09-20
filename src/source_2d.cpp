@@ -403,7 +403,7 @@ atom::Message Source_2D::getBaseParameter(atom::Message pParam) const
 /************/
 float Source_2D::getEV()
 {
-    return log2(mAperture*mAperture*(1000.f/mExposureTime)*100/mISO)-mGain/6.f;
+    return log2(mAperture*mAperture*(1.f/mExposureTime)*100/mISO)-mGain/6.f;
 }
 
 /************/
@@ -704,9 +704,9 @@ void Source_2D::createHdri(cv::Mat& pImg)
             for (int y = 0; y < pImg.rows; ++y)
                 maxValue = max(maxValue, pImg.at<cv::Vec3f>(y, x)[0]);
 
-        //cv::Mat hsv = cv::Mat::zeros(pImg.size(), CV_8UC3);
-        //pImg.convertTo(hsv, CV_8UC3, 10.f * 255.f / maxValue);
-        //cv::imshow("hsv", hsv);
+        cv::Mat hsv = cv::Mat::zeros(pImg.size(), CV_8UC3);
+        pImg.convertTo(hsv, CV_8UC3, 10.f * 255.f / maxValue);
+        cv::imshow("hsv", hsv);
 
         message.push_back(atom::FloatValue::create(mHdriStartExposure));
         ldriCount = 0;
