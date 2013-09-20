@@ -216,6 +216,7 @@ class Source_2D : public Source
 
         // HDRi builder
         HdriBuilder mHdriBuilder;
+        bool mHdriContinuous;
         float mHdriStartExposure, mHdriStepSize;
         int mHdriSteps, mHdriFrameSkip;
 

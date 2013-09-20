@@ -333,7 +333,7 @@ void Source_2D::setBaseParameter(atom::Message pParam)
     }
     else if (paramName == "hdri")
     {
-        if (pParam.size() != 5)
+        if (pParam.size() != 6)
             return;
 
         try
@@ -342,6 +342,7 @@ void Source_2D::setBaseParameter(atom::Message pParam)
             mHdriStepSize = atom::toFloat(pParam[2]);
             mHdriSteps = atom::toInt(pParam[3]);
             mHdriFrameSkip = atom::toInt(pParam[4]);
+            mHdriContinuous = (bool)atom::toInt(pParam[5]);
         }
         catch (atom::BadTypeTagError error)
         {
@@ -665,6 +666,8 @@ void Source_2D::createHdri(cv::Mat& pImg)
 {
     static int ldriCount = -1;
     static int skipFrame = 0;
+
+    mHdriBuilder.setContinuous(mHdriContinuous);
     // If we just started HDRI capture, we need to set the exposure to the start value
     atom::Message message;
     message.push_back(atom::StringValue::create("exposureTime"));
@@ -679,9 +682,9 @@ void Source_2D::createHdri(cv::Mat& pImg)
     // Add current frame to the HdriBuilder
     if (skipFrame == 0)
     {
-        g_log(NULL, G_LOG_LEVEL_INFO, "%s - Exposure value for source %i : %f", mClassName.c_str(), mId, getEV());
-        mHdriBuilder.addLDR(&pImg, getEV());
+        mHdriBuilder.addLDR(pImg, getEV());
         ldriCount++;
+        g_log(NULL, G_LOG_LEVEL_INFO, "%s - Exposure value for source %i, HDR step %i : %f", mClassName.c_str(), mId, ldriCount, getEV());
     }
 
     skipFrame = (skipFrame + 1) % mHdriFrameSkip;
@@ -696,6 +699,12 @@ void Source_2D::createHdri(cv::Mat& pImg)
     }
     else
     {
+        message.push_back(atom::FloatValue::create(mHdriStartExposure));
+        ldriCount = 0;
+    }
+
+    if (mHdriContinuous || ldriCount == 0)
+    {
         mHdriBuilder.computeHDRI();
         pImg = mHdriBuilder.getHDRI();
 
@@ -704,12 +713,9 @@ void Source_2D::createHdri(cv::Mat& pImg)
             for (int y = 0; y < pImg.rows; ++y)
                 maxValue = max(maxValue, pImg.at<cv::Vec3f>(y, x)[0]);
 
-        cv::Mat hsv = cv::Mat::zeros(pImg.size(), CV_8UC3);
-        pImg.convertTo(hsv, CV_8UC3, 10.f * 255.f / maxValue);
-        cv::imshow("hsv", hsv);
-
-        message.push_back(atom::FloatValue::create(mHdriStartExposure));
-        ldriCount = 0;
+        //cv::Mat hsv = cv::Mat::zeros(pImg.size(), CV_8UC3);
+        //pImg.convertTo(hsv, CV_8UC3, 255.f / maxValue);
+        //cv::imshow("hdri simple tonemap", hsv);
     }
 
     setParameter(message);

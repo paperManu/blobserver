@@ -6,6 +6,8 @@ using namespace cv;
 /*************/
 HdriBuilder::HdriBuilder()
 {
+    mContinuous = false;
+
     mMinSum = 0.1f;
     mMinExposureIndex = 0;
     mMaxExposureIndex = 0;
@@ -19,12 +21,12 @@ HdriBuilder::~HdriBuilder()
 }
 
 /*************/
-bool HdriBuilder::addLDR(const Mat *pImage, float pEV)
+bool HdriBuilder::addLDR(const Mat& pImage, float pEV)
 {
     LDRi lLDRi;
 
     lLDRi.EV = pEV;
-    lLDRi.image = *pImage;
+    lLDRi.image = pImage;
 
     // Check if this is the first image
     if(mLDRi.size() == 0)
@@ -48,7 +50,12 @@ bool HdriBuilder::addLDR(const Mat *pImage, float pEV)
         bool lResult = true;
         for(int i=0; i<(int)mLDRi.size(); i++)
         {
-            if(mLDRi[i].EV == lLDRi.EV)
+            if(mLDRi[i].EV == lLDRi.EV && mContinuous)
+            {
+                mLDRi[i] = lLDRi;
+                lResult = false;
+            }
+            else if (mLDRi[i].EV == lLDRi.EV)
                 lResult = false;
         }
 
@@ -151,7 +158,9 @@ bool HdriBuilder::computeHDRI()
         }
     }
 
-    mLDRi.clear();
+    if (!mContinuous)
+        mLDRi.clear();
+
     return true;
 }
 

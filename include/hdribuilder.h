@@ -39,9 +39,11 @@ class HdriBuilder
         HdriBuilder();
         ~HdriBuilder();
     
+        void setContinuous(bool val) {mContinuous = val;}
+
         // Adds an LDR image to the list
         // LDRi must be of type RGB8u
-        bool addLDR(const cv::Mat* pImage, float pEV);
+        bool addLDR(const cv::Mat& pImage, float pEV);
 
         // Retrieves the HDRI
         // To call after the HDRI generation
@@ -54,6 +56,9 @@ class HdriBuilder
     private:
         /*****************/
         // Attributes
+        // If mContinous is set to true, LDRi list is never cleared
+        bool mContinuous;
+
         // LDR images list
         std::vector<LDRi> mLDRi;
     
