@@ -170,7 +170,7 @@ bool HdriBuilder::computeHDRI()
 /*************/
 float HdriBuilder::getGaussian(unsigned char pValue) const
 {
-    float lSigma = 40;
+    float lSigma = 8;
     float lMu = 127;
 
     float lValue = 1/(lSigma*2*M_PI)*exp(-(pValue-lMu)*(pValue-lMu)/(2*pow(lSigma,2)));
