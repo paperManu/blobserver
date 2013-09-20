@@ -71,6 +71,9 @@ class HdriBuilder
         // Images with highest and lowest exposures
         unsigned int mMinExposureIndex;
         unsigned int mMaxExposureIndex;
+
+        // LUT to convert between LDR value to a gaussian coeff
+        std::map<uchar, float> mGaussianLUT;
     
         /****************/
         // Methods

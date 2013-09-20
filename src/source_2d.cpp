@@ -74,6 +74,7 @@ Capture_Ptr Source_2D::retrieveFrame()
 {
     if (mUpdated)
     {
+        bool lResult = true;
         cv::Mat buffer = retrieveRawFrame();
 
         if (mAutoExposureRoi.width != 0 && mAutoExposureRoi.height != 0)
@@ -97,10 +98,10 @@ Capture_Ptr Source_2D::retrieveFrame()
         if (mRotation != 0.f)
             rotate(buffer);
         if (mHdriActive)
-            createHdri(buffer);
+            lResult &= createHdri(buffer);
 
         // Some modifiers will not output a valid image every frame
-        if (buffer.rows != 0 && buffer.cols != 0)
+        if (buffer.rows != 0 && buffer.cols != 0 && lResult)
             mCorrectedBuffer = buffer.clone();
 
         if (mSaveToFile)
@@ -662,7 +663,7 @@ void Source_2D::applyAutoExposure(cv::Mat& pImg)
 }
 
 /*************/
-void Source_2D::createHdri(cv::Mat& pImg)
+bool Source_2D::createHdri(cv::Mat& pImg)
 {
     static int ldriCount = -1;
     static int skipFrame = 0;
@@ -676,7 +677,7 @@ void Source_2D::createHdri(cv::Mat& pImg)
         message.push_back(atom::FloatValue::create(mHdriStartExposure));
         setParameter(message);
         ldriCount++;
-        return;
+        return false;
     }
 
     // Add current frame to the HdriBuilder
@@ -684,12 +685,12 @@ void Source_2D::createHdri(cv::Mat& pImg)
     {
         mHdriBuilder.addLDR(pImg, getEV());
         ldriCount++;
-        g_log(NULL, G_LOG_LEVEL_INFO, "%s - Exposure value for source %i, HDR step %i : %f", mClassName.c_str(), mId, ldriCount, getEV());
+        g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Exposure value for source %i, HDR step %i : %f", mClassName.c_str(), mId, ldriCount, getEV());
     }
 
     skipFrame = (skipFrame + 1) % mHdriFrameSkip;
     if (skipFrame != 1)
-        return;
+        return false;
 
     // Change the exposure time for the next frame
     if (ldriCount < mHdriSteps)
@@ -703,22 +704,16 @@ void Source_2D::createHdri(cv::Mat& pImg)
         ldriCount = 0;
     }
 
+    bool lReturn = false;
     if (mHdriContinuous || ldriCount == 0)
     {
         mHdriBuilder.computeHDRI();
         pImg = mHdriBuilder.getHDRI();
-
-        float maxValue = 0.f;
-        for (int x = 0; x < pImg.cols; ++x)
-            for (int y = 0; y < pImg.rows; ++y)
-                maxValue = max(maxValue, pImg.at<cv::Vec3f>(y, x)[0]);
-
-        //cv::Mat hsv = cv::Mat::zeros(pImg.size(), CV_8UC3);
-        //pImg.convertTo(hsv, CV_8UC3, 255.f / maxValue);
-        //cv::imshow("hdri simple tonemap", hsv);
+        lReturn = true;
     }
 
     setParameter(message);
+    return lReturn;
 }
 
 /*************/

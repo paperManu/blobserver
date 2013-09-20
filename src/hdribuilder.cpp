@@ -13,6 +13,9 @@ HdriBuilder::HdriBuilder()
     mMaxExposureIndex = 0;
 
     mHDRi.create(0, 0, CV_32FC3);
+
+    for (uchar i = 0; i < 255; ++i)
+        mGaussianLUT[i] = getGaussian(i);
 }
 
 /*************/
@@ -140,7 +143,7 @@ bool HdriBuilder::computeHDRI()
                     for(unsigned int channel=0; channel<3; channel++)
                     {
                         lLDRPixel = mLDRi[index].image.at<Vec3b>(y, x)[channel];
-                        lCoeff = getGaussian(lLDRPixel);
+                        lCoeff = mGaussianLUT[lLDRPixel]; //getGaussian(lLDRPixel);
                         lSum[channel] += lCoeff;
                         lHDRPixel[channel] += lCoeff*(float)lLDRPixel/127.f*pow(2.0f, mLDRi[index].EV);
                     }

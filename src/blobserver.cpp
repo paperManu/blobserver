@@ -574,6 +574,17 @@ int App::loop()
             if (img.get() != NULL)
             {
                 cv::Mat displayMat = img->get().clone();
+                if (displayMat.depth() == CV_32F)
+                {
+                    float maxValue = 0.f;
+                    for (int x = 0; x < displayMat.cols; ++x)
+                        for (int y = 0; y < displayMat.rows; ++y)
+                            maxValue = max(maxValue, displayMat.at<cv::Vec3f>(y, x)[0]);
+            
+                    cv::Mat buffer = cv::Mat::zeros(displayMat.size(), CV_8UC3);
+                    displayMat.convertTo(buffer, CV_8UC3, 4.f * 255.f / maxValue);
+                    displayMat = buffer;
+                }
                 cv::putText(displayMat, lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
                     cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(0.0), 3.0);
                 cv::putText(displayMat, lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),

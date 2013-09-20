@@ -260,7 +260,7 @@ class Source_2D : public Source
         void applyAutoExposure(cv::Mat& pImg);
 
         // Method to create a HDRI from LDRIs
-        void createHdri(cv::Mat& pImg);
+        bool createHdri(cv::Mat& pImg);
 
         // Method to save the result to an image
         void saveToFile(cv::Mat& pImg);
