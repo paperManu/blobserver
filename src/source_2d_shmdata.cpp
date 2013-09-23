@@ -181,6 +181,7 @@ void Source_2D_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void*
         bool isGray = false;
         bool isYUV = false;
         bool is420 = false;
+        bool isHDR = false;
 
         smatch match;
         string substr, format;
@@ -229,6 +230,11 @@ void Source_2D_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void*
             channels = 3;
         else if (bpp == 32)
             channels = 4;
+        else if (bpp == 96)
+        {
+            channels = 3;
+            isHDR = true;
+        }
         else if (isYUV)
         {
             bpp = 16;
@@ -260,7 +266,10 @@ void Source_2D_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void*
         else if (channels == 2)
             buffer = cv::Mat::zeros(height, width, CV_8UC2);
         else if (channels == 3)
-            buffer = cv::Mat::zeros(height, width, CV_8UC3);
+            if (isHDR)
+                buffer = cv::Mat::zeros(height, width, CV_32FC3);
+            else
+                buffer = cv::Mat::zeros(height, width, CV_8UC3);
         else if (channels == 4)
             buffer = cv::Mat::zeros(height, width, CV_8UC4);
 
@@ -291,9 +300,7 @@ void Source_2D_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void*
             cv::merge(buffers, buffer);
         }
         else
-        {
             memcpy((char*)(buffer.data), (const char*)data, width*height*bpp/8);
-        }
 
         // If present, we dont keep the alpha channel
         if (buffer.channels() > 3)
@@ -303,7 +310,7 @@ void Source_2D_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void*
             buffer = temp;
         }
 
-        if (abs(red) > blue && channels >= 3 && !isGray && !isYUV)
+        if (!isHDR && abs(red) > blue && channels >= 3 && !isGray && !isYUV)
             cvtColor(buffer, buffer, CV_BGR2RGB);
         else if (isYUV && !is420)
             cvtColor(buffer, buffer, CV_YUV2BGR_UYVY);
