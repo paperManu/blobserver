@@ -48,9 +48,9 @@ class Blob
         virtual void setParameter(std::string pParam, float pValue) {};
 
         virtual void init(properties pNewBlob) {};
-        virtual properties predict() {};
+        virtual properties predict() = 0;
         virtual void setNewMeasures(properties pNewBlob) {};
-        virtual float getDistanceFromPrediction(properties pBlob) {};
+        virtual float getDistanceFromPrediction(properties pBlob) = 0;
         
         // Lifetime is linked to the time left for the blob to live if not detected again
         void setLifetime(int time) {mTotalLifetime = mLifetime = time;}

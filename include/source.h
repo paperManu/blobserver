@@ -86,7 +86,7 @@ class Source
         /**
          * \brief Tells the source to grab a frame, without returning it yet
          */
-        virtual bool grabFrame() {}
+        virtual bool grabFrame() {return true;}
 
         /**
          * \brief Returns true if a new grab is available to retrieve
@@ -109,7 +109,7 @@ class Source
          * \param pParam A message containing the name of the parameter
          * \return Returns a message containing the name of the parameter and its current value
          */
-        virtual atom::Message getParameter(atom::Message pParam) const {}
+        virtual atom::Message getParameter(atom::Message pParam) const {return atom::Message();}
 
         /**
          * \brief Gets the name of the source

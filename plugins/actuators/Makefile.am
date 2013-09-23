@@ -9,6 +9,7 @@ plugins_LTLIBRARIES = \
 	libactuatormeanoutliers.la \
 	libactuatornop.la \
 	libactuatorobjonaplane.la \
+    libactuatorpython.la \
 	libactuatorstitch.la
 
 if PCL
@@ -137,6 +138,21 @@ libactuatorobjonaplane_la_CXXFLAGS = \
 	$(GLIB_CFLAGS) \
 	$(OPENCV_CFLAGS) \
 	$(LIBATOM_CFLAGS)
+
+#-------------#
+if PYTHON
+libactuatorpython_la_SOURCES = \
+    python.cpp
+
+libactuatorpython_la_CXXFLAGS = \
+    $(GLIB_CFLAGS) \
+    $(OPENCV_CFLAGS) \
+    $(LIBATOM_CFLAGS) \
+    `python3-config --cflags`
+
+libactuatorpython_la_LDFLAGS = \
+    `python3-config --ldflags`
+endif
 
 #-------------#
 libactuatorstitch_la_SOURCES = \

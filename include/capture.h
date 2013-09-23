@@ -35,7 +35,7 @@ class Capture
         Capture() {};
         ~Capture() {};
 
-        virtual std::string type() {};
+        virtual std::string type() {return std::string("");}
 };
 
 /*************/

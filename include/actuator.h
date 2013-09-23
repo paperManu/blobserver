@@ -77,7 +77,7 @@ class Actuator
          * The two first values in the message are the number of blob, and the size of each blob in the message
          * \param pCaptures A vector containing all captures. Their number should match mSourceNbr.
          */
-        virtual atom::Message detect(const std::vector< Capture_Ptr > pCaptures) {}
+        virtual atom::Message detect(const std::vector< Capture_Ptr > pCaptures) {return atom::Message();}
         
         /**
          * \brief Returns the message from the last call to detect()
