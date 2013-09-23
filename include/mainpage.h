@@ -53,7 +53,7 @@
  * - fisheye (float[2]): fisheye correction (see http://wiki.panotools.org/Fisheye_Projection). Parameters are, in pixels: [fisheyeFocal] [rectilinearFocal] 
  * - vignetting (int[3]): correction of the vignetting (see http://lensfun.berlios.de/lens-calibration/lens-vignetting.html). Parameters are: [k1] [k2] [k3]
  * - iccInputProfile (string): file path to an ICC profile (for color correction)
- * - hdri (int[3]): activates the creation of a HDR image. Parameters are: [startExposure] [stepSize] [nbrSteps].
+ * - hdri (int[5]): activates the creation of a HDR image. Parameters are: [startExposure] [stepSize] [nbrSteps] [frameSkip] [continuousHDRActive].
  * - save (int[2] string): activates the automatic save of grabs. Parameters are: [activation] [period] [filename] 
  * 
  * \subsection source_2d_opencv_sec OpenCV 2D sources (Source_2D_OpenCV)

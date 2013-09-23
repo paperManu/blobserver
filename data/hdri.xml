@@ -8,7 +8,7 @@
             <Subsource>0</Subsource>
             <Param>
                 <Name>framerate</Name>
-                <Value>15</Value>
+                <Value>30</Value>
             </Param>
             <Param>
                 <Name>raw</Name>
@@ -44,7 +44,7 @@
             </Param>
             <Param>
                 <Name>hdri</Name>
-                <Value>0.0001 3.0 4 4 1</Value>
+                <Value>0.0001 3.0 3 5 1</Value>
             </Param>
         </Source>
         <Client>
