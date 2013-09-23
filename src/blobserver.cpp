@@ -582,7 +582,10 @@ int App::loop()
                             maxValue = max(maxValue, displayMat.at<cv::Vec3f>(y, x)[0]);
             
                     cv::Mat buffer = cv::Mat::zeros(displayMat.size(), CV_8UC3);
-                    displayMat.convertTo(buffer, CV_8UC3, 4.f * 255.f / maxValue);
+                    displayMat /= maxValue;
+                    cv::pow(displayMat, 1.0 / 1.8, displayMat);
+                    displayMat *= 2.0 * 255.f;
+                    displayMat.convertTo(buffer, CV_8UC3);
                     displayMat = buffer;
                 }
                 cv::putText(displayMat, lBufferNames[lSourceNumber].c_str(), cv::Point(10, 30),
