@@ -3,6 +3,8 @@
 using namespace std;
 using namespace cv;
 
+#define MAX_WEIGHT 1e10
+
 /*************/
 HdriBuilder::HdriBuilder()
 {
@@ -91,6 +93,31 @@ bool HdriBuilder::computeHDRI()
         return a.EV < b.EV;
     });
 
+    // Convert all LDRi to floating, exposure corrected LDRi
+    for_each (mLDRi.begin(), mLDRi.end(), [&] (LDRi& ldri)
+    {
+        if (ldri.imagef.total() > 0 && ldri.w.total() > 0)
+            return;
+
+        ldri.imagef = cv::Mat::zeros(ldri.image.rows, ldri.image.cols, CV_32FC3);
+        ldri.w = cv::Mat::zeros(ldri.image.rows, ldri.image.cols, CV_32FC3);
+
+        for (uint x = 0; x < (uint)mHDRi.cols; ++x)
+            for (uint y = 0; y < (uint)mHDRi.rows; ++y)
+            {
+                unsigned char lLDRPixel;
+                float lCoeff;
+
+                for(unsigned int channel=0; channel<3; channel++)
+                {
+                    lLDRPixel = ldri.image.at<Vec3b>(y, x)[channel];
+                    lCoeff = mGaussianLUT[lLDRPixel];
+                    ldri.w.at<Vec3f>(y, x)[channel] = lCoeff;
+                    ldri.imagef.at<Vec3f>(y, x)[channel] = lCoeff*(float)lLDRPixel/127.f*pow(2.0f, ldri.EV);
+                }
+            }
+    });
+
     // Calculation of each HDR pixel
     for(unsigned int x=0; x<(unsigned int)mHDRi.cols; x++)
     {
@@ -118,9 +145,9 @@ bool HdriBuilder::computeHDRI()
             }
             // If the most exposed channel is underexposed on one channel
             // we set the pixel to (almost) black
-            else if(mLDRi[0].image.at<Vec3b>(y, x)[0] < 128
-                    && mLDRi[0].image.at<Vec3b>(y, x)[1] < 128
-                    && mLDRi[0].image.at<Vec3b>(y, x)[2] < 128)
+            else if(mLDRi[0].image.at<Vec3b>(y, x)[0] < 64
+                    && mLDRi[0].image.at<Vec3b>(y, x)[1] < 64
+                    && mLDRi[0].image.at<Vec3b>(y, x)[2] < 64)
             {
                 // We will stick to N&B in this case
                 float lValue = 0.263f*(float)mLDRi[0].image.at<Vec3b>(y, x)[0]
@@ -136,18 +163,11 @@ bool HdriBuilder::computeHDRI()
             else
             {
                 for(unsigned int index=0; index<mLDRi.size(); index++)
-                {
-                    unsigned char lLDRPixel;
-                    float lCoeff;
-
                     for(unsigned int channel=0; channel<3; channel++)
                     {
-                        lLDRPixel = mLDRi[index].image.at<Vec3b>(y, x)[channel];
-                        lCoeff = mGaussianLUT[lLDRPixel]; //getGaussian(lLDRPixel);
-                        lSum[channel] += lCoeff;
-                        lHDRPixel[channel] += lCoeff*(float)lLDRPixel/127.f*pow(2.0f, mLDRi[index].EV);
+                        lHDRPixel[channel] += mLDRi[index].imagef.at<Vec3f>(y, x)[channel];
+                        lSum[channel] += mLDRi[index].w.at<Vec3f>(y, x)[channel];
                     }
-                }
             }
 
             // We divide by the sum of gaussians to get the final values

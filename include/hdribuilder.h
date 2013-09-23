@@ -27,12 +27,16 @@
 
 #include <opencv2/opencv.hpp>
 
+/*************/
 struct LDRi
 {
     cv::Mat image;
     float EV;
+    cv::Mat imagef;
+    cv::Mat w;
 };
 
+/*************/
 class HdriBuilder
 {
     public:
@@ -61,7 +65,7 @@ class HdriBuilder
 
         // LDR images list
         std::vector<LDRi> mLDRi;
-    
+
         // Computed HDRi
         cv::Mat mHDRi;
     

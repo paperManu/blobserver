@@ -27,12 +27,8 @@
                 <Value>600</Value>
             </Param>
             <Param>
-                <Name>exposureTime</Name>
-                <Value>512</Value>
-            </Param>
-            <Param>
                 <Name>gain</Name>
-                <Value>512</Value>
+                <Value>0</Value>
             </Param>
             <Param>
                 <Name>gamma</Name>
@@ -48,7 +44,7 @@
             </Param>
             <Param>
                 <Name>hdri</Name>
-                <Value>0.00005 2.0 4 4 1</Value>
+                <Value>0.0001 3.0 4 4 1</Value>
             </Param>
         </Source>
         <Client>
