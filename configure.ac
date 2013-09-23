@@ -77,10 +77,6 @@ PKG_CHECK_MODULES([PCL], [pcl_filters-1.7 pcl_common-1.7 pcl_octree-1.7 pcl_samp
     AC_DEFINE([HAVE_PCL], [0], [Defined to 1 if pcl-1.7 is detected]))
 AM_CONDITIONAL(PCL, test -n "$PCL_LIBS")
 
-# Boost (needed for PCL...)
-BOOST_REQUIRE([1.48])
-BOOST_SYSTEM
-
 # Liblo
 PKG_CHECK_MODULES([LIBLO], [liblo >= 0.26])
 if test "x${have_liblo}" = "xfalse" ; then
