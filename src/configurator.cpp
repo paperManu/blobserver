@@ -482,16 +482,16 @@ int Configurator::oscHandlerConnect(const char* path, const char* types, lo_arg*
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
 
-    if (message.size() < 2)
+    if (message.size() < 1)
     {
         g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s - Error detected in the connect result: message is too short to be well formed", __FILE__, __FUNCTION__);
         return 1;
     }
     
-    if (string(&types[1]) == string("s"))
+    if (string(&types[0]) == string("s"))
     {
         // Error detected when trying to create flow
-        string error = atom::toString(message[1]);
+        string error = atom::toString(message[0]);
         g_log(NULL, G_LOG_LEVEL_WARNING, "%s::%s - %s", __FILE__, __FUNCTION__, error.c_str());
         return 1;
     }
