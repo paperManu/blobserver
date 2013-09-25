@@ -41,7 +41,15 @@ class Parallel_Detect : public cv::ParallelLoopBody
 
                 if (_margin > 0.f)
                 {
-                    float distance = _svm->predict(descriptionMat, true);
+                    float distance;
+                    try
+                    {
+                        distance = _svm->predict(descriptionMat, true);
+                    }
+                    catch (cv::Exception)
+                    {
+                        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - An exception happened during a call to CvSVM::predict. Is the model file correct?", Actuator_Hog::getClassName().c_str());
+                    }
                     if (distance < -_margin)
                     {
                         lock_guard<mutex> lock(*mMutex.get());
@@ -50,7 +58,15 @@ class Parallel_Detect : public cv::ParallelLoopBody
                 }
                 else
                 {
-                    float distance = _svm->predict(descriptionMat, false);
+                    float distance;
+                    try
+                    {
+                        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - An exception happened during a call to CvSVM::predict. Is the model file correct?", Actuator_Hog::getClassName().c_str());
+                    }
+                    catch (cv::Exception)
+                    {
+                        g_log(NULL, G_LOG_LEVEL_WARNING, "error!");
+                    }
                     if (distance == 1.f)
                     {
                         lock_guard<mutex> lock(*mMutex.get());
