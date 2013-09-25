@@ -69,7 +69,8 @@ blobserver_CXXFLAGS = \
 
 blobserver_LDFLAGS = \
 	-rdynamic \
-	-ldl
+	-ldl \
+    -export-dynamic
 
 blobserver_LDADD = \
     $(ARAVIS_LIBS) \

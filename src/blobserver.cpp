@@ -354,9 +354,9 @@ void App::loadPlugins()
             string path = prefix + strFilename;
             void* handler;
             if (gDebug)
-                handler = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
+                handler = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
             else
-                handler = dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL);
+                handler = dlopen(path.c_str(), RTLD_LAZY | RTLD_GLOBAL);
 
             if (handler == NULL)
             {

@@ -9,8 +9,12 @@ plugins_LTLIBRARIES = \
 	libactuatormeanoutliers.la \
 	libactuatornop.la \
 	libactuatorobjonaplane.la \
-    libactuatorpython.la \
 	libactuatorstitch.la
+
+if PYTHON
+plugins_LTLIBRARIES += \
+    libactuatorpython.la
+endif
 
 if PCL
 plugins_LTLIBRARIES += \
@@ -148,10 +152,11 @@ libactuatorpython_la_CXXFLAGS = \
     $(GLIB_CFLAGS) \
     $(OPENCV_CFLAGS) \
     $(LIBATOM_CFLAGS) \
-    `python3-config --cflags`
+    `python-config --cflags`
 
 libactuatorpython_la_LDFLAGS = \
-    `python3-config --ldflags`
+    `python-config --ldflags` \
+    -Xlinker -export-dynamic
 endif
 
 #-------------#
