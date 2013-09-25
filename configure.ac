@@ -112,7 +112,7 @@ PKG_CHECK_MODULES([ARAVIS], aravis-0.4,
     AC_DEFINE([HAVE_ARAVIS], [0], [Defined to 0 if aravis is detected]))
 
 # Python
-PKG_CHECK_MODULES([PYTHON], python3,
+PKG_CHECK_MODULES([PYTHON], python,
     AC_DEFINE([HAVE_PYTHON], [1], [Defined to 1 if python3 is detected]),
     AC_DEFINE([HAVE_PYTHON], [0], [Defined to 1 if python3 is detected]))
 AM_CONDITIONAL(PYTHON, test -n "$PYTHON_LIBS")
