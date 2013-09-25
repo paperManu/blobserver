@@ -38,7 +38,7 @@ We need the latest version of OpenCV, which is not yet packaged for Ubuntu. So:
   git checkout 2.4.6
   mkdir build
   cd build
-  cmake -DCMAKE_BUILD_TYPE=Release ..
+  cmake -DCMAKE_BUILD_TYPE=Release -DWITH_TBB=ON ..
   make
   sudo make install
 
@@ -50,3 +50,34 @@ Then we can compile blobserver:
   sudo make install
   sudo ldconfig
 
+Optional installation
+---------------------
+Some parts of blobserver are not mandatory, and you need some additional packages to build them. The following commands must be entered before the compiling of blobserver
+
+--> PCL support (for point cloud support):
+  cd ..
+  git clone https://github.com/PointCloudLibrary/pcl pcl	
+  cd pcl
+  git checkout pcl-1.7.0
+  mkdir build
+  cd build
+  cmake ..
+  make && sudo make install
+  cd ../blobserver/
+
+--> LibMapper support (for automatic OSC discovery):
+  cd ..
+  git clone git@github.com:libmapper/libmapper.git
+  cd libmapper
+  ./autogen.sh
+  ./configure
+  make && sudo make install
+  cd ../blobserver/
+
+--> Aravis support (for GiGe cameras):
+  cd ..
+  git clone git://git.gnome.org/aravis
+  cd aravis
+  ./autogen.sh
+  make && sudo make install
+  cd ../blobserver/

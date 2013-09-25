@@ -177,6 +177,8 @@ void Actuator_Python::setParameter(atom::Message pMessage)
             g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Error while loading python module %s. Maybe the function %s is not defined?", mClassName.c_str(), filename.c_str(), filename.c_str());
 
         mOscPath = filename;
+
+        fclose(file);
     }
     setBaseParameter(pMessage);
 }
