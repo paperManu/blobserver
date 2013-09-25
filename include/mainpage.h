@@ -139,7 +139,7 @@
  *
  * OSC output:
  * - name: bgsubtractor
- * - values: X(int) Y(int) Size(int) dX(float) dY(float) Id(int) Age(int) lostDuration(int)
+ * - values: Id(int) X(int) Y(int) Size(int) dX(float) dY(float) Age(int) lostDuration(int)
  *
  * \subsection actuator_clusterpcl_sec Clusters of point clouds (Actuator_ClusterPcl)
  *
@@ -171,7 +171,7 @@
  *
  * OSC output:
  * - name: depthtouch
- * - values: X(int) Y(int) dX(float) dY(float) Id(int)
+ * - values: Id(int) X(int) Y(int) dX(float) dY(float)
  *
  * \subsection actuator_hog_sec Histogram of Oriented Gradients (Actuator_Hog)
  *
@@ -199,7 +199,7 @@
  *
  * OSC output:
  * - name: hog
- * - values: X(int) Y(int) dX(int) dY(int) Id(int) Age(int) lostDuration(int)
+ * - values: Id(int) X(int) Y(int) dX(int) dY(int) Age(int) lostDuration(int)
  * 
  * \subsection actuator_lightspot_sec Light spots (Actuator_LightSpots)
  * 
@@ -215,7 +215,7 @@
  * 
  * OSC output:
  * - name: lightSpots
- * - values: X(int) Y(int) Size(int) dX(int) dY(int) Id(int)
+ * - values: Id(int) X(int) Y(int) Size(int) dX(int) dY(int)
  * 
  * \subsection actuator_mean_outliers_sec Mean outliers (Actuator_MeanOutliers)
  * 
@@ -231,7 +231,7 @@
  * 
  * OSC output:
  * - name: meanOutliers
- * - values: X(int) Y(int) Size(int) dX(int) dY(int)
+ * - values: Id(int) X(int) Y(int) Size(int) dX(int) dY(int)
  *
  * \subsection actuator_objonaplane_sec Objects on a plane (Actuator_ObjOnAPlane)
  *
