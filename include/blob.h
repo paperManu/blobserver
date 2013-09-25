@@ -33,8 +33,8 @@ class Blob
     // A struct to describe blobs
     struct properties
     {
-        cv::Point position;
-        cv::Point speed;
+        cv::Point2f position;
+        cv::Point2f speed;
         cv::Mat colorHist;
         float orientation;
         float size;
