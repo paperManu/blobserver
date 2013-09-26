@@ -28,7 +28,7 @@
             </Param>
             <Param>
                 <Name>processNoiseCov</Name>
-                <Value>1e-7</Value>
+                <Value>1e-6</Value>
             </Param>
             <Param>
                 <Name>measurementNoiseCov</Name>

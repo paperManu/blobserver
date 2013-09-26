@@ -120,6 +120,10 @@
  * - maxManhattanDistance (float, default 0.1): maximum distance between the center of the arm's cloud and its neighbours
  * - minCloudSize (int, default 50): if the number of points in the cloud is lower than this value, the position is not outputted (used to get rid of noise)
  *
+ * OSC output:
+ * - name: armPcl
+ * - values: Id(int) X(float) Y(float) Z(float)
+ *
  * \subsection actuator_bgsubtractor_sec Background subtractor using mixtures of gaussians as models (Actuator_BgSubtractor)
  *
  * This actuator detects objects based on a model of the background which uses mixture of gaussians. It is mostly based on the implementation from OpenCV (http://docs.opencv.org/modules/video/doc/motion_analysis_and_object_tracking.html?#BackgroundSubtractorMOG2%20:%20public%20BackgroundSubtractor).
@@ -143,7 +147,7 @@
  *
  * \subsection actuator_clusterpcl_sec Clusters of point clouds (Actuator_ClusterPcl)
  *
- * This actuator outputs the number of distinct clusters it can find in the input point cloud
+ * This actuator outputs the position of each cluster it can find in a point cloud.
  *
  * Number of source(s) needed: 1 Source_3D
  *
@@ -151,6 +155,10 @@
  * - minClusterSize (int, default 50): minimum number of points for a cluster to be kept
  * - maxClusterSize (int, default 25000): maximum number of points for a cluster to be kept
  * - clusterTolerance (float, default 0.03): maximum distance between two points to consider them as neighbours
+ *
+ * OSC output:
+ * - name: clusterPcl
+ * - values: Id(int) X(float) Y(float) Z(float)
  *
  * \subsection actuator_depthtouch_sec Adding touch interaction to surfaces using depth map (Actuator_DepthTouch)
  *
@@ -172,6 +180,18 @@
  * OSC output:
  * - name: depthtouch
  * - values: Id(int) X(int) Y(int) dX(float) dY(float) contact(int)
+ *
+ * \subsection actuator_fiducialtracker_sec Fiducial markers tracking (Actuator_FiducialTracker)
+ *
+ * This actuator is dedicated to tracking fiducial markers like the one used for reacTIVision (see http://reactivision.sourceforge.net/). The marker detection has been taken from reacTIVision and integrated inside blobserver, so that it can take advantage of the other functionalities of blobserver like camera stitching.
+ *
+ * Number of source(s) needed: 1 Source_2D
+ *
+ * Available parameters: None
+ *
+ * OSC output:
+ * - name: fiducialtracker
+ * - values: Id(int) X(float) Y(float) angle(float)
  *
  * \subsection actuator_hog_sec Histogram of Oriented Gradients (Actuator_Hog)
  *
@@ -250,6 +270,23 @@
  * - minBlobArea (int, default 32): minimum size of a blob to not be considered as noise.
  * - maxTrackedBlobs (int, default 16): maximum number of blobs to track
  *
+ * OSC output:
+ * - name: objOnAPlane
+ * - values: Id(int) X(int) Y(int) Size(int) dX(int) dY(int)
+ *
+ * \subsection actuator_python_sec Python scripted actuator (Actuator_Python)
+ *
+ * Use the power of Python to prototype new actuators! The input script must contain a function with the same name as the file, and a single parameter: the input image as a list of integers. Its output must be a list of numbers.
+ *
+ * Number of source(s) needed: 1 Source_2D
+ *
+ * Available parameters:
+ * - file (string): filename of the python script, without extension.
+ *
+ * OSC output:
+ * - name: same as the 'file' parameter
+ * - values: depends on what the Python script outputs.
+ *
  * \subsection actuator_stitch_sec Stitching (Actuator_Stitch)
  * 
  * This actuator stitches any number of 2D images into one, according to the input parameters.
@@ -259,6 +296,8 @@
  * Available parameters:
  * - cropInput (int[5], no default): crop parameters for the source given by the first value. Parameters are: [sourceIndex] [x] [y] [width] [height]
  * - transform (float[4], no default): translation and rotation parameters for the given source. Parameters are: [sourceIndex] [x] [y] [angle in degree]
+ *
+ * OSC output: None
  *
  **************
  * \section howto_xml_sec How to use Blobserver - Configuration through a XML file
