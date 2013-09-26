@@ -171,7 +171,7 @@
  *
  * OSC output:
  * - name: depthtouch
- * - values: Id(int) X(int) Y(int) dX(float) dY(float)
+ * - values: Id(int) X(int) Y(int) dX(float) dY(float) contact(int)
  *
  * \subsection actuator_hog_sec Histogram of Oriented Gradients (Actuator_Hog)
  *

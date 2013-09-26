@@ -207,6 +207,14 @@ atom::Message Actuator_DepthTouch::detect(const vector< Capture_Ptr > pCaptures)
         else
             property.contact = 0;
 
+        if (isnan(property.position.x) || isnan(property.position.y) || isnan(property.wrist.x) || isnan(property.wrist.y))
+        {
+            property.position.x = 0.f;
+            property.position.y = 0.f;
+            property.wrist.x = 0.f;
+            property.wrist.y = 0.f;
+        }
+
         properties.push_back(property);
     }
 
