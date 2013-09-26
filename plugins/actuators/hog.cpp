@@ -48,7 +48,7 @@ class Parallel_Detect : public cv::ParallelLoopBody
                     }
                     catch (cv::Exception)
                     {
-                        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - An exception happened during a call to CvSVM::predict. Is the model file correct?", Actuator_Hog::getClassName().c_str());
+                        g_log(NULL, G_LOG_LEVEL_ERROR, "%s - An exception happened during a call to CvSVM::predict. Is the model file correct?", Actuator_Hog::getClassName().c_str());
                     }
                     if (distance < -_margin)
                     {
@@ -61,7 +61,7 @@ class Parallel_Detect : public cv::ParallelLoopBody
                     float distance;
                     try
                     {
-                        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - An exception happened during a call to CvSVM::predict. Is the model file correct?", Actuator_Hog::getClassName().c_str());
+                        g_log(NULL, G_LOG_LEVEL_ERROR, "%s - An exception happened during a call to CvSVM::predict. Is the model file correct?", Actuator_Hog::getClassName().c_str());
                     }
                     catch (cv::Exception)
                     {
