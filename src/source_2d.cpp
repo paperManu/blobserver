@@ -29,6 +29,7 @@ Source_2D::Source_2D()
 
     mScale = 1.f;
     mRotation = 0.f;
+    mScaleValues = 1.f;
 
     mCorrectDistortion = false;
     mCorrectFisheye = false;
@@ -97,6 +98,8 @@ Capture_Ptr Source_2D::retrieveFrame()
             scale(buffer);
         if (mRotation != 0.f)
             rotate(buffer);
+        if (mScaleValues != 1.f)
+            buffer *= mScaleValues;
         if (mHdriActive)
             lResult &= createHdri(buffer);
 
@@ -185,6 +188,10 @@ void Source_2D::setBaseParameter(atom::Message pParam)
     else if (paramName == "rotation")
     {
         readParam(pParam, mRotation);
+    }
+    else if (paramName == "scaleValues")
+    {
+        readParam(pParam, mScaleValues);
     }
     else if (paramName == "distortion")
     {

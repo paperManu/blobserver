@@ -195,6 +195,7 @@ class Source_2D : public Source
         // Basic geometric correction parameters
         float mScale;
         float mRotation;
+        float mScaleValues;
 
         // Distorsion parameters
         bool mCorrectDistortion; //!< Flag set if distortion correction is activated

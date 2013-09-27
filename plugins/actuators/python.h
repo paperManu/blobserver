@@ -45,16 +45,12 @@ class Actuator_Python : public Actuator
         atom::Message detect(std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
-        Capture_Ptr getOutput() const {return mCapture;}
-
     private:
         static std::string mClassName;
         static std::string mDocumentation;
 
         static unsigned int mSourceNbr;
         unsigned int mFrameNumber;
-
-        Capture_Ptr mCapture;
 
         bool mIsFileLoaded;
         PyObject* mPythonMain;
