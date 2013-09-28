@@ -118,7 +118,7 @@ void Actuator_MirrorBall::setParameter(atom::Message pMessage)
     {
         float fov;
         if (readParam(pMessage, fov))
-            mFOV = max(0.1f, fov);
+            mFOV = max(0.1f, (float)(fov * M_PI / 180.f));
     }
     else if (cmd == "reflectance")
     {
@@ -254,6 +254,7 @@ void Actuator_MirrorBall::getDistanceFromCamera()
     alpha = abs(alpha);
 
     mCameraDistance = mSphereDiameter / (2.f * tan(alpha / 2.f)) + lCorrection;
+    cout << mCameraDistance << endl;
 }
 
 /*************/
