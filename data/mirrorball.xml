@@ -4,15 +4,15 @@
             <Type>Actuator_MirrorBall</Type>
             <Param>
                 <Name>sphereDiameter</Name>
-                <Value>50</Value>
+                <Value>30</Value>
             </Param>
             <Param>
                 <Name>sphere</Name>
                 <Value>320 240 240</Value>
             </Param>
             <Param>
-                <Name>distance</Name>
-                <Value>100</Value>
+                <Name>fov</Name>
+                <Value>45</Value>
             </Param>
         </Actuator>
         <Source>
@@ -33,18 +33,6 @@
             <Param>
                 <Name>height</Name>
                 <Value>480</Value>
-            </Param>
-            <Param>
-                <Name>autoExposure</Name>
-                <Value>300 200 80 40 127 32 0.05</Value>
-            </Param>
-            <Param>
-                <Name>whiteBalanceRed</Name>
-                <Value>512</Value>
-            </Param>
-            <Param>
-                <Name>whiteBalanceBlue</Name>
-                <Value>512</Value>
             </Param>
         </Source>
         <Client>

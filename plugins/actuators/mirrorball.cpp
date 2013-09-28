@@ -35,8 +35,10 @@ void Actuator_MirrorBall::make()
     mSphereReflectance = 1.f;
     mCameraDistance = 1.f;
 
-    mTrackingLength = 1;
-    mThreshold = 1.f;
+    mFixedSphere = false;
+
+    mTrackingLength = 30;
+    mThreshold = 3.f;
 }
 
 /*************/
@@ -48,12 +50,19 @@ atom::Message Actuator_MirrorBall::detect(vector< Capture_Ptr > pCaptures)
     cv::Mat capture = captures[0];
     
     mImage = capture;
-    if (mSphere[2] == 0.f)
+    if (!mFixedSphere)
     {
         mSphere = detectSphere();
+        mSphere = filterSphere(mSphere);
         if (mSphere[2] == 0.f)
             return mLastMessage;
+
+        g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Sphere detected at position (%f, %f), radius %f", mClassName.c_str(), mSphere[0], mSphere[1], mSphere[2]);
     }
+
+    int panoWidth = round(2 * M_PI * mSphere[2]);
+    if (mEquiImage.cols != panoWidth)
+        mEquiImage.create(panoWidth / 2, panoWidth, mImage.type());
 
     mSphereImage = capture(cv::Rect(mSphere[0]-mSphere[2], mSphere[1]-mSphere[2], mSphere[2]*2.f, mSphere[2]*2.f));
     if (mProjectionMap.total() == 0)
@@ -62,7 +71,7 @@ atom::Message Actuator_MirrorBall::detect(vector< Capture_Ptr > pCaptures)
         createTransformationMap();
     }
 
-    //mSphereImage(cv::Rect(0, 0, 1, 1)).setTo(0);
+    mSphereImage(cv::Rect(0, 0, 1, 1)).setTo(0);
 
     cv::Mat remappedImage;
     remap(mSphereImage, remappedImage, mProjectionMap, cv::Mat(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
@@ -103,6 +112,7 @@ void Actuator_MirrorBall::setParameter(atom::Message pMessage)
          if (!readParam(pMessage, sphere[2], 3))
             return;
          mSphere = sphere;
+         mFixedSphere = true;
     }
     else if (cmd == "fov")
     {
@@ -135,8 +145,7 @@ void Actuator_MirrorBall::setParameter(atom::Message pMessage)
 /*************/
 cv::Vec3f Actuator_MirrorBall::detectSphere()
 {
-    cv::Mat image, buffer;
-
+    cv::Mat buffer;
     cv::cvtColor(mImage, buffer, CV_BGR2GRAY);
     cv::GaussianBlur(buffer, buffer, cv::Size(3, 3), 2, 2);
     cv::equalizeHist(buffer, buffer);
@@ -148,10 +157,68 @@ cv::Vec3f Actuator_MirrorBall::detectSphere()
         return cv::Vec3f(0.f, 0.f, 0.f);
 
     if (circles[0][0] + circles[0][2] > mImage.cols || circles[0][0] - circles[0][2] < 0
-        || circles[0][1] + circles[0][2] > image.rows || circles[0][1] - circles[0][2] < 0)
+        || circles[0][1] + circles[0][2] > mImage.rows || circles[0][1] - circles[0][2] < 0)
         return cv::Vec3f(0.f, 0.f, 0.f);
 
     return circles[0];
+}
+
+/*************/
+cv::Vec3f Actuator_MirrorBall::filterSphere(cv::Vec3f newSphere)
+{
+    if (newSphere[2] != 0.f)
+    {
+        if (mSpherePositions.size() >= mTrackingLength)
+            mSpherePositions.erase(mSpherePositions.begin());
+        mSpherePositions.push_back(newSphere);
+    }
+    else if (mSpherePositions.size() == 0)
+        return cv::Vec3f(0.f, 0.f, 0.f);
+
+    cv::Vec3f sum(0.f, 0.f, 0.f);
+    cv::Vec3f sum2(0.f, 0.f, 0.f);
+    for (uint index = 0; index < (uint)mSpherePositions.size(); ++index)
+    {
+        sum += mSpherePositions[index];
+        sum2 += mSpherePositions[index].mul(mSpherePositions[index]);
+    }
+    sum *= (1.f / (float)mSpherePositions.size());
+    sum2 *= (1.f / (float)mSpherePositions.size());
+
+    cv::Vec3f sigma;
+    sigma[0] = sqrtf(sum2[0] - sum[0]*sum[0]);
+    sigma[1] = sqrtf(sum2[1] - sum[1]*sum[1]);
+    sigma[2] = sqrtf(sum2[2] - sum[1]*sum[1]);
+
+    cv::Vec3f filtered(0.f, 0.f, 0.f);
+    for (uint index = 0; index < (uint)mSpherePositions.size(); ++index)
+    {
+        if (mSpherePositions[index][0] - sum[0] > 2*sigma[0]
+            || mSpherePositions[index][1] - sum[1] > 2*sigma[1]
+            || mSpherePositions[index][2] - sum[2] > 2*sigma[2])
+        {
+            mSpherePositions.erase(mSpherePositions.begin() + index);
+            index--;
+        }
+        else
+            filtered += mSpherePositions[index];
+    }
+
+    filtered *= 1.f / (float)mSpherePositions.size();
+
+    if (newSphere[2] != 0.f)
+    {
+        float distance = sqrtf(powf(newSphere[0] - filtered[0], 2.f) + powf(newSphere[1] - filtered[1], 2.f));
+        float sigmaDist = sqrtf(sigma[0]*sigma[0] + sigma[1]*sigma[1]);
+        if ((distance > mThreshold * sigmaDist) && !(mThreshold == 0.f))
+        {
+            mSpherePositions.clear();
+            mSpherePositions.push_back(newSphere);
+            return newSphere;
+        }
+    }
+
+    return filtered;
 }
 
 /*************/
@@ -212,12 +279,12 @@ void Actuator_MirrorBall::createTransformationMap()
             }
         }
 
-    vector<cv::Mat> channels;
-    cv::split(mProjectionMap, channels);
-    cv::imshow("c1", cv::abs(channels[0] / M_PI));
-    cv::imshow("c2", cv::abs(channels[1] / M_PI));
-
     projectionMapFromDirections();
+
+    //vector<cv::Mat> channels;
+    //cv::split(mProjectionMap, channels);
+    //cv::imshow("c1", cv::abs(channels[0] / M_PI));
+    //cv::imshow("c2", cv::abs(channels[1] / M_PI));
 }
 
 /*************/
@@ -345,5 +412,7 @@ void Actuator_MirrorBall::projectionMapFromDirections()
     cv::dilate(backMap, buffer, cv::Mat(), cv::Point(-1, -1), 4);
     mProjectionMap = backMap;
     cv::add(mProjectionMap, buffer, mProjectionMap, mask, mProjectionMap.type());
-    mProjectionMap = buffer;
+
+    cv::resize(buffer, buffer, cv::Size(mEquiImage.cols, mEquiImage.cols));
+    mProjectionMap = buffer(cv::Rect(0, (buffer.rows - mEquiImage.rows) / 2, buffer.cols, mEquiImage.rows));
 }
