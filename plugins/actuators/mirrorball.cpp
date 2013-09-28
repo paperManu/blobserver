@@ -254,7 +254,6 @@ void Actuator_MirrorBall::getDistanceFromCamera()
     alpha = abs(alpha);
 
     mCameraDistance = mSphereDiameter / (2.f * tan(alpha / 2.f)) + lCorrection;
-    cout << mCameraDistance << endl;
 }
 
 /*************/
@@ -281,11 +280,6 @@ void Actuator_MirrorBall::createTransformationMap()
         }
 
     projectionMapFromDirections();
-
-    //vector<cv::Mat> channels;
-    //cv::split(mProjectionMap, channels);
-    //cv::imshow("c1", cv::abs(channels[0] / M_PI));
-    //cv::imshow("c2", cv::abs(channels[1] / M_PI));
 }
 
 /*************/
@@ -408,11 +402,50 @@ void Actuator_MirrorBall::projectionMapFromDirections()
             }
         }
 
+    vector<cv::Mat> channels;
+    cv::split(backMap, channels);
+    cv::imshow("1c1", cv::abs(channels[0] / size.width));
+    cv::imshow("1c2", cv::abs(channels[1] / size.height));
+    cv::imshow("mask", mask);
+
+    //for (int y = 0; y < size.height; ++y)
+    //{
+    //    cv::Vec2f prev, next;
+    //    int prevPos = 0, nextPos = 0;
+    //    for (int x = 0; x < size.width; ++x)
+    //    {
+    //        if (mask.at<uchar>(y, x) < 255)
+    //        {
+    //            for (int xx = x+1; xx < size.width; ++xx)
+    //            {
+    //                if (mask.at<uchar>(y, xx) == 255)
+    //                {
+    //                    next = backMap.at<cv::Vec2f>(y, xx);
+    //                    nextPos = xx;
+    //                }
+    //            }
+
+    //            if (nextPos <= prevPos)
+    //            {
+    //                next = mProjectionMap.at<cv::Vec2f>(y, size.width);
+    //                nextPos = size.width;
+    //            }
+
+    //            float coeff = (float)(x - prevPos) / (float)(nextPos - prevPos);
+    //            backMap.at<cv::Vec2f>(y, x) = prev * coeff + next * (1.f - coeff);
+    //        }
+    //        else
+    //        {
+    //            prev = backMap.at<cv::Vec2f>(y, x);
+    //            prevPos = x;
+    //        }
+    //    }
+    //}
+
     mask = 255 - mask;
     cv::Mat buffer = cv::Mat::zeros(mProjectionMap.size(), mProjectionMap.type());
     cv::dilate(backMap, buffer, cv::Mat(), cv::Point(-1, -1), 4);
-    mProjectionMap = backMap;
-    cv::add(mProjectionMap, buffer, mProjectionMap, mask, mProjectionMap.type());
+    cv::add(backMap, buffer, mProjectionMap, mask, mProjectionMap.type());
 
     cv::resize(buffer, buffer, cv::Size(mEquiImage.cols, mEquiImage.cols));
     mProjectionMap = buffer(cv::Rect(0, (buffer.rows - mEquiImage.rows) / 2, buffer.cols, mEquiImage.rows));
