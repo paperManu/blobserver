@@ -193,9 +193,9 @@ cv::Vec3f Actuator_MirrorBall::filterSphere(cv::Vec3f newSphere)
     cv::Vec3f filtered(0.f, 0.f, 0.f);
     for (uint index = 0; index < (uint)mSpherePositions.size(); ++index)
     {
-        if (mSpherePositions[index][0] - sum[0] > 2*sigma[0]
-            || mSpherePositions[index][1] - sum[1] > 2*sigma[1]
-            || mSpherePositions[index][2] - sum[2] > 2*sigma[2])
+        if (mSpherePositions[index][0] - sum[0] > sigma[0]
+            || mSpherePositions[index][1] - sum[1] > sigma[1]
+            || mSpherePositions[index][2] - sum[2] > sigma[2])
         {
             mSpherePositions.erase(mSpherePositions.begin() + index);
             index--;
