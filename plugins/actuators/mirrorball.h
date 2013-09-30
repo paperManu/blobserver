@@ -52,12 +52,12 @@ class Actuator_MirrorBall : public Actuator
 
         cv::Mat mImage;
         cv::Mat mSphereImage; // image cropped to contain only the chromed sphere
-        cv::Mat mEquiImage;
 
         float mFOV, mCroppedFOV; // FOV of the whole image, FOV of the cropped one
         cv::Vec3f mSphere; // position and radius of the sphere projection in the input image
         std::vector<cv::Vec3f> mSpherePositions; // Positions of the sphere in the mTrackingLenght previous images
         bool mFixedSphere; // If mSphere is set by the config file, this is true
+        int mPanoWidth;
 
         float mSphereDiameter; // Real sphere radius in mm
         float mSphereReflectance;

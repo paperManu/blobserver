@@ -34,6 +34,7 @@ void Actuator_MirrorBall::make()
     mSphereDiameter = 1.f;
     mSphereReflectance = 1.f;
     mCameraDistance = 1.f;
+    mPanoWidth = 512;
 
     mFixedSphere = false;
 
@@ -60,9 +61,7 @@ atom::Message Actuator_MirrorBall::detect(vector< Capture_Ptr > pCaptures)
         g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Sphere detected at position (%f, %f), radius %f", mClassName.c_str(), mSphere[0], mSphere[1], mSphere[2]);
     }
 
-    int panoWidth = round(2 * M_PI * mSphere[2]);
-    if (mEquiImage.cols != panoWidth)
-        mEquiImage.create(panoWidth / 2, panoWidth, mImage.type());
+    mPanoWidth = round(M_PI * mSphere[2]);
 
     mSphereImage = capture(cv::Rect(mSphere[0]-mSphere[2], mSphere[1]-mSphere[2], mSphere[2]*2.f, mSphere[2]*2.f));
     if (mProjectionMap.total() == 0)
@@ -437,6 +436,6 @@ void Actuator_MirrorBall::projectionMapFromDirections()
         }
     }
     cv::Mat buffer;
-    cv::resize(backMap, buffer, cv::Size(mEquiImage.cols, mEquiImage.cols));
-    mProjectionMap = buffer(cv::Rect(0, (buffer.rows - mEquiImage.rows) / 2, buffer.cols, mEquiImage.rows));
+    cv::resize(backMap, buffer, cv::Size(mPanoWidth, mPanoWidth));
+    mProjectionMap = buffer(cv::Rect(0, (buffer.rows - mPanoWidth / 2) / 2, buffer.cols, mPanoWidth / 2));
 }
