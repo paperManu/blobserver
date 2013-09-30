@@ -14,12 +14,12 @@ Source::Source():
 
     mFramerate = 0;
 
-    mSubsourceNbr = 0;
-    mId = 0;
+    mSubsourceNbr = string();
+    mId = string();
 }
 
 /************/
-Source::Source(int pParam)
+Source::Source(string pParam)
 {
     Source();
 }

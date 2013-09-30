@@ -10,20 +10,21 @@ std::string Source_3D_Shmdata::mDocumentation = "N/A";
 /*************/
 Source_3D_Shmdata::Source_3D_Shmdata()
 {
-    make(0);
+    make(string());
 }
 
 /*************/
-Source_3D_Shmdata::Source_3D_Shmdata(int pParam)
+Source_3D_Shmdata::Source_3D_Shmdata(string pParam)
 {
     make(pParam);
 }
 
 /*************/
-void Source_3D_Shmdata::make(int pParam)
+void Source_3D_Shmdata::make(string pParam)
 {
     mName = mClassName;
     mSubsourceNbr = pParam;
+    mId = pParam;
 }
 
 /*************/
@@ -83,11 +84,6 @@ void Source_3D_Shmdata::setParameter(atom::Message pParam)
 
         mShm.reset(new ShmPointCloud<pcl::PointXYZRGBA>(location.c_str(), false));
     }
-    else if (paramName == "cameraNumber")
-    {
-        if (readParam(pParam, paramValue))
-            mSubsourceNbr = (unsigned int)paramValue;
-    }
 }
 
 /*************/
@@ -112,9 +108,9 @@ atom::Message Source_3D_Shmdata::getParameter(atom::Message pParam) const
     if (paramName == "framerate")
         msg.push_back(atom::IntValue::create(mFramerate));
     else if (paramName == "subsourcenbr")
-        msg.push_back(atom::IntValue::create(mSubsourceNbr));
+        msg.push_back(atom::StringValue::create(mSubsourceNbr.c_str()));
     else if (paramName == "id")
-        msg.push_back(atom::IntValue::create(mId));
+        msg.push_back(atom::StringValue::create(mId.c_str()));
 
     return msg;
 }

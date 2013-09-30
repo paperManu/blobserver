@@ -45,7 +45,7 @@ class Source_3D_Shmdata : public Source
 {
     public:
         Source_3D_Shmdata();
-        Source_3D_Shmdata(int pParam);
+        Source_3D_Shmdata(std::string pParam);
         ~Source_3D_Shmdata();
 
         static std::string getClassName() {return mClassName;}
@@ -67,7 +67,7 @@ class Source_3D_Shmdata : public Source
 
         std::shared_ptr< ShmPointCloud<pcl::PointXYZRGBA> > mShm;
 
-        void make(int pParam);
+        void make(std::string pParam);
 };
 
 #endif // HAVE_PCL && HAVE_SHMDATA

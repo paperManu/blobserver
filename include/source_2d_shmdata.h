@@ -36,7 +36,7 @@ class Source_2D_Shmdata : public Source_2D
 {
     public:
         Source_2D_Shmdata();
-        Source_2D_Shmdata(int pParam);
+        Source_2D_Shmdata(std::string pParam);
         ~Source_2D_Shmdata();
 
         static std::string getClassName() {return mClassName;}
@@ -58,7 +58,7 @@ class Source_2D_Shmdata : public Source_2D
 
         shmdata_any_reader_t* mReader;
 
-        void make(int pParam);
+        void make(std::string pParam);
         static void onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,
             const char* type_description, void* user_data);
 };

@@ -11,17 +11,17 @@ string Source_2D_Shmdata::mDocumentation = "N/A";
 /*************/
 Source_2D_Shmdata::Source_2D_Shmdata()
 {
-    make(0);
+    make(string());
 }
 
 /*************/
-Source_2D_Shmdata::Source_2D_Shmdata(int pParam)
+Source_2D_Shmdata::Source_2D_Shmdata(string pParam)
 {
     make(pParam);
 }
 
 /*************/
-void Source_2D_Shmdata::make(int pParam)
+void Source_2D_Shmdata::make(string pParam)
 {
     mReader = NULL;
 
@@ -96,11 +96,6 @@ void Source_2D_Shmdata::setParameter(atom::Message pParam)
 
         g_log(NULL, G_LOG_LEVEL_INFO, "%s: Connected to shmdata %s", mClassName.c_str(), location.c_str());
     }
-    else if (paramName == "cameraNumber")
-    {
-        if (readParam(pParam, paramValue))
-            mSubsourceNbr = (unsigned int)paramValue;
-    }
     else
         setBaseParameter(pParam);
 }
@@ -131,7 +126,7 @@ atom::Message Source_2D_Shmdata::getParameter(atom::Message pParam) const
     else if (paramName == "framerate")
         msg.push_back(atom::IntValue::create(mFramerate));
     else if (paramName == "subsourcenbr")
-        msg.push_back(atom::IntValue::create(mSubsourceNbr));
+        msg.push_back(atom::StringValue::create(mSubsourceNbr.c_str()));
     else
         msg = getBaseParameter(pParam);
 

@@ -370,7 +370,7 @@ void App::loadPlugins()
                     g_log(NULL, G_LOG_LEVEL_WARNING, "%s - %s", __FUNCTION__, dlerror());
                 else
                 {
-                    typedef void (*func)(factory::AbstractFactory<Actuator, string, string, int>&);
+                    typedef void (*func)(factory::AbstractFactory<Actuator, string, string, string>&);
                     ((func)registerToFactory)(mActuatorFactory);
                 }
             }
@@ -425,10 +425,8 @@ int App::loop()
                 atom::Message msg;
                 msg.push_back(atom::StringValue::create("id"));
                 msg = source->getParameter(msg);
-                int id = atom::toInt(msg[1]);
-                char name[16];
-                sprintf(name, "%i", id);
-                lBufferNames.push_back(source->getName() + string(" ") + string(name));
+                string id = atom::toString(msg[1]);
+                lBufferNames.push_back(source->getName() + string(" ") + id);
             } );
         }
 
@@ -980,11 +978,11 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         }
 
         string sourceName;
-        int sourceIndex;
+        string sourceID;
         try
         {
             sourceName = atom::toString(*iter);
-            sourceIndex = atom::toInt(*(iter+1));
+            sourceID = atom::toString(*(iter+1));
         }
         catch (atom::BadTypeTagError typeError)
         {
@@ -997,7 +995,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         vector<shared_ptr<Source>>::const_iterator iterSource;
         for (iterSource = theApp->mSources.begin(); iterSource != theApp->mSources.end(); ++iterSource)
         {
-            if (iterSource->get()->getName() == sourceName && iterSource->get()->getSubsourceNbr() == (unsigned int)sourceIndex)
+            if (iterSource->get()->getName() == sourceName && iterSource->get()->getSubsourceNbr() == sourceID)
             {
                 sources.push_back(*iterSource);
                 alreadyConnected = true;
@@ -1008,7 +1006,7 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         {
             shared_ptr<Source> source;
             if (theApp->mSourceFactory.key_exists(sourceName))
-                source = theApp->mSourceFactory.create(sourceName, sourceIndex);
+                source = theApp->mSourceFactory.create(sourceName, sourceID);
             else
             {
                 string error = "Unable to create source ";
@@ -1455,7 +1453,7 @@ int App::oscHandlerGetSources(const char* path, const char* types, lo_arg** argv
         // We try to create the named source
         shared_ptr<Source> source;
         if (theApp->mSourceFactory.key_exists(sourceName))
-            source = theApp->mSourceFactory.create(sourceName, -1);
+            source = theApp->mSourceFactory.create(sourceName, std::string());
         else
             return 1;
 

@@ -61,7 +61,6 @@
  * Note that OpenCV must have been compiled with the desired camera support.
  * 
  * Available parameters:
- * - cameraNumber (int): camera index as per OpenCV numbering. Setting this to 0 will use the first camera found.
  * - width (int)
  * - height (int)
  * - framerate (int)
@@ -93,7 +92,6 @@
  * 
  * Available parameters:
  * - location (string): file path to the shmdata
- * - cameraNumber (int): index of the shmdata, this can be used to access multiple times the same shmdata
  *
  * \subsection source_3d_shmdata_sec shmdata 3D sources (Source_3D_Shmdata)
  *
@@ -101,7 +99,6 @@
  *
  * Available parameters:
  * - location (string): file path to the shmdata
- * - cameraNumber (int): index of the shmdata, this can be used to access multiple times the same shmdata
  * 
  **************
  * \section actuators_sec List of actuators

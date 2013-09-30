@@ -404,7 +404,7 @@ atom::Message Source_2D::getBaseParameter(atom::Message pParam) const
 
     msg.push_back(pParam[0]);
     if (paramName == "id")
-        msg.push_back(atom::FloatValue::create(mId));
+        msg.push_back(atom::StringValue::create(mId.c_str()));
 
     return msg;
 }
@@ -671,10 +671,10 @@ void Source_2D::applyAutoExposure(cv::Mat& pImg)
     message.push_back(atom::FloatValue::create(exposure));
     setParameter(message);
 
-    g_log(NULL, G_LOG_LEVEL_DEBUG, "%s %i %i: exposureTime  %f", mName.c_str(), mSubsourceNbr, mId, exposure);
+    g_log(NULL, G_LOG_LEVEL_DEBUG, "%s %s: exposureTime  %f", mName.c_str(), mSubsourceNbr.c_str(), exposure);
 
     // Lastly, we log-broadcast the changes
-    g_log(LOG_BROADCAST, G_LOG_LEVEL_INFO, "exposureTime %s %i %i %f", mName.c_str(), mSubsourceNbr, mId, exposure);
+    g_log(LOG_BROADCAST, G_LOG_LEVEL_INFO, "exposureTime %s %s %f", mName.c_str(), mSubsourceNbr.c_str(), exposure);
 }
 
 /*************/
@@ -700,7 +700,7 @@ bool Source_2D::createHdri(cv::Mat& pImg)
     {
         mHdriBuilder.addLDR(pImg, getEV());
         ldriCount++;
-        g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Exposure value for source %i, HDR step %i : %f", mClassName.c_str(), mId, ldriCount, getEV());
+        g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Exposure value for source %s, HDR step %i : %f", mClassName.c_str(), mSubsourceNbr.c_str(), ldriCount, getEV());
     }
 
     skipFrame = (skipFrame + 1) % mHdriFrameSkip;

@@ -12,13 +12,13 @@ Source_2D_OpenCV::Source_2D_OpenCV()
 }
 
 /*************/
-Source_2D_OpenCV::Source_2D_OpenCV(int pParam)
+Source_2D_OpenCV::Source_2D_OpenCV(string pParam)
 {
     make(pParam);
 }
 
 /*************/
-void Source_2D_OpenCV::make(int pParam)
+void Source_2D_OpenCV::make(string pParam)
 {
     mName = mClassName;
     mSubsourceNbr = pParam;
@@ -35,14 +35,14 @@ Source_2D_OpenCV::~Source_2D_OpenCV()
 /*************/
 bool Source_2D_OpenCV::connect()
 {
-    if (mSubsourceNbr == 0)
+    if (mSubsourceNbr == "")
         return true;
 
-    mCamera.open(mSubsourceNbr);
+    mCamera.open(stoi(mSubsourceNbr));
 
     if (!mCamera.isOpened())
     {
-        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Unable to open subsource %i", mClassName.c_str(), mSubsourceNbr);
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Unable to open subsource %s", mClassName.c_str(), mSubsourceNbr.c_str());
         return false;
     }
 
@@ -56,7 +56,7 @@ bool Source_2D_OpenCV::connect()
     channels = (int)(mCamera.get(CV_CAP_PROP_FORMAT));
     channels = (unsigned int)((channels >> 3) + 1); // See CV_MAKETYPE in types_c.h in OpenCV
 
-    mId = (unsigned int)(mCamera.get(CV_CAP_PROP_GUID));
+    mId = to_string((int)(mCamera.get(CV_CAP_PROP_GUID)));
 
     return true;
 }
@@ -203,10 +203,6 @@ void Source_2D_OpenCV::setParameter(atom::Message pParam)
     {
         mCamera.set(CV_CAP_PROP_WHITE_BALANCE_RED_V, paramValue);
     }
-    else if (paramName == "cameraNumber")
-    {
-        mSubsourceNbr = (unsigned int)paramValue;
-    }
     else
         setBaseParameter(pParam);
 }
@@ -239,7 +235,7 @@ atom::Message Source_2D_OpenCV::getParameter(atom::Message pParam) const
     else if (paramName == "exposureTime")
         msg.push_back(atom::FloatValue::create(mExposureTime));
     else if (paramName == "subsourcenbr")
-        msg.push_back(atom::IntValue::create(mSubsourceNbr));
+        msg.push_back(atom::StringValue::create(mSubsourceNbr.c_str()));
     else
         msg = getBaseParameter(pParam);
 

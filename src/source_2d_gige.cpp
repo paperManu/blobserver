@@ -14,13 +14,13 @@ Source_2D_Gige::Source_2D_Gige()
 }
 
 /*************/
-Source_2D_Gige::Source_2D_Gige(int pParam)
+Source_2D_Gige::Source_2D_Gige(string pParam)
 {
     make(pParam);
 }
 
 /*************/
-void Source_2D_Gige::make(int pParam)
+void Source_2D_Gige::make(string pParam)
 {
     mName = mClassName;
     mSubsourceNbr = pParam;
@@ -44,14 +44,14 @@ bool Source_2D_Gige::connect()
 {
     arv_g_type_init();
 
-    if (mSubsourceNbr == 0)
+    if (mSubsourceNbr == "")
         mCamera = arv_camera_new(NULL);
     else
-        mCamera = arv_camera_new(to_string(mSubsourceNbr).c_str());
+        mCamera = arv_camera_new(mSubsourceNbr.c_str());
 
     if (mCamera == NULL)
     {
-        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Unable to open subsource %i", mClassName.c_str(), mSubsourceNbr);
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Unable to open subsource %s", mClassName.c_str(), mSubsourceNbr.c_str());
         return false;
     }
 
@@ -66,7 +66,7 @@ bool Source_2D_Gige::connect()
     arv_camera_set_pixel_format(mCamera, ARV_PIXEL_FORMAT_RGB_8_PACKED);
 
     const char* id = arv_camera_get_device_id(mCamera);
-    mId = stoi(string(id));
+    mId = string(id);
 
     // Create the stream object
     allocateStream();
@@ -384,7 +384,7 @@ atom::Message Source_2D_Gige::getParameter(atom::Message pParam) const
     else if (paramName == "exposureTime")
         msg.push_back(atom::FloatValue::create(mExposureTime));
     else if (paramName == "subsourcenbr")
-        msg.push_back(atom::IntValue::create(mSubsourceNbr));
+        msg.push_back(atom::StringValue::create(mSubsourceNbr.c_str()));
     else
         msg = getBaseParameter(pParam);
 

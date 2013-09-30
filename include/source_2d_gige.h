@@ -37,7 +37,7 @@ class Source_2D_Gige : public Source_2D
 {
     public:
         Source_2D_Gige();
-        Source_2D_Gige(int pParam);
+        Source_2D_Gige(std::string pParam);
         ~Source_2D_Gige();
 
         static std::string getClassName() {return mClassName;}
@@ -66,7 +66,7 @@ class Source_2D_Gige : public Source_2D
         bool mInvertRGB, mBayer;
 
         // Methods
-        void make(int pParam);
+        void make(std::string pParam);
         void allocateStream();
         static void streamCb(void* user_data, ArvStreamCallbackType type, ArvBuffer* buffer);
 };

@@ -31,7 +31,7 @@ class Source_2D_OpenCV : public Source_2D
 {
     public:
         Source_2D_OpenCV();
-        Source_2D_OpenCV(int pParam);
+        Source_2D_OpenCV(std::string pParam);
         ~Source_2D_OpenCV();
 
         static std::string getClassName() {return mClassName;}
@@ -54,7 +54,7 @@ class Source_2D_OpenCV : public Source_2D
         cv::VideoCapture mCamera;
         std::string mVideoUrl;
 
-        void make(int pParam);
+        void make(std::string pParam);
 };
 
 #endif // SOURCE_2D_OPENCV_H

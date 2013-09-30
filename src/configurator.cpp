@@ -93,7 +93,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool dist
         // to create the flow (before any change of parameters)
         string actuator;
         vector<string> sources;
-        vector<int> subsources;
+        vector<string> subsources;
         string client, realClient, server;
         string serverPort;
         int clientPort = 0;
@@ -107,7 +107,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool dist
             else if (!xmlStrcmp(lCur->name, (const xmlChar*)"Source"))
             {
                 sources.push_back(getStringValueFrom(doc, lCur, (const xmlChar*)"Type"));
-                subsources.push_back(getIntValueFrom(doc, lCur, (const xmlChar*)"Subsource"));
+                subsources.push_back(getStringValueFrom(doc, lCur, (const xmlChar*)"Subsource"));
             }
             else if (!xmlStrcmp(lCur->name, (const xmlChar*)"Client"))
             {
@@ -168,7 +168,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool dist
                     continue;
                 message.push_back(atom::StringValue::create(sources[i].c_str()));
 
-                message.push_back(atom::IntValue::create(subsources[i]));
+                message.push_back(atom::StringValue::create(subsources[i].c_str()));
             }
 
             lo_message oscMessage = lo_message_new();

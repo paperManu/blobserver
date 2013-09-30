@@ -49,7 +49,7 @@ class Source
          * \brief Constructor allowing to specify a subsource
          * \param pParam Index of the subsource to allocate
          */
-        Source(int pParam);
+        Source(std::string pParam);
 
         /**
          * \brief Destructor
@@ -124,7 +124,7 @@ class Source
         /**
          * \brief Gets the subsource number
          */
-        unsigned int getSubsourceNbr() const {return mSubsourceNbr;}
+        std::string getSubsourceNbr() const {return mSubsourceNbr;}
 
     protected:
         bool mUpdated; //!< Flag set to true if a new grab is available
@@ -133,8 +133,8 @@ class Source
         std::string mName;
         unsigned int mFramerate;
 
-        unsigned int mSubsourceNbr;
-        unsigned int mId;
+        std::string mSubsourceNbr;
+        std::string mId;
 
     private:
         static std::string mClassName; //!< Class name, to be set in child class

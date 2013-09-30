@@ -93,8 +93,8 @@ class App
         bool mRun;
 
         // Factories
-        factory::AbstractFactory<Actuator, std::string, std::string, int> mActuatorFactory;
-        factory::AbstractFactory<Source, std::string, std::string, int> mSourceFactory;
+        factory::AbstractFactory<Actuator, std::string, std::string, std::string> mActuatorFactory;
+        factory::AbstractFactory<Source, std::string, std::string, std::string> mSourceFactory;
 
         // liblo related
         lo_server_thread mOscServer;
