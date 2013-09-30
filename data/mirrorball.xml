@@ -12,7 +12,7 @@
             </Param>
             <Param>
                 <Name>fov</Name>
-                <Value>45</Value>
+                <Value>42</Value>
             </Param>
         </Actuator>
         <Source>

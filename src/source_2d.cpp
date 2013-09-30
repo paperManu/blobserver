@@ -615,7 +615,7 @@ cmsHTRANSFORM Source_2D::loadICCTransform(std::string pFile)
 /*************/
 void Source_2D::applyAutoExposure(cv::Mat& pImg)
 {
-    if (pImg.channels() != 3)
+    if (pImg.channels() != 3 && pImg.channels() != 1)
         return;
 
     // TODO: Allow to chose the colorspace for luminance computation
@@ -627,7 +627,7 @@ void Source_2D::applyAutoExposure(cv::Mat& pImg)
     roi.height = min(roi.height, pImg.rows - 1 - roi.y);
 
     cv::Mat buffer;
-    pImg.convertTo(buffer, CV_32FC3);
+    pImg.convertTo(buffer, CV_32F);
     buffer /= 255.f;
     cv::pow(buffer, 1/mGamma, buffer); // Conversion from sRGB to RGB
 
@@ -636,13 +636,21 @@ void Source_2D::applyAutoExposure(cv::Mat& pImg)
     for (int x = roi.x; x < roi.x + roi.width && x < buffer.cols; ++x)
         for (int y = roi.y; y < roi.y + roi.height && x < buffer.rows; ++y)
         {
-            float r, g, b;
-            r = buffer.at<cv::Vec3f>(y, x)[0];
-            g = buffer.at<cv::Vec3f>(y, x)[1];
-            b = buffer.at<cv::Vec3f>(y, x)[2];
+            if (pImg.channels() == 3)
+            {
+                float r, g, b;
+                r = buffer.at<cv::Vec3f>(y, x)[0];
+                g = buffer.at<cv::Vec3f>(y, x)[1];
+                b = buffer.at<cv::Vec3f>(y, x)[2];
 
-            luminance += 0.2126f * r + 0.7152f * g + 0.0722f * b;
-            pixelNumber += 1.f;
+                luminance += 0.2126f * r + 0.7152f * g + 0.0722f * b;
+                pixelNumber += 1.f;
+            }
+            else if (pImg.channels() == 1)
+            {
+                luminance += buffer.at<float>(y, x);
+                pixelNumber += 1.f;
+            }
         }
 
     if (pixelNumber == 0)
