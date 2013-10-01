@@ -44,7 +44,7 @@ bool Source_2D_Gige::connect()
 {
     arv_g_type_init();
 
-    if (mSubsourceNbr == "")
+    if (mSubsourceNbr == string("0"))
         mCamera = arv_camera_new(NULL);
     else
         mCamera = arv_camera_new(mSubsourceNbr.c_str());

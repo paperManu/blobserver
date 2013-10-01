@@ -8,11 +8,15 @@
             </Param>
             <Param>
                 <Name>sphere</Name>
-                <Value>320 240 240</Value>
+                <Value>620 432 410</Value>
             </Param>
             <Param>
                 <Name>fov</Name>
-                <Value>42</Value>
+                <Value>40</Value>
+            </Param>
+            <Param>
+                <Name>threshold</Name>
+                <Value>4</Value>
             </Param>
         </Actuator>
         <Source>
@@ -24,15 +28,15 @@
             </Param>
             <Param>
                 <Name>iso</Name>
-                <Value>400</Value>
+                <Value>800</Value>
             </Param>
             <Param>
                 <Name>width</Name>
-                <Value>640</Value>
+                <Value>1280</Value>
             </Param>
             <Param>
                 <Name>height</Name>
-                <Value>480</Value>
+                <Value>960</Value>
             </Param>
         </Source>
         <Client>
