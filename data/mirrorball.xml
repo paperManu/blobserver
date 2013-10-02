@@ -8,11 +8,11 @@
             </Param>
             <Param>
                 <Name>sphere</Name>
-                <Value>620 432 410</Value>
+                <Value>616 460 450</Value>
             </Param>
             <Param>
                 <Name>fov</Name>
-                <Value>40</Value>
+                <Value>22</Value>
             </Param>
             <Param>
                 <Name>threshold</Name>

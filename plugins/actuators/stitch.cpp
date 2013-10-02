@@ -58,11 +58,6 @@ atom::Message Actuator_Stitch::detect(const vector< Capture_Ptr > pCaptures)
             cv::Mat crop = cv::Mat(captures[index], mCameraCrop[index]);
             captures[index] = crop;
         }
-        else
-        {
-            index++;
-            continue;
-        }
 
         if (mCameraRotation.find(index) != mCameraRotation.end())
         {
@@ -79,7 +74,7 @@ atom::Message Actuator_Stitch::detect(const vector< Capture_Ptr > pCaptures)
         else
         {
             width = max(width, captures[index].cols);
-            width = max(width, captures[index].rows);
+            height = max(height, captures[index].rows);
         }
 
         index++;
