@@ -349,7 +349,7 @@ void App::loadPlugins()
         string strFilename = string(filename);
         if (strFilename.substr(strFilename.size() - 3, strFilename.size()) == string(".so"))
         {
-            g_log(NULL, G_LOG_LEVEL_DEBUG, "Found lib %s", strFilename.c_str());
+            //g_log(NULL, G_LOG_LEVEL_DEBUG, "Found lib %s", strFilename.c_str());
 
             string path = prefix + strFilename;
             void* handler;
