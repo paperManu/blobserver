@@ -407,7 +407,7 @@ void Actuator_MirrorBall::projectionMapFromDirections()
         int prevPos = 0, nextPos = 0;
         for (int x = 0; x < size.width; ++x)
         {
-            if (mask.at<uchar>(y, x) < 255)
+            if (mask.at<uchar>(y, x) < 255 && prevPos != 0)
             {
                 for (int xx = x+1; xx < size.width; ++xx)
                 {
@@ -419,16 +419,12 @@ void Actuator_MirrorBall::projectionMapFromDirections()
                 }
 
                 if (nextPos <= prevPos)
-                {
-                    next = mProjectionMap.at<cv::Vec2f>(y, size.width);
-                    next = cv::Vec2f(0.f, 0.f);
-                    nextPos = size.width;
-                }
+                    continue;
 
                 float coeff = (float)(x - prevPos) / (float)(nextPos - prevPos);
                 backMap.at<cv::Vec2f>(y, x) = prev * (1.f - coeff) + next * coeff;
             }
-            else
+            else if (mask.at<uchar>(y, x) == 255)
             {
                 prev = backMap.at<cv::Vec2f>(y, x);
                 prevPos = x;
