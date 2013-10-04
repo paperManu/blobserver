@@ -26,6 +26,9 @@
 #ifndef NOP_H
 #define NOP_H
 
+#define GLFW_NO_GLU
+#define GL_GLEXT_PROTOTYPES
+
 #include "actuator.h"
 #include <GLFW/glfw3.h>
 
@@ -58,9 +61,14 @@ class Actuator_GLSL : public Actuator
 
         bool isGlfw;
         GLFWwindow* mWindow;
+        cv::Size mGLSize;
+
+        GLuint mVertexArray;
+        GLuint mVertexBuffer[2];
 
         // Methods
         void make();
+        void initGL();
 };
 
 REGISTER_ACTUATOR(Actuator_GLSL)

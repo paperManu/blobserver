@@ -35,9 +35,13 @@ void Actuator_GLSL::make()
     else
         isGlfw = true;
 
-    mWindow = glfwCreateWindow(640, 480, "Actuator_GLSL", NULL, NULL);
+    glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
+    mGLSize = cv::Size(640, 480);
+    mWindow = glfwCreateWindow(mGLSize.width, mGLSize.height, "Actuator_GLSL", NULL, NULL);
     if (!mWindow)
         g_log(NULL, G_LOG_LEVEL_ERROR, "%s - Unable to create a window", mClassName.c_str());
+
+    initGL();
 }
 
 /*************/
@@ -50,9 +54,16 @@ Actuator_GLSL::~Actuator_GLSL()
 /*************/
 atom::Message Actuator_GLSL::detect(vector< Capture_Ptr > pCaptures)
 {
-    if (pCaptures.size() == 0)
+    vector<cv::Mat> captures = captureToMat(pCaptures);
+    if (captures.size() < mSourceNbr)
         return mLastMessage;
-    mCapture = pCaptures[0];
+    cv::Mat capture = captures[0];
+    
+    if (mGLSize.width != capture.cols || mGLSize.height != capture.rows)
+    {
+        mGLSize = cv::Size(capture.cols, capture.rows);
+        glfwSetWindowSize(mWindow, mGLSize.width, mGLSize.height);
+    }
 
     glfwMakeContextCurrent(mWindow);
     glfwSwapBuffers(mWindow);
@@ -61,6 +72,37 @@ atom::Message Actuator_GLSL::detect(vector< Capture_Ptr > pCaptures)
     mLastMessage = atom::createMessage("iii", 1, 1, mFrameNumber);
 
     return mLastMessage;
+}
+
+/*************/
+void Actuator_GLSL::initGL()
+{
+    GLfloat points[] = {-1.f, -1.f, 0.f, 1.f,
+                        -1.f, 1.f, 0.f, 1.f,
+                        1.f, 1.f, 0.f, 1.f,
+                        1.f, 1.f, 0.f, 1.f,
+                        1.f, -1.f, 0.f, 1.f,
+                        -1.f, -1.f, 0.f, 1.f};
+
+    GLfloat tex[] = {0.f, 0.f,
+                     0.f, 1.f,
+                     1.f, 1.f,
+                     1.f, 1.f,
+                     1.f, 0.f,
+                     0.f, 0.f};
+
+    glGenVertexArrays(1, &mVertexArray);
+    glBindVertexArray(mVertexArray);
+    glGenBuffers(2, mVertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer[0]);
+    glBufferData(GL_ARRAY_BUFFER, 6*4*sizeof(float), points, GL_STATIC_DRAW);
+    glVertexAttribPointer(mVertexBuffer[0], 4, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(mVertexBuffer[0]);
+
+    glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer[1]);
+    glBufferData(GL_ARRAY_BUFFER, 6*2*sizeof(float), tex, GL_STATIC_DRAW);
+    glVertexAttribPointer(mVertexBuffer[1], 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(mVertexBuffer[1]);
 }
 
 /*************/
