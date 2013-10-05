@@ -30,13 +30,52 @@
 #define GL_GLEXT_PROTOTYPES
 
 #include "actuator.h"
-#include <GLFW/glfw3.h>
 
- /*************/
+#include <memory>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+
+/*************/
+// Class Texture
+class Texture
+{
+    public:
+        Texture();
+        ~Texture();
+        Texture& operator=(const cv::Mat& pImg);
+        GLuint getGLTex() {return mGLTex;}
+
+    private:
+        GLuint mGLTex;
+        cv::Size mSize;
+};
+
+/*************/
+// Class Shader
+class Shader
+{
+    public:
+        Shader();
+        ~Shader();
+        void setShader(const std::string src, const std::string type);
+        bool activate(void* pContext);
+        void bindTexture(GLuint pTexture, uint pTextureUnit, std::string pName);
+
+    private:
+        GLuint mVertex;
+        GLuint mGeometry;
+        GLuint mFragment;
+        GLuint mProgram;
+        bool mIsLinked;
+};
+
+/*************/
 // Class Actuator_GLSL
 class Actuator_GLSL : public Actuator
 {
     public:
+        friend Shader;
+
         Actuator_GLSL();
         Actuator_GLSL(int pParam);
         ~Actuator_GLSL();
@@ -59,16 +98,22 @@ class Actuator_GLSL : public Actuator
 
         Capture_Ptr mCapture;
 
-        bool isGlfw;
+        bool isGlfw, mIsInitDone;
         GLFWwindow* mWindow;
         cv::Size mGLSize;
 
         GLuint mVertexArray;
         GLuint mVertexBuffer[2];
+        std::vector<Texture> mTextures;
+
+        std::shared_ptr<Shader> mShader;
 
         // Methods
         void make();
         void initGL();
+        void initGeometry();
+        void initShader();
+        void uploadTextures(std::vector<cv::Mat> pImg);
 };
 
 REGISTER_ACTUATOR(Actuator_GLSL)
