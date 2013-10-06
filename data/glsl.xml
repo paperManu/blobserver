@@ -2,6 +2,14 @@
     <Flow>
         <Actuator>
             <Type>Actuator_GLSL</Type>
+            <Param>
+                <Name>vertexFile</Name>
+                <Value>glsl.vert</Value>
+            </Param>
+            <Param>
+                <Name>fragmentFile</Name>
+                <Value>glsl.frag</Value>
+            </Param>
         </Actuator>
         <Source>
             <Type>Source_2D_OpenCV</Type>

@@ -1,4 +1,8 @@
 #include "glsl.h"
+
+#include <fstream>
+#include <cerrno>
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -74,7 +78,7 @@ Actuator_GLSL::~Actuator_GLSL()
 }
 
 /*************/
-atom::Message Actuator_GLSL::detect(vector< Capture_Ptr > pCaptures)
+atom::Message Actuator_GLSL::detect(vector<Capture_Ptr> pCaptures)
 {
     vector<cv::Mat> captures = captureToMat(pCaptures);
     if (captures.size() < mSourceNbr)
@@ -219,9 +223,9 @@ void Actuator_GLSL::initFBO()
 
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
-        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Error while initializing framebuffer object", __FUNCTION__);
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Error while initializing framebuffer object", mClassName.c_str());
     else
-        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Framebuffer object successfully initialized", __FUNCTION__);
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Framebuffer object successfully initialized", mClassName.c_str());
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -251,9 +255,92 @@ void Actuator_GLSL::updateFBO()
 }
 
 /*************/
+string Actuator_GLSL::readFile(string pName)
+{
+    ifstream in(pName, ios::in | ios::binary);
+    if (in)
+    {
+        string contents;
+        in.seekg(0, ios::end);
+        contents.resize(in.tellg());
+        in.seekg(0, ios::beg);
+        in.read(&contents[0], contents.size());
+        in.close();
+        return contents;
+    }
+
+    g_log(NULL, G_LOG_LEVEL_ERROR, "%s - File %s cannot be opened", mClassName.c_str(), pName.c_str());
+}
+
+/*************/
 void Actuator_GLSL::setParameter(atom::Message pMessage)
 {
-    setBaseParameter(pMessage);
+    std::string cmd;
+    try
+    {
+        cmd = toString(pMessage[0]);
+    }
+    catch (atom::BadTypeTagError error)
+    {
+        return;
+    }
+
+    glfwMakeContextCurrent(mWindow);
+
+    if (cmd == "vertexFile")
+    {
+        string name;
+        if (readParam(pMessage, name))
+        {
+            string code = readFile(name);
+            mShader->setShader(code, "vertex");
+        }
+    }
+    else if (cmd == "geometryFile")
+    {
+        string name;
+        if (readParam(pMessage, name))
+        {
+            string code = readFile(name);
+            mShader->setShader(code, "geometry");
+        }
+    }
+    else if (cmd == "fragmentFile")
+    {
+        string name;
+        if (readParam(pMessage, name))
+        {
+            string code = readFile(name);
+            mShader->setShader(code, "fragment");
+        }
+    }
+    else if (cmd == "uniform")
+    {
+        string name;
+        int card;
+        if (!readParam(pMessage, name, 1))
+            return;
+        card = pMessage.size() - 2;
+
+        vector<float> values;
+        values.resize(card);
+        for (int i = 0; i < card; ++i)
+            if (!readParam(pMessage, values[i], i+2))
+                return;
+
+        if (card == 1)
+            mShader->setUniform(name, values[0]);
+        else if (card == 2)
+            mShader->setUniform(name, glm::dvec2(values[0], values[1]));
+        else if (card == 2)
+            mShader->setUniform(name, glm::dvec3(values[0], values[1], values[2]));
+        else if (card == 2)
+            mShader->setUniform(name, glm::dvec4(values[0], values[1], values[2], values[3]));
+    }
+    else
+        setBaseParameter(pMessage);
+        
+    glfwMakeContextCurrent(NULL);
 }
 
 /*************/
@@ -466,4 +553,44 @@ void Shader::bindTexture(GLuint pTexture, uint pTextureUnit, string pName)
 void Shader::setViewProjectionMatrix(const glm::mat4& matrix)
 {
     glUniformMatrix4fv(mLocationMVP, 1, GL_FALSE, glm::value_ptr(matrix));
+}
+
+/*************/
+void Shader::setUniform(string name, float v)
+{
+    GLint location;
+    location = glGetUniformLocation(mProgram, name.c_str());
+    if (location == -1)
+        return;
+    glUniform1f(location, v);
+}
+
+/*************/
+void Shader::setUniform(string name, glm::dvec2 v)
+{
+    GLint location;
+    location = glGetUniformLocation(mProgram, name.c_str());
+    if (location == -1)
+        return;
+    glUniform2f(location, v[0], v[1]);
+}
+
+/*************/
+void Shader::setUniform(string name, glm::dvec3 v)
+{
+    GLint location;
+    location = glGetUniformLocation(mProgram, name.c_str());
+    if (location == -1)
+        return;
+    glUniform3f(location, v[0], v[1], v[2]);
+}
+
+/*************/
+void Shader::setUniform(string name, glm::dvec4 v)
+{
+    GLint location;
+    location = glGetUniformLocation(mProgram, name.c_str());
+    if (location == -1)
+        return;
+    glUniform4f(location, v[0], v[1], v[2], v[3]);
 }

@@ -62,6 +62,10 @@ class Shader
         void bindTexture(GLuint pTexture, uint pTextureUnit, std::string pName);
 
         void setViewProjectionMatrix(const glm::mat4& matrix);
+        void setUniform(std::string name, float value);
+        void setUniform(std::string name, glm::dvec2 v);
+        void setUniform(std::string name, glm::dvec3 v); 
+        void setUniform(std::string name, glm::dvec4 v);
 
     private:
         GLuint mVertex;
@@ -122,6 +126,8 @@ class Actuator_GLSL : public Actuator
 
         void uploadTextures(std::vector<cv::Mat> pImg);
         void updateFBO();
+
+        std::string readFile(std::string pName);
 };
 
 REGISTER_ACTUATOR(Actuator_GLSL)
