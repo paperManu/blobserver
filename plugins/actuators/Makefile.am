@@ -12,9 +12,12 @@ plugins_LTLIBRARIES = \
 	libactuatorobjonaplane.la \
 	libactuatorstitch.la
 
+if GLFW3
+plugins_LTLIBRARIES += libactuatorglsl.la
+endif
+
 if PYTHON
-plugins_LTLIBRARIES += \
-    libactuatorpython.la
+plugins_LTLIBRARIES += libactuatorpython.la
 endif
 
 if PCL
@@ -69,6 +72,17 @@ libactuatorfiducialtracker_la_SOURCES += \
     $(top_srcdir)/ext/libfidtrack/tiled_bernsen_threshold.c \
     $(top_srcdir)/ext/libfidtrack/topologysearch.c \
     $(top_srcdir)/ext/libfidtrack/treeidmap.cpp
+
+#-------------#
+if GLFW3
+if GLM
+libactuatorglsl_la_SOURCES = glsl.cpp
+libactuatorglsl_la_CXXFLAGS = \
+	$(DEFAULT_CFLAGS) \
+	$(GLFW3_CFLAGS)
+libactuatorglsl_la_LDFLAGS = $(GLFW3_LIBS)
+endif
+endif
 
 #-------------#
 libactuatorhog_la_SOURCES = \

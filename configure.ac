@@ -117,6 +117,20 @@ PKG_CHECK_MODULES([PYTHON], python,
     AC_DEFINE([HAVE_PYTHON], [0], [Defined to 1 if python3 is detected]))
 AM_CONDITIONAL(PYTHON, test -n "$PYTHON_LIBS")
 
+# GLFW
+PKG_CHECK_MODULES([GLFW3], glfw3,
+    AC_DEFINE([HAVE_GLFW3], [1], [Defined to 1 if glfw3 is detected]),
+    AC_DEFINE([HAVE_GLFW3], [0], [Defined to 1 if glfw3 is detected]))
+AM_CONDITIONAL(GLFW3, test -n "$GLFW3_LIBS")
+
+# GLM
+AC_LANG_PUSH([C++])
+AC_CHECK_HEADER([glm/glm.hpp],
+    [HAVE_GLM=true],
+    [HAVE_GLM=false])
+AM_CONDITIONAL(GLM, test "$HAVE_GLM" = "true")
+AC_LANG_POP([C++])
+
 # GNU help2man creates man pages from --help output; in many cases, this
 # is sufficient, and obviates the need to maintain man pages separately.
 # However, this means invoking executables, which we generally cannot do
