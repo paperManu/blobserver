@@ -75,11 +75,13 @@ libactuatorfiducialtracker_la_SOURCES += \
 
 #-------------#
 if GLFW3
+if GLM
 libactuatorglsl_la_SOURCES = glsl.cpp
 libactuatorglsl_la_CXXFLAGS = \
 	$(DEFAULT_CFLAGS) \
 	$(GLFW3_CFLAGS)
 libactuatorglsl_la_LDFLAGS = $(GLFW3_LIBS)
+endif
 endif
 
 #-------------#
