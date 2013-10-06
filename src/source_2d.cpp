@@ -27,6 +27,9 @@ Source_2D::Source_2D()
 
     mFilterNoise = false;
 
+    mGammaCorrection = false;
+    mGammaCorrectionValue = 1.f;
+
     mScale = 1.f;
     mRotation = 0.f;
     mScaleValues = 1.f;
@@ -90,6 +93,8 @@ Capture_Ptr Source_2D::retrieveFrame()
             correctVignetting(buffer);
         if (mICCTransform != NULL)
             cmsDoTransform(mICCTransform, buffer.data, buffer.data, buffer.total());
+        if (mGammaCorrection)
+            correctGamma(buffer);
         if (mCorrectDistortion)
             correctDistortion(buffer);
         if (mCorrectFisheye)
@@ -177,6 +182,15 @@ void Source_2D::setBaseParameter(atom::Message pParam)
                 mFilterNoise = true;
             else
                 mFilterNoise = false;
+        }
+    }
+    else if (paramName == "gammaCorrection")
+    {
+        float g;
+        if (readParam(pParam, g))
+        {
+            mGammaCorrectionValue = g;
+            mGammaCorrection = true;
         }
     }
     else if (paramName == "scale")
@@ -495,6 +509,23 @@ void Source_2D::correctVignetting(cv::Mat& pImg)
     }
 
     cv::multiply(pImg, mVignettingMat, pImg, 1.0, pImg.type());
+}
+
+/************/
+void Source_2D::correctGamma(cv::Mat& pImg)
+{
+    int depth = pImg.depth();
+    cv::Mat buffer;
+    pImg.convertTo(buffer, CV_32F);
+    if (depth == CV_8U)
+    {
+        cv::pow(buffer / 255.f, mGammaCorrectionValue, buffer);
+        buffer *= 255.f;
+    }
+    else
+        cv::pow(buffer, mGammaCorrectionValue, buffer);
+        
+    buffer.convertTo(pImg, depth);
 }
 
 /************/
