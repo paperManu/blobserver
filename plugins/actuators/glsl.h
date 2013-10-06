@@ -61,12 +61,16 @@ class Shader
         bool activate(void* pContext);
         void bindTexture(GLuint pTexture, uint pTextureUnit, std::string pName);
 
+        void setViewProjectionMatrix(const glm::mat4& matrix);
+
     private:
         GLuint mVertex;
         GLuint mGeometry;
         GLuint mFragment;
         GLuint mProgram;
         bool mIsLinked;
+
+        GLint mLocationMVP;
 };
 
 /*************/
@@ -85,8 +89,6 @@ class Actuator_GLSL : public Actuator
 
         atom::Message detect(std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
-
-        Capture_Ptr getOutput() const {return mCapture;}
 
     private:
         // Attributes
@@ -108,12 +110,18 @@ class Actuator_GLSL : public Actuator
 
         std::shared_ptr<Shader> mShader;
 
+        GLuint mFBO;
+        GLuint mFBOTexture;
+
         // Methods
         void make();
         void initGL();
         void initGeometry();
         void initShader();
+        void initFBO();
+
         void uploadTextures(std::vector<cv::Mat> pImg);
+        void updateFBO();
 };
 
 REGISTER_ACTUATOR(Actuator_GLSL)

@@ -1,4 +1,6 @@
 #include "glsl.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 char DEFAULT_VERTEX_SHADER[] =
     "#version 150 core\n"
@@ -6,29 +8,20 @@ char DEFAULT_VERTEX_SHADER[] =
     "in vec4 vVertex;\n"
     "in vec2 vTexCoord;\n"
     "\n"
-    "uniform mat4 vMVP;\n"
-    "uniform vec2 vMouse;\n"
+    "uniform mat4 vViewProjectionMatrix;\n"
     "\n"
     "smooth out vec2 finalTexCoord;\n"
     "\n"
     "void main(void)\n"
     "{\n"
-    "    gl_Position.xyz = (vMVP*vVertex).xyz;\n"
-    "\n"
+    "    gl_Position.xyz = (vViewProjectionMatrix*vVertex).xyz;\n"
     "    finalTexCoord = vTexCoord;\n"
     "}\n";
 
 char DEFAULT_FRAGMENT_SHADER[] =
     "#version 150 core\n"
     "\n"
-    "uniform sampler2D vTexMap;\n"
-    "uniform sampler2D vHUDMap;\n"
-    "uniform sampler2D vFBOMap;\n"
-    "\n"
-    "uniform vec2 vMouse;\n"
-    "uniform float vTimer;\n"
-    "uniform vec2 vResolution;\n"
-    "uniform int vPass;\n"
+    "uniform sampler2D vTex0;\n"
     "\n"
     "in vec2 finalTexCoord;\n"
     "\n"
@@ -36,9 +29,8 @@ char DEFAULT_FRAGMENT_SHADER[] =
     "\n"
     "void main(void)\n"
     "{\n"
-    "    float lHUDScale = vResolution.y/32.f;\n"
-    "    fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
-    "    fragColor += texture(vHUDMap, vec2(finalTexCoord.s, finalTexCoord.t*lHUDScale));\n"
+    "    fragColor = vec4(finalTexCoord.x, finalTexCoord.y, 0.0, 1.0);\n"
+    "    fragColor *= texture(vTex0, finalTexCoord);\n"
     "}\n";
 
 using namespace std;
@@ -99,12 +91,27 @@ atom::Message Actuator_GLSL::detect(vector< Capture_Ptr > pCaptures)
     {
         mGLSize = cv::Size(capture.cols, capture.rows);
         glfwSetWindowSize(mWindow, mGLSize.width, mGLSize.height);
+        updateFBO();
     }
+
+    int width, height;
+    glfwGetFramebufferSize(mWindow, &width, &height);
+    glViewport(0, 0, width, height);
 
     if (mShader->activate(this))
     {
+        glm::mat4 viewProjectionMatrix = glm::ortho(-1.f, 1.f, -1.f, 1.f);
+        mShader->setViewProjectionMatrix(viewProjectionMatrix);
+
+        GLenum renderBuffers[] = {GL_BACK};
+        glDrawBuffers(1, renderBuffers);
         glClear(GL_COLOR_BUFFER_BIT);
-        glClearColor(1.f, 1.f, 1.f, 1.f);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        
+        cv::Mat buffer = cv::Mat::zeros(mGLSize, CV_8UC3);
+        glReadPixels(0, 0, mGLSize.width, mGLSize.height, GL_BGR, GL_UNSIGNED_BYTE, buffer.data);
+        cv::flip(buffer, mOutputBuffer, 0);
+
         glfwSwapBuffers(mWindow);
     }
     else
@@ -112,6 +119,8 @@ atom::Message Actuator_GLSL::detect(vector< Capture_Ptr > pCaptures)
         glClear(GL_COLOR_BUFFER_BIT);
         glfwSwapBuffers(mWindow);
     }
+
+    glfwMakeContextCurrent(NULL);
 
     mFrameNumber++;
     mLastMessage = atom::createMessage("iii", 1, 1, mFrameNumber);
@@ -133,24 +142,21 @@ void Actuator_GLSL::initGL()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
-    glfwWindowHint(GLFW_VISIBLE, GL_TRUE);
+    glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
     mGLSize = cv::Size(640, 480);
     mWindow = glfwCreateWindow(mGLSize.width, mGLSize.height, "Actuator_GLSL", NULL, NULL);
     if (!mWindow)
         g_log(NULL, G_LOG_LEVEL_ERROR, "%s - Unable to create a window", mClassName.c_str());
 
-    glfwSetWindowTitle(mWindow, mClassName.c_str());
     glfwMakeContextCurrent(mWindow);
+    glClearColor(0.f, 0.f, 0.1f, 1.f);
 
-    glClearColor(0.f, 1.f, 0.f, 1.f);
     initGeometry();
-
-    mShader.reset(new Shader());
-    mShader->setShader(string(DEFAULT_VERTEX_SHADER), "vertex");
-    mShader->setShader(string(DEFAULT_FRAGMENT_SHADER), "fragment");
-    mShader->activate(this);
+    initShader();
 
     mIsInitDone = true;
+
+    glfwMakeContextCurrent(NULL);
 }
 
 /*************/
@@ -187,6 +193,37 @@ void Actuator_GLSL::initGeometry()
 /*************/
 void Actuator_GLSL::initShader()
 {
+    mShader.reset(new Shader());
+    mShader->setShader(string(DEFAULT_VERTEX_SHADER), "vertex");
+    mShader->setShader(string(DEFAULT_FRAGMENT_SHADER), "fragment");
+    mShader->activate(this);
+}
+
+/*************/
+void Actuator_GLSL::initFBO()
+{
+    glGenFramebuffers(1, &mFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
+
+    glGenTextures(1, &mFBOTexture);
+    glBindTexture(GL_TEXTURE_2D, mFBOTexture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, mGLSize.width, mGLSize.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mFBOTexture, 0);
+
+    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Error while initializing framebuffer object", __FUNCTION__);
+    else
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Framebuffer object successfully initialized", __FUNCTION__);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 /*************/
@@ -196,7 +233,21 @@ void Actuator_GLSL::uploadTextures(vector<cv::Mat> pImg)
         mTextures.resize(pImg.size());
 
     for (uint i = 0; i < pImg.size(); ++i)
+    {
         mTextures[i] = pImg[i];
+        mShader->bindTexture(mTextures[i].getGLTex(), i, string("vTex") + to_string(i));
+    }
+}
+
+/*************/
+void Actuator_GLSL::updateFBO()
+{
+    if (glIsTexture(mFBOTexture) == GL_FALSE)
+        return;
+
+    glBindTexture(GL_TEXTURE_2D, mFBOTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, mGLSize.width, mGLSize.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 /*************/
@@ -315,7 +366,7 @@ void Shader::setShader(const string src, const string type)
         g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Shader of type %s compiled successfully", __FUNCTION__, type.c_str());
     else
     {
-        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Error while compiling shader of type %s", __FUNCTION__, type.c_str());
+        g_log(NULL, G_LOG_LEVEL_ERROR, "%s - Error while compiling shader of type %s", __FUNCTION__, type.c_str());
 
         GLint length;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
@@ -334,12 +385,12 @@ bool Shader::activate(void* pContext)
     GLint status;
     Actuator_GLSL* context = (Actuator_GLSL*)pContext;
 
-    if (mIsLinked)
+    if (glIsProgram(mProgram) == GL_TRUE && mIsLinked)
     {
         glUseProgram(mProgram);
         return true;
     }
-    else if (glIsProgram(mProgram))
+    else if (glIsProgram(mProgram) == GL_TRUE)
         glDeleteProgram(mProgram);
 
     mProgram = glCreateProgram();
@@ -347,19 +398,28 @@ bool Shader::activate(void* pContext)
     {
         glGetShaderiv(mVertex, GL_COMPILE_STATUS, &status);
         if (status == GL_TRUE)
+        {
             glAttachShader(mProgram, mVertex);
+            g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Vertex shader attached to the shader program", __FUNCTION__);
+        }
     }
     if (glIsShader(mGeometry))
     {
         glGetShaderiv(mGeometry, GL_COMPILE_STATUS, &status);
         if (status == GL_TRUE)
+        {
             glAttachShader(mProgram, mGeometry);
+            g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Geometry shader attached to the shader program", __FUNCTION__);
+        }
     }
     if (glIsShader(mFragment))
     {
-        glGetShaderiv(mGeometry, GL_COMPILE_STATUS, &status);
+        glGetShaderiv(mFragment, GL_COMPILE_STATUS, &status);
         if (status == GL_TRUE)
-            glAttachShader(mProgram, mGeometry);
+        {
+            glAttachShader(mProgram, mFragment);
+            g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Fragment shader attached to the shader program", __FUNCTION__);
+        }
     }
     
     glBindAttribLocation(mProgram, context->mVertexBuffer[0], "vVertex");
@@ -372,11 +432,10 @@ bool Shader::activate(void* pContext)
         g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Shader program linked successfully", __FUNCTION__);
         mIsLinked = true;
         glUseProgram(mProgram);
-        return true;
     }
     else
     {
-        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Error while linking shader program", __FUNCTION__);
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Error while linking the shader program", __FUNCTION__);
         
         GLint length;
         glGetProgramiv(mProgram, GL_INFO_LOG_LENGTH, &length);
@@ -388,6 +447,10 @@ bool Shader::activate(void* pContext)
         mIsLinked = false;
         return false;
     }
+
+    mLocationMVP = glGetUniformLocation(mProgram, "vViewProjectionMatrix");
+
+    return true;
 }
 
 /*************/
@@ -397,4 +460,10 @@ void Shader::bindTexture(GLuint pTexture, uint pTextureUnit, string pName)
     glBindTexture(GL_TEXTURE_2D, pTexture);
     GLint uniform = glGetUniformLocation(mProgram, pName.c_str());
     glUniform1i(uniform, pTextureUnit);
+}
+
+/*************/
+void Shader::setViewProjectionMatrix(const glm::mat4& matrix)
+{
+    glUniformMatrix4fv(mLocationMVP, 1, GL_FALSE, glm::value_ptr(matrix));
 }
