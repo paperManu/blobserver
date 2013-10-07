@@ -82,3 +82,17 @@ Some parts of blobserver are not mandatory, and you need some additional package
   ./autogen.sh
   make && sudo make install
   cd ../blobserver/
+
+--> GLSL support (for Actuator_GLSL)
+  cd ..
+  git clone git@github.com:glfw/glfw.git
+  cd glfw
+  git checkout 3.0.3
+  mkdir build
+  cd build
+  cmake -DBUILD_SHARED_LIBS=ON ..
+  make && sudo make install
+  cd ../../blobserver/
+
+  Also, GLM is needed:
+  sudo apt-get install libglm-dev

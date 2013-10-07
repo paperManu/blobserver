@@ -192,6 +192,20 @@
  * - name: fiducialtracker
  * - values: Id(int) X(float) Y(float) angle(float)
  *
+ * \subsection actuator_glsl OpenGL (GLSL) based actuator (Actuator_GLSL)
+ *
+ * Uses the GPU to modify the input image(s) according to some shaders.
+ *
+ * Number of source(s) needed: at least 1 Source_2D (only limited by the GPU)
+ *
+ * Available parameters:
+ * - vertexFile (string): path to the vertex shader
+ * - geometryFile (string): path to the geometry shader
+ * - fragmentFile (string): path to the fragment shader
+ * - uniform (string float[n]): send the specified floats as a uniform to the shaders. (1 <= n <= 4) 
+ *
+ * OSC output: none
+ *
  * \subsection actuator_hog_sec Histogram of Oriented Gradients (Actuator_Hog)
  *
  * This actuator searches for objects corresponding to the model trained with blobtrainer.
