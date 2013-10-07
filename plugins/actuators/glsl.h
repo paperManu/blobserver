@@ -23,8 +23,8 @@
  * The Actuator_GLSL class.
  */
 
-#ifndef NOP_H
-#define NOP_H
+#ifndef GLSL_H
+#define GLSL_H
 
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
@@ -132,4 +132,4 @@ class Actuator_GLSL : public Actuator
 
 REGISTER_ACTUATOR(Actuator_GLSL)
 
-#endif // NOP_H
+#endif // GLSL_H
