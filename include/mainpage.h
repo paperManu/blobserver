@@ -202,6 +202,7 @@
  * - vertexFile (string): path to the vertex shader
  * - geometryFile (string): path to the geometry shader
  * - fragmentFile (string): path to the fragment shader
+ * - glSize (float[2]): size of the rendering buffer. Parameters are: [width] [height]
  * - uniform (string float[n]): send the specified floats as a uniform to the shaders. (1 <= n <= 4) 
  *
  * OSC output: none

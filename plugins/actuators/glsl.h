@@ -107,6 +107,7 @@ class Actuator_GLSL : public Actuator
         bool isGlfw, mIsInitDone;
         GLFWwindow* mWindow;
         cv::Size mGLSize;
+        bool mOverrideSize;
 
         GLuint mVertexArray;
         GLuint mVertexBuffer[2];

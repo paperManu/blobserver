@@ -10,6 +10,10 @@
                 <Name>fragmentFile</Name>
                 <Value>shaders/glsl.frag</Value>
             </Param>
+            <Param>
+                <Name>glSize</Name>
+                <Value>1024 768</Value>
+            </Param>
         </Actuator>
         <Source>
             <Type>Source_2D_OpenCV</Type>

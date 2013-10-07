@@ -66,6 +66,7 @@ void Actuator_GLSL::make()
 
     mFrameNumber = 0;
 
+    mOverrideSize = false;
     mIsInitDone = false;
     initGL();
 }
@@ -90,17 +91,23 @@ atom::Message Actuator_GLSL::detect(vector<Capture_Ptr> pCaptures)
 
     glfwMakeContextCurrent(mWindow);
     uploadTextures(captures);
-    
-    if (mGLSize.width != capture.cols || mGLSize.height != capture.rows)
-    {
-        mGLSize = cv::Size(capture.cols, capture.rows);
-        glfwSetWindowSize(mWindow, mGLSize.width, mGLSize.height);
-        updateFBO();
-    }
 
     int width, height;
     glfwGetFramebufferSize(mWindow, &width, &height);
-    glViewport(0, 0, width, height);
+    
+    glfwHideWindow(mWindow);
+    if (!mOverrideSize && (width != capture.cols || height != capture.rows))
+    {
+        mGLSize = cv::Size(capture.cols, capture.rows);
+        glfwSetWindowSize(mWindow, mGLSize.width, mGLSize.height);
+    }
+    else if (mOverrideSize && (width != mGLSize.width || height != mGLSize.height))
+    {
+        glfwShowWindow(mWindow);
+        glfwSetWindowSize(mWindow, mGLSize.width, mGLSize.height);
+    }
+
+    glViewport(0, 0, mGLSize.width, mGLSize.height);
 
     if (mShader->activate(this))
     {
@@ -144,7 +151,7 @@ void Actuator_GLSL::initGL()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_FALSE);
 
     glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
     mGLSize = cv::Size(640, 480);
@@ -312,6 +319,19 @@ void Actuator_GLSL::setParameter(atom::Message pMessage)
         {
             string code = readFile(name);
             mShader->setShader(code, "fragment");
+        }
+    }
+    else if (cmd == "glSize")
+    {
+        float w, h;
+        if (!readParam(pMessage, w, 1))
+            return;
+        if (!readParam(pMessage, h, 2))
+            return;
+        if (w > 0 && h > 0)
+        {
+            mOverrideSize = true;
+            mGLSize = cv::Size(w, h);
         }
     }
     else if (cmd == "uniform")
