@@ -108,6 +108,7 @@ atom::Message Actuator_GLSL::detect(vector<Capture_Ptr> pCaptures)
     }
 
     glViewport(0, 0, mGLSize.width, mGLSize.height);
+    mShader->setUniform("vDim", glm::ivec2(mGLSize.width, mGLSize.height));
 
     if (mShader->activate(this))
     {
@@ -247,6 +248,7 @@ void Actuator_GLSL::uploadTextures(vector<cv::Mat> pImg)
     {
         mTextures[i] = pImg[i];
         mShader->bindTexture(mTextures[i].getGLTex(), i, string("vTex") + to_string(i));
+        mShader->setUniform(string("vTex") + to_string(i) + string("Size"), glm::ivec2(pImg[i].cols, pImg[i].rows));
     }
 }
 
@@ -473,7 +475,7 @@ void Shader::setShader(const string src, const string type)
         g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Shader of type %s compiled successfully", __FUNCTION__, type.c_str());
     else
     {
-        g_log(NULL, G_LOG_LEVEL_ERROR, "%s - Error while compiling shader of type %s", __FUNCTION__, type.c_str());
+        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Error while compiling shader of type %s", __FUNCTION__, type.c_str());
 
         GLint length;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
@@ -573,6 +575,46 @@ void Shader::bindTexture(GLuint pTexture, uint pTextureUnit, string pName)
 void Shader::setViewProjectionMatrix(const glm::mat4& matrix)
 {
     glUniformMatrix4fv(mLocationMVP, 1, GL_FALSE, glm::value_ptr(matrix));
+}
+
+/*************/
+void Shader::setUniform(string name, int v)
+{
+    GLint location;
+    location = glGetUniformLocation(mProgram, name.c_str());
+    if (location == -1)
+        return;
+    glUniform1i(location, v);
+}
+
+/*************/
+void Shader::setUniform(string name, glm::ivec2 v)
+{
+    GLint location;
+    location = glGetUniformLocation(mProgram, name.c_str());
+    if (location == -1)
+        return;
+    glUniform2i(location, v[0], v[1]);
+}
+
+/*************/
+void Shader::setUniform(string name, glm::ivec3 v)
+{
+    GLint location;
+    location = glGetUniformLocation(mProgram, name.c_str());
+    if (location == -1)
+        return;
+    glUniform3i(location, v[0], v[1], v[2]);
+}
+
+/*************/
+void Shader::setUniform(string name, glm::ivec4 v)
+{
+    GLint location;
+    location = glGetUniformLocation(mProgram, name.c_str());
+    if (location == -1)
+        return;
+    glUniform4i(location, v[0], v[1], v[2], v[3]);
 }
 
 /*************/

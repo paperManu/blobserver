@@ -62,6 +62,10 @@ class Shader
         void bindTexture(GLuint pTexture, uint pTextureUnit, std::string pName);
 
         void setViewProjectionMatrix(const glm::mat4& matrix);
+        void setUniform(std::string name, int value);
+        void setUniform(std::string name, glm::ivec2 v);
+        void setUniform(std::string name, glm::ivec3 v);
+        void setUniform(std::string name, glm::ivec4 v);
         void setUniform(std::string name, float value);
         void setUniform(std::string name, glm::dvec2 v);
         void setUniform(std::string name, glm::dvec3 v); 

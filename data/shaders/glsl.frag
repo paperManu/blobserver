@@ -1,6 +1,8 @@
 #version 150 core
 
+uniform ivec2 vDim;
 uniform sampler2D vTex0;
+uniform ivec2 vTex0Size;
 
 in vec2 finalTexCoord;
 
