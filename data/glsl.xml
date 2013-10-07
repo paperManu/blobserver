@@ -4,11 +4,11 @@
             <Type>Actuator_GLSL</Type>
             <Param>
                 <Name>vertexFile</Name>
-                <Value>glsl.vert</Value>
+                <Value>shaders/glsl.vert</Value>
             </Param>
             <Param>
                 <Name>fragmentFile</Name>
-                <Value>glsl.frag</Value>
+                <Value>shaders/glsl.frag</Value>
             </Param>
         </Actuator>
         <Source>
