@@ -36,5 +36,6 @@ src/Makefile
 src/Makefile.in
 src/blobserver
 src/blobcontroller
+src/blobcrop
 src/blobtrainer
 include/stamp-h1

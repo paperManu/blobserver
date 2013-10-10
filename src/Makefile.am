@@ -7,6 +7,7 @@ AM_CPPFLAGS = \
 bin_PROGRAMS = \
     blobserver \
     blobcontroller \
+    blobcrop \
     blobtrainer
 
 # Blobserver
@@ -111,6 +112,16 @@ blobcontroller_LDADD = \
     $(PCL_LIBS) \
     $(SHMDATA_LIBS) \
     $(XML2_LIBS)
+
+# Blobcrop
+blobcrop_SOURCES = blobcrop.cpp
+blobcrop_CXXFLAGS = \
+    $(GLIB_CFLAGS) \
+    $(OPENCV_CFLAGS)
+
+blobcrop_LDADD = \
+    $(GLIB_LIBS) \
+    $(OPENCV_LIBS)
 
 # Blobtrainer
 blobtrainer_SOURCES = \

@@ -108,7 +108,7 @@ void App::stop()
 }
 
 /*****************/
-void leave (int sig)
+void leave(int sig)
 {
     shared_ptr<App> theApp = App::getInstance();
     theApp->stop();

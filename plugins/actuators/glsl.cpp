@@ -66,6 +66,7 @@ void Actuator_GLSL::make()
 
     mFrameNumber = 0;
 
+    mWindow = NULL;
     mOverrideSize = false;
     mIsInitDone = false;
     initGL();
