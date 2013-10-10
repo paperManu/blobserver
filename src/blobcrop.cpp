@@ -100,23 +100,22 @@ void onMouseCb(int event, int x, int y, int flags, void* userdata)
 
     char outputName[16];
     sprintf(outputName, "%05d", gCropIndex);
-    cout << gCropIndex << endl;
     cv::Mat crop = image(roi);
-    cv::imwrite(string(data->output) + string("/") + string(outputName) + string(".") + string(gExtension), crop);
+    string path = string(data->output) + string("/") + string(outputName) + string(".") + string(gExtension);
+    cv::imwrite(path, crop);
+    cout << path << " written" << endl;
 
     gCropIndex++;
-
-    cout << x << " " << y << endl;
 }
 
 /*************/
 int main(int argc, char** argv)
 {
     gExtension = (char*)malloc(8 * sizeof(char));
-    gExtension = "png";
+    gExtension = (char*)"png";
 
     gOutputDir = (char*)malloc(128 * sizeof(char));
-    gOutputDir = "crops";
+    gOutputDir = (char*)"crops";
 
     gRoiSize = cv::Size(64, 128);
 
@@ -192,7 +191,7 @@ int main(int argc, char** argv)
         CbData data;
         data.image = image;
         data.filename = filename;
-        data.output = string("test");
+        data.output = string(gOutputDir);
 
         cv::setMouseCallback(filename.c_str(), onMouseCb, &data);
 
