@@ -163,6 +163,7 @@ int main(int argc, char** argv)
             cout << "Usage:" << endl;
             cout << "--ext extension \tSpecifies the image file extension to use (default: png)" << endl;
             cout << "--size h w \t\tSpecifies the size of the crops (default: 64 128)" << endl;
+            cout << "--out name \t\tSet the output directory to contain cropped images (default: crops)" << endl;
             return 1;
         }
     }
