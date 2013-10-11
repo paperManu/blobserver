@@ -373,6 +373,7 @@ Texture::Texture()
 {
     glGenTextures(1, &mGLTex);
     mSize = cv::Size(0, 0);
+    mType = -1;
 }
 
 /*************/
@@ -392,7 +393,7 @@ Texture& Texture::operator=(const cv::Mat& pImg)
     cv::flip(pImg, buffer, 0);
 
     glGetError();
-    if (mSize != pImg.size() || !glIsTexture(mGLTex))
+    if (mSize != pImg.size() || mType != pImg.type() || !glIsTexture(mGLTex))
     {
         glDeleteTextures(1, &mGLTex);
         glGenTextures(1, &mGLTex);
@@ -404,17 +405,55 @@ Texture& Texture::operator=(const cv::Mat& pImg)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, buffer.cols, buffer.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, buffer.data);
+
+        if (pImg.type() == CV_8UC3)
+        {
+            g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Created a new texture of type GL_UNSIGNED_BYTE, format GL_BGR", "Texture");
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buffer.cols, buffer.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, buffer.data);
+        }
+        else if (pImg.type() == CV_8UC1)
+        {
+            g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Created a new texture of type GL_UNSIGNED_BYTE, format GL_RED", "Texture");
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, buffer.cols, buffer.rows, 0, GL_RED, GL_UNSIGNED_BYTE, buffer.data);
+        }
+        else if (pImg.type() == CV_32FC3)
+        {
+            g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Created a new texture of type GL_FLOAT, format GL_BGR", "Texture");
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buffer.cols, buffer.rows, 0, GL_BGR, GL_FLOAT, buffer.data);
+        }
+        else if (pImg.type() == CV_32FC1)
+        {
+            g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Created a new texture of type GL_FLOAT, format GL_RED", "Texture");
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, buffer.cols, buffer.rows, 0, GL_RED, GL_FLOAT, buffer.data);
+        }
+        else
+        {
+            g_log(NULL, G_LOG_LEVEL_ERROR, "%s - Unsupported texture format", "Texture");
+            return *this;
+        }
+
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         mSize = pImg.size();
+        mType = pImg.type();
     }
     else
     {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, mGLTex);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, buffer.cols, buffer.rows, GL_BGR, GL_UNSIGNED_BYTE, buffer.data);
+
+        if (mType == CV_8UC3)
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, buffer.cols, buffer.rows, GL_BGR, GL_UNSIGNED_BYTE, buffer.data);
+        else if (mType == CV_8UC1)
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, buffer.cols, buffer.rows, GL_RED, GL_UNSIGNED_BYTE, buffer.data);
+        else if (mType == CV_32FC3)
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, buffer.cols, buffer.rows, GL_BGR, GL_FLOAT, buffer.data);
+        else if (mType = CV_32FC1)
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, buffer.cols, buffer.rows, GL_RED, GL_FLOAT, buffer.data);
+        else
+            return *this; // This should never happen due to the previous test of type
+
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
     }

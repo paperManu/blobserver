@@ -48,6 +48,7 @@ class Texture
     private:
         GLuint mGLTex;
         cv::Size mSize;
+        int mType;
 };
 
 /*************/
