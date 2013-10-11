@@ -37,6 +37,7 @@ using namespace std;
 
 char* gExtension = NULL;
 char* gOutputDir = NULL;
+char* gPrefix = NULL;
 cv::Size gRoiSize;
 
 bool gQuit = false;
@@ -91,15 +92,16 @@ void onMouseCb(int event, int x, int y, int flags, void* userdata)
 
     cv::rectangle(mask, roi, cv::Scalar(255), CV_FILLED);
 
-    cv::Mat displayMat;
+    cv::Mat displayMat, inverse;
     image.copyTo(displayMat, mask);
-    cv::imshow(data->filename, displayMat);
+    image.copyTo(inverse, 255 - mask);
+    cv::imshow(data->filename, displayMat + inverse / 2);
 
     if (event != cv::EVENT_LBUTTONDOWN)
         return;
 
     char outputName[16];
-    sprintf(outputName, "%05d", gCropIndex);
+    sprintf(outputName, "%s%05d", gPrefix, gCropIndex);
     cv::Mat crop = image(roi);
     string path = string(data->output) + string("/") + string(outputName) + string(".") + string(gExtension);
     cv::imwrite(path, crop);
@@ -116,6 +118,9 @@ int main(int argc, char** argv)
 
     gOutputDir = (char*)malloc(128 * sizeof(char));
     gOutputDir = (char*)"crops";
+
+    gPrefix = (char*)malloc(64 * sizeof(char));
+    gPrefix = (char*)"";
 
     gRoiSize = cv::Size(64, 128);
 
@@ -145,8 +150,8 @@ int main(int argc, char** argv)
                 }
                 gRoiSize = cv::Size(h, w);
                 cout << "Chosen size: " << h << "x" << w << endl;
-                i += 3;
             }
+            i += 3;
         }
         else if (strcmp(argv[i], "--out") == 0)
         {
@@ -154,7 +159,15 @@ int main(int argc, char** argv)
             {
                 gOutputDir = argv[i + 1];
             }
-            i++;
+            i += 2;
+        }
+        else if (strcmp(argv[i], "--prefix") == 0)
+        {
+            if (argc >= i + 1)
+            {
+                gPrefix = argv[i + 1];
+            }
+            i += 2;
         }
         else if (strcmp(argv[i], "--help") == 0)
         {
@@ -163,6 +176,7 @@ int main(int argc, char** argv)
             cout << "--ext extension \tSpecifies the image file extension to use (default: png)" << endl;
             cout << "--size h w \t\tSpecifies the size of the crops (default: 64 128)" << endl;
             cout << "--out name \t\tSet the output directory to contain cropped images (default: crops)" << endl;
+            cout << "--prefix name \tSet a prefix to the output file names (default: none)" << endl;
             return 1;
         }
     }
