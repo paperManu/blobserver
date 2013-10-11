@@ -110,6 +110,7 @@ class Actuator_GLSL : public Actuator
         Capture_Ptr mCapture;
 
         bool isGlfw, mIsInitDone;
+        GLint mIsGLVisible;
         GLFWwindow* mWindow;
         cv::Size mGLSize;
         bool mOverrideSize;

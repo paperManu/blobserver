@@ -66,6 +66,7 @@ void Actuator_GLSL::make()
 
     mFrameNumber = 0;
 
+    mIsGLVisible = GL_FALSE;
     mWindow = NULL;
     mOverrideSize = false;
     mIsInitDone = false;
@@ -96,7 +97,9 @@ atom::Message Actuator_GLSL::detect(vector<Capture_Ptr> pCaptures)
     int width, height;
     glfwGetFramebufferSize(mWindow, &width, &height);
     
-    glfwHideWindow(mWindow);
+    if (mIsGLVisible == GL_FALSE)
+        glfwHideWindow(mWindow);
+
     if (!mOverrideSize && (width != capture.cols || height != capture.rows))
     {
         mGLSize = cv::Size(capture.cols, capture.rows);
@@ -155,7 +158,7 @@ void Actuator_GLSL::initGL()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_FALSE);
 
-    glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
+    glfwWindowHint(GLFW_VISIBLE, mIsGLVisible);
     mGLSize = cv::Size(640, 480);
     mWindow = glfwCreateWindow(mGLSize.width, mGLSize.height, "Actuator_GLSL", NULL, NULL);
     if (!mWindow)
@@ -360,6 +363,12 @@ void Actuator_GLSL::setParameter(atom::Message pMessage)
         else if (card == 2)
             mShader->setUniform(name, glm::dvec4(values[0], values[1], values[2], values[3]));
     }
+    else if (cmd == "visible")
+    {
+        float visible;
+        if (readParam(pMessage, visible))
+            mIsGLVisible = (visible > 0.f) ? GL_TRUE : GL_FALSE;
+    }
     else
         setBaseParameter(pMessage);
         
@@ -409,22 +418,22 @@ Texture& Texture::operator=(const cv::Mat& pImg)
         if (pImg.type() == CV_8UC3)
         {
             g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Created a new texture of type GL_UNSIGNED_BYTE, format GL_BGR", "Texture");
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buffer.cols, buffer.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, buffer.data);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, buffer.cols, buffer.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, buffer.data);
         }
         else if (pImg.type() == CV_8UC1)
         {
             g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Created a new texture of type GL_UNSIGNED_BYTE, format GL_RED", "Texture");
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, buffer.cols, buffer.rows, 0, GL_RED, GL_UNSIGNED_BYTE, buffer.data);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, buffer.cols, buffer.rows, 0, GL_RED, GL_UNSIGNED_BYTE, buffer.data);
         }
         else if (pImg.type() == CV_32FC3)
         {
             g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Created a new texture of type GL_FLOAT, format GL_BGR", "Texture");
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buffer.cols, buffer.rows, 0, GL_BGR, GL_FLOAT, buffer.data);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, buffer.cols, buffer.rows, 0, GL_BGR, GL_FLOAT, buffer.data);
         }
         else if (pImg.type() == CV_32FC1)
         {
             g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Created a new texture of type GL_FLOAT, format GL_RED", "Texture");
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, buffer.cols, buffer.rows, 0, GL_RED, GL_FLOAT, buffer.data);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, buffer.cols, buffer.rows, 0, GL_RED, GL_FLOAT, buffer.data);
         }
         else
         {
