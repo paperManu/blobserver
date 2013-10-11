@@ -167,15 +167,15 @@ int main(int argc, char** argv)
         }
     }
 
-    g_mkdir(gOutputDir, 0755);
     vector<string> fileList = loadFileList("./");
-
     if (fileList.empty())
     {
         cout << "Not a single image file has been found. Exiting" << endl;
         return 1;
     }
     cout << "Found " << fileList.size() << " images to process." << endl;
+
+    g_mkdir(gOutputDir, 0755);
    
     for_each (fileList.begin(), fileList.end(), [&] (string filename)
     {
