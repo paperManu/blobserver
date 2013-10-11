@@ -40,7 +40,6 @@ char* gOutputDir = NULL;
 char* gPrefix = NULL;
 cv::Size gRoiSize;
 
-bool gQuit = false;
 int gCropIndex = 0;
 
 /*************/
@@ -188,17 +187,18 @@ int main(int argc, char** argv)
         return 1;
     }
     cout << "Found " << fileList.size() << " images to process." << endl;
+    cout << "Notice: use 'n' for next image, 'p' for the previous one" << endl;
 
     g_mkdir(gOutputDir, 0755);
    
-    for_each (fileList.begin(), fileList.end(), [&] (string filename)
+    //for_each (fileList.begin(), fileList.end(), [&] (string filename)
+    for (int i = 0; i < fileList.size(); ++i)
     {
-        if (gQuit)
-            return;
+        string filename = fileList[i];
 
         cv::Mat image = cv::imread(filename, -1);
         if (image.total() == 0)
-            return;
+            continue;
 
         cv::imshow(filename.c_str(), image);
 
@@ -215,13 +215,15 @@ int main(int argc, char** argv)
             char key = cv::waitKey(16);
             if (key == 'n')
                 goOn = false;
-            else if ((int)key == 27)
+            else if (key == 'p')
             {
-                gQuit = true;
-                return;
+                goOn = false;
+                i = max(-1, i - 2);
             }
+            else if ((int)key == 27)
+                return 1;
         }
 
         cv::destroyWindow(filename.c_str());
-    });
+    }
 }
