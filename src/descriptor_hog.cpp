@@ -71,12 +71,9 @@ class Parallel_Gradients : public cv::ParallelLoopBody
 Descriptor_Hog::Descriptor_Hog():
     _doCrop(false)
 {
-    _descriptorSize.width = 8;
-    _descriptorSize.height = 16;
-    _blockSize.width = 3;
-    _blockSize.height = 3;
-    _cellSize.width = 8;
-    _cellSize.height = 8;
+    _roiSize = cv::Size_<int>(64, 128);
+    _blockSize = cv::Size_<int>(3, 3);
+    _cellSize = cv::Size_<int>(8, 8);
     _binsPerCell = 9;
     _signed = false;
     _normType = L1_NORM;
@@ -88,6 +85,10 @@ Descriptor_Hog::Descriptor_Hog():
     _kernelH.at<float>(0, 1) = 0.f;
     _kernelH.at<float>(0, 2) = 1.f;
     _kernelV = _kernelH.t();
+
+    _cellMinSize = cv::Size_<int>(0, 0);
+    _cellMaxSize = cv::Size_<int>(0, 0);
+    _cellStep = cv::Size_<float>(1.f, 1.f);
 }
 
 /*************/
@@ -124,34 +125,72 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
 {
     vector<float> descriptor;
 
+    if (_cellMinSize == cv::Size_<int>(0, 0) ||
+        _cellMaxSize == cv::Size_<int>(0, 0) ||
+        _cellStep == cv::Size_<float>(0.f, 0.f))
+    {
+        descriptor = getSingleScaleDescriptor(pPos, _cellSize);
+    }
+    else
+    {
+        cv::Size_<int> cellSize = _cellMinSize;
+        
+        while (cellSize.width <= _cellMaxSize.width) // && cellSize.height <= _cellMaxSize.height)
+        {
+            cellSize.height = _cellMinSize.height;
+
+            while (cellSize.height <= _cellMaxSize.height)
+            {
+                int currentSize = descriptor.size();
+                vector<float> addedVectors = getSingleScaleDescriptor(pPos, cellSize);
+                descriptor.resize(currentSize + addedVectors.size());
+                copy(addedVectors.begin(), addedVectors.end(), descriptor.begin() + currentSize);
+
+                cellSize.height = (int)((float)cellSize.height * _cellStep.height);
+            }
+
+            cellSize.width = (int)((float)cellSize.width * _cellStep.width);
+        }
+    }
+
+    return descriptor;
+}
+
+/*************/
+vector<float> Descriptor_Hog::getSingleScaleDescriptor(cv::Point_<int> pPos, const cv::Size_<int> pCellSize) const
+{
+    vector<float> descriptor;
+
     // Angle covered per bin
     float anglePerBin = 180.f / (float)_binsPerCell;
     if (_signed)
         anglePerBin *= 2.f;
 
     // Check if we have enough room to build a complete descriptor
-    int roiSizeH = _descriptorSize.width * _cellSize.width;
-    int roiSizeV = _descriptorSize.height * _cellSize.height;
-    if (pPos.x + roiSizeH > _image.cols || pPos.y + roiSizeV > _image.rows)
+    if (pPos.x + _roiSize.width > _image.cols || pPos.y + _roiSize.height > _image.rows)
         return descriptor;
+
     // If position is too close to the border (no margin), we don't have enough room either
     if (pPos.x < 0 || pPos.y < 0)
         return descriptor;
+
+    int cellNumberH = _roiSize.width / pCellSize.width;
+    int cellNumberV = _roiSize.height / pCellSize.height;
     
     // For each cell, we compute its descriptor
     vector< vector<float> > cellsDescriptor;
-    for (int cellH = 0; cellH < _descriptorSize.width; ++cellH)
-        for (int cellV = 0; cellV < _descriptorSize.height; ++cellV)
+    for (int cellH = 0; cellH < cellNumberH; ++cellH)
+        for (int cellV = 0; cellV < cellNumberV; ++cellV)
         {
             cv::Point_<int> topLeft;
-            topLeft.x = cellH * _cellSize.width + pPos.x;
-            topLeft.y = cellV * _cellSize.height + pPos.y;
+            topLeft.x = cellH * pCellSize.width + pPos.x;
+            topLeft.y = cellV * pCellSize.height + pPos.y;
             
             // Creation of the histogram
             vector<float> cellDescriptor;
             cellDescriptor.assign(_binsPerCell, 0);
-            for (int x = 0; x < _cellSize.width; ++x)
-                for (int y = 0; y < _cellSize.height; ++y)
+            for (int x = 0; x < pCellSize.width; ++x)
+                for (int y = 0; y < pCellSize.height; ++y)
                 {
                     int index = _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[0] / anglePerBin;
                     float subPos = _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[0] - index*anglePerBin;
@@ -177,8 +216,8 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
         }
 
     // We have all cells descriptors. Now we normalize them to create the global descriptor
-    for (int cellH = 0; cellH < _descriptorSize.width - (_blockSize.width - 1); ++cellH)
-        for (int cellV = 0; cellV < _descriptorSize.height - (_blockSize.height - 1); ++cellV)
+    for (int cellH = 0; cellH < cellNumberH - (_blockSize.width - 1); ++cellH)
+        for (int cellV = 0; cellV < cellNumberV - (_blockSize.height - 1); ++cellV)
         {
             int blockCenterH = cellH + (_blockSize.width << 2);
             int blockCenterV = cellV + (_blockSize.height << 2);
@@ -191,7 +230,7 @@ vector<float> Descriptor_Hog::getDescriptor(cv::Point_<int> pPos) const
                 for (int j = 0; j < _blockSize.height; ++j)
                 {
                     //int index = blockCenterH+i + (blockCenterH+j)*windowV;
-                    int index = cellH+i + (cellV+j) * _descriptorSize.width;
+                    int index = cellH+i + (cellV+j) * cellNumberH;
 
                     // We apply a gaussian curve over the blocks
                     float gaussianFactor = 1.f;
@@ -239,15 +278,20 @@ void Descriptor_Hog::setHogParams(const cv::Size_<int> pDescriptorSize, const cv
 
     _blockSize = pBlockSize;
     _cellSize = pCellSize;
-    // We calculate the size of the descriptor (in cells), lower rounded
-    _descriptorSize.width = pDescriptorSize.width / _cellSize.width;
-    _descriptorSize.height = pDescriptorSize.height / _cellSize.height;
-
+    _roiSize = pDescriptorSize;
     _binsPerCell = pBinsPerCell;
     _signed = pSigned;
     _normType = pNorm;
 
     _gaussSigma = max(0.f, pSigma);
+}
+
+/*************/
+void Descriptor_Hog::setMultiscaleParams(const cv::Size_<int> pCellMinSize, const cv::Size_<int> pCellMaxSize, const cv::Size_<float> pCellStep)
+{
+    _cellMinSize = pCellMinSize;
+    _cellMaxSize = pCellMaxSize;
+    _cellStep = pCellStep;
 }
 
 /*************/

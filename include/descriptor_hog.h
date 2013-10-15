@@ -70,7 +70,7 @@ class Descriptor_Hog
          * \param pTransH Horizontal translation of the crop
          * \param pTransV Horizontal translation of the crop
          */
-        void setRoi(cv::Rect_<int> pCropRect);
+        void setRoi(const cv::Rect_<int> pCropRect);
 
         /**
          * Specifies various parameters for the histogram of oriented gradients creation.
@@ -86,6 +86,10 @@ class Descriptor_Hog
         void setHogParams(const cv::Size_<int> pDescriptorSize, const cv::Size_<int> pBlockSize, const cv::Size_<int> pCellSize,
             const unsigned int pBinsPerCell, const bool pSigned = false, const Hog_Norm pNorm = L2_NORM, const float pSigma = 1.f);
 
+        /**
+         */
+        void setMultiscaleParams(const cv::Size_<int> pCellMinSize, const cv::Size_<int> pCellMaxSize, const cv::Size_<float> pCellStep);
+
     private:
         // Input image
         cv::Mat _image;
@@ -97,7 +101,7 @@ class Descriptor_Hog
         cv::Rect_<int> _cropRect;
 
         // R-HOG parameters (see [Dalal et al. 2005])
-        cv::Size_<int> _descriptorSize;
+        cv::Size_<int> _roiSize;
         cv::Size_<int> _blockSize;
         cv::Size_<int> _cellSize;
         int _binsPerCell;
@@ -105,9 +109,16 @@ class Descriptor_Hog
         Hog_Norm _normType;
         float _gaussSigma;
 
+        // Multiscale parameters
+        cv::Size_<int> _cellMinSize, _cellMaxSize;
+        cv::Size_<float> _cellStep;
+
         // Constant attributes
         float _epsilon; // A small value, used for normalization.
         cv::Mat _kernelH, _kernelV;
+
+        // Computes a single scale descriptor
+        std::vector<float> getSingleScaleDescriptor(cv::Point_<int> pPos, const cv::Size_<int> pCellSize) const;
 
         // Method to compute the norm of a descriptor
         float getDescriptorNorm(std::vector<float> pDescriptor) const;

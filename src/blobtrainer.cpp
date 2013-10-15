@@ -54,6 +54,8 @@ static double gCPenalty = 0.1;
 static int gBins = 9;
 static gchar* gPosition = NULL;
 static gchar* gCellSize = NULL;
+static gchar* gCellMaxSize = NULL;
+static gchar* gCellStep = NULL;
 static gchar* gBlockSize = NULL;
 static gchar* gRoiSize = NULL;
 static double gSigma = 0.0;
@@ -65,6 +67,8 @@ static double gCrossValidation = 1.0;
 int _svmCriteria;
 cv::Point_<int> _roiPosition;
 cv::Point_<int> _cellSize;
+cv::Point_<int> _cellMaxSize;
+cv::Point_<float> _cellStep;
 cv::Point_<int> _blockSize;
 cv::Point_<int> _roiSize;
 
@@ -84,6 +88,8 @@ static GOptionEntry gEntries[] =
     {"bins", 'b', 0, G_OPTION_ARG_INT, &gBins, "Specifies number of bins for the HOG descriptor (default: 9)", NULL},
     {"position", 0, 0, G_OPTION_ARG_STRING, &gPosition, "Specifies the position where to create the positives descriptors (default: '16x16')", NULL},
     {"cell-size", 0, 0, G_OPTION_ARG_STRING, &gCellSize, "Specifies the size of the cells (in pixels) of descriptors (default: '8x8')", NULL},
+    {"cell-max-size", 0, 0, G_OPTION_ARG_STRING, &gCellMaxSize, "Specifies the maximum size of the cells, when using multiscale training (default: 0x0)", NULL},
+    {"cell-step", 0, 0, G_OPTION_ARG_STRING, &gCellStep, "Specifies the step factor between cell size, when using multiscale training (default: '1x1'", NULL},
     {"block-size", 0, 0, G_OPTION_ARG_STRING, &gBlockSize, "Specifies the size of the blocks over which cells are normalized (default: '3x3')", NULL},
     {"roi-size", 0, 0, G_OPTION_ARG_STRING, &gRoiSize, "Specifies the size (in pixels) of the ROI from which to create descriptors (default: '64x128')", NULL},
     {"sigma", 0, 0, G_OPTION_ARG_DOUBLE, &gSigma, "Specifies the sigma parameter for the gaussian kernel applied over blocks (default: 1.0)", NULL},
@@ -138,6 +144,14 @@ int parseArgs(int argc, char** argv)
     if (gCellSize == NULL)
         gCellSize = (gchar*)"8x8";
     sscanf(gCellSize, "%ix%i", &(_cellSize.x), &(_cellSize.y));
+
+    if (gCellMaxSize == NULL)
+        gCellMaxSize = (gchar*)"0x0";
+    sscanf(gCellMaxSize, "%ix%i", &(_cellMaxSize.x), &(_cellMaxSize.y));
+
+    if (gCellStep == NULL)
+        gCellStep = (gchar*)"2x2";
+    sscanf(gCellStep, "%fx%f", &(_cellStep.x), &(_cellStep.y));
 
     if (gBlockSize == NULL)
         gBlockSize = (gchar*)"3x3";
@@ -196,6 +210,8 @@ void trainSVM(vector<string>& pPositiveFiles, vector<string>& pNegativeFiles, De
         cout << "   output file = " << gOutput << endl;
         cout << "   ROI position = " << gPosition << endl;
         cout << "   cell size = " << gCellSize << endl;
+        cout << "   cell max size = " << _cellMaxSize.x << "x" << _cellMaxSize.y << endl;
+        cout << "   cell step = " << gCellStep << endl;
         cout << "   block size = " << gBlockSize << endl;
         cout << "   roi size = " << gRoiSize << endl;
         cout << "   bins per cell = " << gBins << endl;
@@ -401,10 +417,14 @@ void testSVM(vector<string>& pPositiveFiles, vector<string>& pNegativeFiles, Des
         totalTime += timeSince(chronoTime);
     }
 
+    float precision = (float)positive / ((float)positive + (float)totalNegatives - (float)negative);
+    float recall = (float)positive/ ((float)pPositiveFiles.size() - (float)portionOfPositiveFiles);
+
     if (!gTable)
     {
         cout << "Positive: " << positive << " / " << pPositiveFiles.size() - portionOfPositiveFiles << endl;
         cout << "Negative: " << negative << " / " << totalNegatives << endl;
+        cout << "Precision: " << precision << " -- Recall: " << recall << endl;
         cout << "Time per prediction (us): " << totalTime / (pPositiveFiles.size() - portionOfPositiveFiles + totalNegatives) << endl;
     }
     else
@@ -415,13 +435,15 @@ void testSVM(vector<string>& pPositiveFiles, vector<string>& pNegativeFiles, Des
         cout << gOutput << " ";
         cout << gPosition << " ";
         cout << gCellSize << " ";
+        cout << gCellMaxSize << " ";
+        cout << gCellStep << " ";
         cout << gBlockSize << " ";
         cout << gRoiSize << " ";
         cout << gBins << " ";
         cout << gSigma << " ";
         cout << gPca << " ";
         cout << totalTime / (pPositiveFiles.size() - portionOfPositiveFiles + totalNegatives) << " ";
-        cout << (float)positive / ((float)pPositiveFiles.size() - (float)portionOfPositiveFiles) << " " << (float)negative/(float)totalNegatives << endl;
+        cout << precision << " " << recall << endl;
     }
 }
 
@@ -448,6 +470,12 @@ int main(int argc, char** argv)
     // Set up the descriptor
     Descriptor_Hog descriptor;
     descriptor.setHogParams(_roiSize, _blockSize, _cellSize, gBins, false, Descriptor_Hog::L2_NORM, gSigma);
+    if (_cellMaxSize.x >= _cellSize.x && _cellMaxSize.y >= _cellSize.y && _cellStep.x >= 1.f && _cellStep.y >= 1.f)
+    {
+        if (!gTable)
+            cout << "Multiscale training activated" << endl;
+        descriptor.setMultiscaleParams(_cellSize, _cellMaxSize, _cellStep);
+    }
 
     // The PCA object
     cv::PCA pca;
