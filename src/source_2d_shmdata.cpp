@@ -205,7 +205,7 @@ void Source_2D_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void*
             substr = subMatch.str();
             sscanf(substr.c_str(), ")%i", &red);
         }
-        else
+        else if (bpp != 96)
         {
             if (regex_match(dataType, regYUV))
                 isYUV = true;
