@@ -129,7 +129,7 @@ atom::Message Actuator_GLSL::detect(vector<Capture_Ptr> pCaptures)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, mFBOTexture);
+        glBindTexture(GL_TEXTURE_2D, mFBOTextures[0]);
         cv::Mat buffer = cv::Mat::zeros(mGLSize, CV_8UC3);
         glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, buffer.data);
         cv::flip(buffer, mOutputBuffer, 0);
@@ -237,8 +237,10 @@ void Actuator_GLSL::initFBO()
     glGenFramebuffers(1, &mFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
 
-    glGenTextures(1, &mFBOTexture);
-    glBindTexture(GL_TEXTURE_2D, mFBOTexture);
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    mFBOTextures.push_back(texture);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -247,7 +249,7 @@ void Actuator_GLSL::initFBO()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, mGLSize.width, mGLSize.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
     glBindTexture(GL_TEXTURE_2D, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mFBOTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
@@ -275,12 +277,54 @@ void Actuator_GLSL::uploadTextures(vector<cv::Mat> pImg)
 /*************/
 void Actuator_GLSL::updateFBO()
 {
-    if (glIsTexture(mFBOTexture) == GL_FALSE)
+    if (mFBOTextures.size() == 0 || glIsTexture(mFBOTextures[0]) == GL_FALSE)
         return;
 
-    glBindTexture(GL_TEXTURE_2D, mFBOTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, mGLSize.width, mGLSize.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    for (int i = 0; i < mFBOTextures.size(); ++i)
+    {
+        glBindTexture(GL_TEXTURE_2D, mFBOTextures[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, mGLSize.width, mGLSize.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+}
+
+/*************/
+void Actuator_GLSL::updateFBOAttachment(int pNbr)
+{
+    if (pNbr == mFBOTextures.size())
+        return;
+    else if (pNbr < mFBOTextures.size())
+    {
+        for (int i = pNbr; i < mFBOTextures.size(); ++i)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, mFBOTextures[i], 0);
+            glDeleteTextures(1, &mFBOTextures[i]);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+        mFBOTextures.resize(pNbr);
+    }
+    else
+    {
+        for (int i = mFBOTextures.size(); i < pNbr; ++i)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
+            GLuint texture;
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            mFBOTextures.push_back(texture);
+        
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, mGLSize.width, mGLSize.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+    }
 }
 
 /*************/
@@ -378,6 +422,12 @@ void Actuator_GLSL::setParameter(atom::Message pMessage)
             mShader->setUniform(name, glm::dvec3(values[0], values[1], values[2]));
         else if (card == 2)
             mShader->setUniform(name, glm::dvec4(values[0], values[1], values[2], values[3]));
+    }
+    else if (cmd == "outputNbr")
+    {
+        float nbr;
+        if (readParam(pMessage, nbr) && nbr >= 1.f)
+            updateFBOAttachment(nbr);
     }
     else if (cmd == "visible")
     {

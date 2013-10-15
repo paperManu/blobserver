@@ -122,7 +122,7 @@ class Actuator_GLSL : public Actuator
         std::shared_ptr<Shader> mShader;
 
         GLuint mFBO;
-        GLuint mFBOTexture;
+        std::vector<GLuint> mFBOTextures;
 
         // Methods
         void make();
@@ -133,6 +133,7 @@ class Actuator_GLSL : public Actuator
 
         void uploadTextures(std::vector<cv::Mat> pImg);
         void updateFBO();
+        void updateFBOAttachment(int pNbr);
 
         std::string readFile(std::string pName);
 };
