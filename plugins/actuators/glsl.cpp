@@ -104,11 +104,13 @@ atom::Message Actuator_GLSL::detect(vector<Capture_Ptr> pCaptures)
     {
         mGLSize = cv::Size(capture.cols, capture.rows);
         glfwSetWindowSize(mWindow, mGLSize.width, mGLSize.height);
+        updateFBO();
     }
     else if (mOverrideSize && (width != mGLSize.width || height != mGLSize.height))
     {
         glfwShowWindow(mWindow);
         glfwSetWindowSize(mWindow, mGLSize.width, mGLSize.height);
+        updateFBO();
     }
 
     glViewport(0, 0, mGLSize.width, mGLSize.height);
@@ -119,14 +121,27 @@ atom::Message Actuator_GLSL::detect(vector<Capture_Ptr> pCaptures)
         glm::mat4 viewProjectionMatrix = glm::ortho(-1.f, 1.f, -1.f, 1.f);
         mShader->setViewProjectionMatrix(viewProjectionMatrix);
 
-        GLenum renderBuffers[] = {GL_BACK};
-        glDrawBuffers(1, renderBuffers);
+        GLenum fboBuffers[] = {GL_COLOR_ATTACHMENT0};
+        glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
+        glDrawBuffers(1, fboBuffers);
         glClear(GL_COLOR_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, mFBOTexture);
         cv::Mat buffer = cv::Mat::zeros(mGLSize, CV_8UC3);
-        glReadPixels(0, 0, mGLSize.width, mGLSize.height, GL_BGR, GL_UNSIGNED_BYTE, buffer.data);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, buffer.data);
         cv::flip(buffer, mOutputBuffer, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        if (mIsGLVisible)
+        {
+            GLenum renderBuffers[] = {GL_BACK};
+            glDrawBuffers(1, renderBuffers);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
 
         glfwSwapBuffers(mWindow);
     }
@@ -169,6 +184,7 @@ void Actuator_GLSL::initGL()
 
     initGeometry();
     initShader();
+    initFBO();
 
     mIsInitDone = true;
 
