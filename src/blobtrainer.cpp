@@ -450,7 +450,7 @@ void testSVM(vector<string>& pPositiveFiles, vector<string>& pNegativeFiles, Des
 /*************/
 void randomize(vector<string>& pFiles)
 {
-    srand(time(0));
+    srand(pFiles.size());
     for (unsigned int i = 0; i < pFiles.size(); ++i)
     {
         int index = rand() % pFiles.size();
@@ -492,13 +492,9 @@ int main(int argc, char** argv)
 
     // If no model file is specified for testing, we have to create one
     if (gTestFile == NULL)
-    {
         trainSVM(positiveFiles, negativeFiles, descriptor, svm, pca, gCrossValidation);
-    }
     else
-    {
         svm.load((const char*)gTestFile);
-    }
 
     testSVM(positiveFiles, negativeFiles, descriptor, svm, pca, gCrossValidation);
 
