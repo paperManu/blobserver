@@ -108,3 +108,11 @@ vector<cv::Mat> Actuator::captureToMat(vector< Capture_Ptr > pCaptures)
 
     return images;
 }
+
+/*************/
+vector<Capture_Ptr> Actuator::getOutput() const
+{
+    vector<Capture_Ptr> outputVec;
+    outputVec.push_back(Capture_2D_Mat_Ptr(new Capture_2D_Mat(mOutputBuffer.clone())));
+    return outputVec;
+}

@@ -58,7 +58,7 @@ struct Flow
     std::shared_ptr<Actuator> actuator;
     std::shared_ptr<OscClient> client;
 #if HAVE_SHMDATA
-    std::shared_ptr<Shm> sink;
+    std::vector< std::shared_ptr<Shm> > sink;
 #endif
 #if HAVE_MAPPER
     std::vector<mapper_signal> mapperSignal;

@@ -478,14 +478,27 @@ int App::loop()
                 atom::Message message;
                 message = flow.actuator->getLastMessage();
 
-                Capture_Ptr output = flow.actuator->getOutput();
-                lBuffers.push_back(output);
+                vector<Capture_Ptr> output = flow.actuator->getOutput();
+                for_each (output.begin(), output.end(), [&] (Capture_Ptr& img)
+                {
+                    lBuffers.push_back(img);
+                    lBufferNames.push_back(flow.actuator->getName());
+                });
 
 #if HAVE_SHMDATA
-                flow.sink->setCapture(output);
+                if (flow.sink.size() < output.size())
+                    for (int i = flow.sink.size(); i < output.size(); ++i)
+                    {
+                        char shmFile[128];
+                        sprintf(shmFile, "/tmp/blobserver_%i_%s_%i", flow.id, flow.actuator->getOscPath().c_str(), i);
+                        shared_ptr<Shm> shm;
+                        shm.reset(new ShmAuto(shmFile));
+                        flow.sink.push_back(shm);
+                    }
+                        
+                for (int i = 0; i < output.size(); ++i)
+                    flow.sink[i]->setCapture(output[i]);
 #endif
-
-                lBufferNames.push_back(flow.actuator->getName());
 
                 // Send OSC messages
                 // Beginning of the frame
@@ -1040,13 +1053,6 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
         flow.client = address;
         flow.id = theApp->getValidId();
         flow.run = false;
-
-        char shmFile[128];
-        sprintf(shmFile, "/tmp/blobserver_output_%i", flow.id);
-
-#if HAVE_SHMDATA
-        flow.sink.reset(new ShmAuto(shmFile));
-#endif
 
         vector<shared_ptr<Source>>::const_iterator source;
         for (source = sources.begin(); source != sources.end(); ++source)

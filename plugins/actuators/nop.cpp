@@ -48,3 +48,11 @@ void Actuator_Nop::setParameter(atom::Message pMessage)
 {
     setBaseParameter(pMessage);
 }
+
+/*************/
+vector<Capture_Ptr> Actuator_Nop::getOutput() const
+{
+    vector<Capture_Ptr> outputVec;
+    outputVec.push_back(mCapture);
+    return outputVec;
+}

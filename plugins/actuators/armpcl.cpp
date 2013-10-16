@@ -244,12 +244,16 @@ void Actuator_ArmPcl::setParameter(atom::Message pMessage)
 }
 
 /*************/
-Capture_Ptr Actuator_ArmPcl::getOutput() const
+vector<Capture_Ptr> Actuator_ArmPcl::getOutput() const
 {
+    vector<Capture_Ptr> outputVec;
+
     if (mOutputType == 0)
-        return Capture_2D_Mat_Ptr(new Capture_2D_Mat(mOutputBuffer.clone()));
+        outputVec.push_back(Capture_2D_Mat_Ptr(new Capture_2D_Mat(mOutputBuffer.clone())));
     else if (mOutputType == 1)
-        return mCapture;
+        outputVec.push_back(mCapture);
+
+    return outputVec;
 }
 
 #endif //HAVE_PCL
