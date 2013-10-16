@@ -99,6 +99,8 @@ class Actuator_GLSL : public Actuator
         atom::Message detect(std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
+        std::vector<Capture_Ptr> getOutput() const;
+
     private:
         // Attributes
         static std::string mClassName;
@@ -123,6 +125,7 @@ class Actuator_GLSL : public Actuator
 
         GLuint mFBO;
         std::vector<GLuint> mFBOTextures;
+        std::vector<cv::Mat> mOutputBuffers;
 
         // Methods
         void make();

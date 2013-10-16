@@ -121,7 +121,9 @@ atom::Message Actuator_GLSL::detect(vector<Capture_Ptr> pCaptures)
         glm::mat4 viewProjectionMatrix = glm::ortho(-1.f, 1.f, -1.f, 1.f);
         mShader->setViewProjectionMatrix(viewProjectionMatrix);
 
-        GLenum fboBuffers[] = {GL_COLOR_ATTACHMENT0};
+        GLenum fboBuffers[mFBOTextures.size()];
+        for (int i = 0; i < mFBOTextures.size(); ++i)
+            fboBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
         glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
         glDrawBuffers(1, fboBuffers);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -129,10 +131,14 @@ atom::Message Actuator_GLSL::detect(vector<Capture_Ptr> pCaptures)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, mFBOTextures[0]);
-        cv::Mat buffer = cv::Mat::zeros(mGLSize, CV_8UC3);
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, buffer.data);
-        cv::flip(buffer, mOutputBuffer, 0);
+        mOutputBuffers.resize(mFBOTextures.size());
+        for (int i = 0; i < mFBOTextures.size(); ++i)
+        {
+            glBindTexture(GL_TEXTURE_2D, mFBOTextures[i]);
+            cv::Mat buffer = cv::Mat::zeros(mGLSize, CV_8UC3);
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, buffer.data);
+            cv::flip(buffer, mOutputBuffers[i], 0);
+        }
         glBindTexture(GL_TEXTURE_2D, 0);
 
         if (mIsGLVisible)
@@ -439,6 +445,18 @@ void Actuator_GLSL::setParameter(atom::Message pMessage)
         setBaseParameter(pMessage);
         
     glfwMakeContextCurrent(NULL);
+}
+
+/*************/
+vector<Capture_Ptr> Actuator_GLSL::getOutput() const
+{
+    vector<Capture_Ptr> outputVec;
+    for_each (mOutputBuffers.begin(), mOutputBuffers.end(), [&] (const cv::Mat& buffer)
+    {
+        outputVec.push_back(Capture_2D_Mat_Ptr(new Capture_2D_Mat(buffer.clone())));
+    });
+
+    return outputVec;
 }
 
 /*************/
