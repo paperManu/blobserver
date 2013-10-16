@@ -122,7 +122,7 @@ atom::Message Actuator_Python::detect(vector< Capture_Ptr > pCaptures)
         }
     }
 
-    if (outputSize.width != 0 && outputSize.height != 0 && outputChannels >= 1)
+    if (outputSize.width != 0 && outputSize.height != 0 && outputChannels >= 1 && outputChannels <= 3)
     {
         cv::Mat buffer = cv::Mat::zeros(outputSize, CV_MAKETYPE(CV_8U, outputChannels));
         for (int y = 0; y < outputSize.height; ++y)

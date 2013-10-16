@@ -68,6 +68,8 @@ class Actuator_Hog : public Actuator
         cv::Size_<int> mRoiSize;
         cv::Size_<int> mBlockSize;
         cv::Size_<int> mCellSize;
+        cv::Size_<int> mCellMaxSize;
+        cv::Size_<float> mCellStep;
         unsigned int mBins;
         float mSigma;
 

@@ -141,9 +141,8 @@ atom::Message Actuator_GLSL::detect(vector<Capture_Ptr> pCaptures)
             glDrawBuffers(1, renderBuffers);
             glClear(GL_COLOR_BUFFER_BIT);
             glDrawArrays(GL_TRIANGLES, 0, 6);
+            glfwSwapBuffers(mWindow);
         }
-
-        glfwSwapBuffers(mWindow);
     }
     else
     {

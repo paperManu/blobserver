@@ -126,6 +126,8 @@ void Actuator_Hog::make()
     mRoiSize = cv::Size_<int>(64, 128);
     mBlockSize = cv::Size_<int>(2, 2);
     mCellSize = cv::Size_<int>(16, 16);
+    mCellMaxSize = cv::Size_<int>(0, 0);
+    mCellStep = cv::Size_<float>(2.f, 2.f);
     mBins = 9;
     mSigma = 0.f;
     updateDescriptorParams();
@@ -467,6 +469,30 @@ void Actuator_Hog::setParameter(atom::Message pMessage)
             mCellSize = cellSize;
         updateDescriptorParams();
     }
+    else if (cmd == "cellMaxSize")
+    {
+        string cellStr;
+        if (!readParam<string>(pMessage, cellStr))
+            return;
+
+        cv::Size_<int> cellSize;
+        sscanf(cellStr.c_str(), "size_%ix%i", &(cellSize.width), &(cellSize.height));
+        if (cellSize.width > 0 && cellSize.height > 0)
+            mCellMaxSize = cellSize;
+        updateDescriptorParams();
+    }
+    else if (cmd == "cellStep")
+    {
+        string step;
+        if (!readParam<string>(pMessage, step))
+            return;
+
+        cv::Size_<float> cellStep;
+        sscanf(step.c_str(), "size_%fx%f", &(cellStep.width), &(cellStep.height));
+        if (cellStep.width >= 1.f && cellStep.height >= 1.f)
+            mCellStep = cellStep;
+        updateDescriptorParams();
+    }
     else if (cmd == "bins")
     {
         float bins;
@@ -535,4 +561,6 @@ void Actuator_Hog::setParameter(atom::Message pMessage)
 void Actuator_Hog::updateDescriptorParams()
 {
     mDescriptor.setHogParams(mRoiSize, mBlockSize, mCellSize, mBins, false, Descriptor_Hog::L2_NORM, mSigma);
+    if (mCellMaxSize.width >= mCellSize.width && mCellMaxSize.height >= mCellSize.height && mCellStep.width >= 1.f && mCellStep.height >= 1.f)
+        mDescriptor.setMultiscaleParams(mCellSize, mCellMaxSize, mCellStep);
 }

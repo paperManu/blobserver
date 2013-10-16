@@ -412,7 +412,7 @@ atom::Message Source_2D_Gige::getSubsources() const
 /*************/
 void Source_2D_Gige::streamCb(void* user_data, ArvStreamCallbackType type, ArvBuffer* buffer)
 {
-    Source_2D_Gige* source = (Source_2D_Gige*)user_data;
+    Source_2D_Gige* source = static_cast<Source_2D_Gige*>(user_data);
 
     if (buffer != NULL)
     {
