@@ -106,6 +106,43 @@ atom::Message Actuator_Python::detect(vector< Capture_Ptr > pCaptures)
     if (PyErr_Occurred())
         PyErr_Print();
 
+    mPythonOutput = PyDict_GetItemString(mPythonGlobal, "blobOutput");
+
+    cv::Size outputSize;
+    int outputChannels;
+    if (PyList_Size(mPythonOutput) != 0)
+    {
+        outputSize.height = PyList_Size(mPythonOutput);
+        PyObject* row = PyList_GetItem(mPythonOutput, 0);
+        outputSize.width = PyList_Size(row);
+        if (outputSize.width != 0)
+        {
+            PyObject* channels = PyList_GetItem(row, 0);
+            outputChannels = PyList_Size(channels);
+        }
+    }
+
+    if (outputSize.width != 0 && outputSize.height != 0 && outputChannels >= 1)
+    {
+        cv::Mat buffer = cv::Mat::zeros(outputSize, CV_MAKETYPE(CV_8U, outputChannels));
+        for (int y = 0; y < outputSize.height; ++y)
+        {
+            PyObject* row = PyList_GetItem(mPythonOutput, y);
+            for (int x = 0; x < outputSize.width; ++x)
+            {
+                PyObject* channels = PyList_GetItem(row, x);
+                for (int c = 0; c < outputChannels; ++c)
+                {
+                    int value = PyInt_AsLong(PyList_GetItem(channels, c));
+                    buffer.at<cv::Vec3b>(y, x)[c] = value;
+                }
+            }
+        }
+        mOutputBuffer = buffer;
+    }
+    else
+        mOutputBuffer = capture.clone();
+
     if (!PyList_Check(result))
     {
         g_log(NULL, G_LOG_LEVEL_WARNING, "%s: Return value of the Python script should be a list", mClassName.c_str());

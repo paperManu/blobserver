@@ -255,7 +255,7 @@ void Actuator_GLSL::initFBO()
     if (status != GL_FRAMEBUFFER_COMPLETE)
         g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Error while initializing framebuffer object", mClassName.c_str());
     else
-        g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Framebuffer object successfully initialized", mClassName.c_str());
+        g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Framebuffer object successfully initialized", mClassName.c_str());
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -291,6 +291,7 @@ void Actuator_GLSL::updateFBO()
 /*************/
 void Actuator_GLSL::updateFBOAttachment(int pNbr)
 {
+    glGetError();
     if (pNbr == mFBOTextures.size())
         return;
     else if (pNbr < mFBOTextures.size())
