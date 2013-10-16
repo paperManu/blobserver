@@ -124,8 +124,9 @@ atom::Message Actuator_GLSL::detect(vector<Capture_Ptr> pCaptures)
         GLenum fboBuffers[mFBOTextures.size()];
         for (int i = 0; i < mFBOTextures.size(); ++i)
             fboBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
+
         glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
-        glDrawBuffers(1, fboBuffers);
+        glDrawBuffers(mFBOTextures.size(), fboBuffers);
         glClear(GL_COLOR_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
