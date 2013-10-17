@@ -33,6 +33,10 @@ bool HdriBuilder::addLDR(const Mat& pImage, float pEV)
     lLDRi.EV = pEV;
     lLDRi.image = pImage;
 
+    // Check if the size has changed
+    if (mLDRi.size() != 0 && mLDRi[0].image.size() != lLDRi.image.size())
+        mLDRi.clear();
+
     // Check if this is the first image
     if(mLDRi.size() == 0)
     {

@@ -58,6 +58,9 @@ Source_2D::Source_2D()
     mSaveToFile = false;
     mSaveIndex = 0;
     mSavePhase = 0;
+
+    mIsRunning = true;
+    mCorrectionThread.reset(new thread(&Source_2D::applyCorrections, this));
 }
 
 /************/
@@ -71,53 +74,73 @@ Source_2D::~Source_2D()
 {
     if (mICCTransform != NULL)
         cmsDeleteTransform(mICCTransform);
+
+    mIsRunning = false;
+    mCorrectionThread->join();
+}
+
+/************/
+void Source_2D::applyCorrections()
+{
+    timespec nap;
+    nap.tv_sec = 0;
+    nap.tv_nsec = 1e5;
+
+    while (mIsRunning)
+    {
+        if (mUpdated)
+        {
+            lock_guard<mutex> lock(mCorrectionMutex);
+
+            bool lResult = true;
+            cv::Mat buffer = retrieveRawFrame();
+    
+            if (mAutoExposureRoi.width != 0 && mAutoExposureRoi.height != 0)
+                applyAutoExposure(buffer);
+            if (mMask.total() != 0)
+                applyMask(buffer);
+            // Noise filtering and vignetting correction, as well as ICC transform and lense
+            // distortion correction have to be done before any geometric transformation
+            if (mFilterNoise)
+                filterNoise(buffer);
+            if (mCorrectVignetting)
+                correctVignetting(buffer);
+            if (mICCTransform != NULL)
+                cmsDoTransform(mICCTransform, buffer.data, buffer.data, buffer.total());
+            if (mGammaCorrection)
+                correctGamma(buffer);
+            if (mCorrectDistortion)
+                correctDistortion(buffer);
+            if (mCorrectFisheye)
+                correctFisheye(buffer);
+            if (mScale != 1.f)
+                scale(buffer);
+            if (mRotation != 0.f)
+                rotate(buffer);
+            if (mScaleValues != 1.f)
+                buffer *= mScaleValues;
+            if (mHdriActive)
+                lResult &= createHdri(buffer);
+    
+            // Some modifiers will not output a valid image every frame
+            if (buffer.rows != 0 && buffer.cols != 0 && lResult)
+                mCorrectedBuffer = buffer.clone();
+    
+            if (mSaveToFile)
+                saveToFile(buffer);
+
+            mUpdated = false;
+        }
+
+        nanosleep(&nap, NULL);
+    }
 }
 
 /************/
 Capture_Ptr Source_2D::retrieveFrame()
 {
-    if (mUpdated)
-    {
-        bool lResult = true;
-        cv::Mat buffer = retrieveRawFrame();
-
-        if (mAutoExposureRoi.width != 0 && mAutoExposureRoi.height != 0)
-            applyAutoExposure(buffer);
-        if (mMask.total() != 0)
-            applyMask(buffer);
-        // Noise filtering and vignetting correction, as well as ICC transform and lense
-        // distortion correction have to be done before any geometric transformation
-        if (mFilterNoise)
-            filterNoise(buffer);
-        if (mCorrectVignetting)
-            correctVignetting(buffer);
-        if (mICCTransform != NULL)
-            cmsDoTransform(mICCTransform, buffer.data, buffer.data, buffer.total());
-        if (mGammaCorrection)
-            correctGamma(buffer);
-        if (mCorrectDistortion)
-            correctDistortion(buffer);
-        if (mCorrectFisheye)
-            correctFisheye(buffer);
-        if (mScale != 1.f)
-            scale(buffer);
-        if (mRotation != 0.f)
-            rotate(buffer);
-        if (mScaleValues != 1.f)
-            buffer *= mScaleValues;
-        if (mHdriActive)
-            lResult &= createHdri(buffer);
-
-        // Some modifiers will not output a valid image every frame
-        if (buffer.rows != 0 && buffer.cols != 0 && lResult)
-            mCorrectedBuffer = buffer.clone();
-
-        if (mSaveToFile)
-            saveToFile(buffer);
-
-        mUpdated = false;
-    }
-
+    lock_guard<mutex> lock(mCorrectionMutex);
+    
     Capture_2D_Mat_Ptr capture(new Capture_2D_Mat(mCorrectedBuffer));
     return capture;
 }
@@ -742,7 +765,7 @@ bool Source_2D::createHdri(cv::Mat& pImg)
     if (ldriCount < mHdriSteps)
     {
         message.push_back(atom::FloatValue::create(mExposureTime*pow(2.0, mHdriStepSize)));
-        pImg.create(480, 640, CV_32FC3);
+        pImg.create(pImg.size(), CV_32FC3);
     }
     else
     {
