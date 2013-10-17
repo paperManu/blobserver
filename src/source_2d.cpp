@@ -72,11 +72,11 @@ Source_2D::Source_2D(int pParam)
 /************/
 Source_2D::~Source_2D()
 {
-    if (mICCTransform != NULL)
-        cmsDeleteTransform(mICCTransform);
-
     mIsRunning = false;
     mCorrectionThread->join();
+
+    if (mICCTransform != NULL)
+        cmsDeleteTransform(mICCTransform);
 }
 
 /************/

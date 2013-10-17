@@ -60,6 +60,11 @@ class Actuator
         Actuator(int pParam);
 
         /**
+         * \brief Destructor
+         */
+        virtual ~Actuator() {};
+
+        /**
          * \brief Gets the class name of the actuator
          */
         static std::string getClassName() {return mClassName;}

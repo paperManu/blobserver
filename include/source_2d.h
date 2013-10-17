@@ -90,7 +90,7 @@ class Source_2D : public Source
         /**
          * \brief Destructor
          */
-        ~Source_2D();
+        virtual ~Source_2D();
 
         /**
          * \return Returns the class name of the source

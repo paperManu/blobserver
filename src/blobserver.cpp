@@ -924,7 +924,6 @@ int App::oscHandlerConnect(const char* path, const char* types, lo_arg** argv, i
     atom::Message message;
     atom::message_build_from_lo_args(message, types, argv, argc);
 
-
     //char port[8];
     string addressStr;
     try

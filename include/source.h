@@ -54,7 +54,7 @@ class Source
         /**
          * \brief Destructor
          */
-        ~Source();
+        virtual ~Source();
 
         /**
          * \return Returns the class name of the source
