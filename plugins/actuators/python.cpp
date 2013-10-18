@@ -69,6 +69,9 @@ atom::Message Actuator_Python::detect(vector< Capture_Ptr > pCaptures)
     }
     cv::Mat capture = captures[0];
 
+    if (mPythonModule == NULL)
+        return mLastMessage;
+
     if (mRawCapture == NULL || mRawRows != capture.rows || mRawCols != capture.cols || mRawChannels != capture.channels())
     {
         mRawCapture = PyList_New(capture.rows);
@@ -204,6 +207,7 @@ void Actuator_Python::setParameter(atom::Message pMessage)
             g_log(NULL, G_LOG_LEVEL_WARNING, "%s - Python failed to load file %s", mClassName.c_str(), filename.c_str());
             if (PyErr_Occurred())
                 PyErr_Print();
+            mPythonModule = NULL;
             return;
         }
 
