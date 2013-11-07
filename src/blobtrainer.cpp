@@ -89,7 +89,7 @@ static GOptionEntry gEntries[] =
     {"position", 0, 0, G_OPTION_ARG_STRING, &gPosition, "Specifies the position where to create the positives descriptors (default: '16x16')", NULL},
     {"cell-size", 0, 0, G_OPTION_ARG_STRING, &gCellSize, "Specifies the size of the cells (in pixels) of descriptors (default: '8x8')", NULL},
     {"cell-max-size", 0, 0, G_OPTION_ARG_STRING, &gCellMaxSize, "Specifies the maximum size of the cells, when using multiscale training (default: 0x0)", NULL},
-    {"cell-step", 0, 0, G_OPTION_ARG_STRING, &gCellStep, "Specifies the step factor between cell size, when using multiscale training (default: '1x1'", NULL},
+    {"cell-step", 0, 0, G_OPTION_ARG_STRING, &gCellStep, "Specifies the step factor between cell size, when using multiscale training (default: '2x2'", NULL},
     {"block-size", 0, 0, G_OPTION_ARG_STRING, &gBlockSize, "Specifies the size of the blocks over which cells are normalized (default: '3x3')", NULL},
     {"roi-size", 0, 0, G_OPTION_ARG_STRING, &gRoiSize, "Specifies the size (in pixels) of the ROI from which to create descriptors (default: '64x128')", NULL},
     {"sigma", 0, 0, G_OPTION_ARG_DOUBLE, &gSigma, "Specifies the sigma parameter for the gaussian kernel applied over blocks (default: 1.0)", NULL},
