@@ -255,9 +255,9 @@ void trainSVM(vector<string>& pPositiveFiles, vector<string>& pNegativeFiles, De
 
         cv::Mat image = cv::imread(pNegativeFiles[i]);
         pDescriptor.setImage(image);
-        for (int x = 0; x < image.cols - _roiSize.x; x += image.cols/5)
+        for (int x = 0; x <= image.cols - _roiSize.x; x += image.cols/5)
         {
-            for (int y = 0; y < image.rows - _roiSize.y; y += image.rows/5)
+            for (int y = 0; y <= image.rows - _roiSize.y; y += image.rows/5)
             {
                 vector<float> description = pDescriptor.getDescriptor(_roiPosition + cv::Point_<int>(x, y));
                 if (description.size() == 0)

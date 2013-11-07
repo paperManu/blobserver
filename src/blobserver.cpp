@@ -594,7 +594,7 @@ int App::loop()
             
                     cv::Mat buffer = cv::Mat::zeros(displayMat.size(), CV_8UC3);
                     displayMat /= maxValue;
-                    cv::pow(displayMat, 1.0 / 1.8, displayMat);
+                    cv::pow(displayMat, 1.0 / 2.2, displayMat);
                     displayMat *= 255.f;
                     displayMat.convertTo(buffer, CV_8UC3);
                     displayMat = buffer;
