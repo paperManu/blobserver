@@ -590,7 +590,8 @@ int App::loop()
                     float maxValue = 0.f;
                     for (int x = 0; x < displayMat.cols; ++x)
                         for (int y = 0; y < displayMat.rows; ++y)
-                            maxValue = max(maxValue, displayMat.at<cv::Vec3f>(y, x)[0]);
+                            for (int c = 0; c < displayMat.channels(); ++c)
+                                maxValue = max(maxValue, displayMat.at<cv::Vec3f>(y, x)[c]);
             
                     cv::Mat buffer = cv::Mat::zeros(displayMat.size(), CV_8UC3);
                     displayMat /= maxValue;

@@ -31,6 +31,9 @@ void Source_2D_Gige::make(string pParam)
     mInvertRGB = false;
 
     mConvertedFrame = cv::Mat::zeros(480, 640, CV_8UC3);
+
+    mCamera = NULL;
+    mStream = NULL;
 }
 
 /*************/
