@@ -390,9 +390,9 @@ void testSVM(vector<string>& pPositiveFiles, vector<string>& pNegativeFiles, Des
         chronoTime = chrono::duration_cast<chrono::microseconds>(chronoStart.time_since_epoch()).count();
         pDescriptor.setImage(image);
 
-        for (int x = 0; x < image.cols - _roiSize.x; x += image.cols/5)
+        for (int x = 0; x <= image.cols - _roiSize.x; x += image.cols/5)
         {
-            for (int y = 0; y < image.rows - _roiSize.y; y += image.rows/5)
+            for (int y = 0; y <= image.rows - _roiSize.y; y += image.rows/5)
             {
                 vector<float> description = pDescriptor.getDescriptor(_roiPosition + cv::Point_<int>(x, y));
                 cv::Mat descriptionMat(1, (int)description.size(), CV_32FC1, &description[0]);
