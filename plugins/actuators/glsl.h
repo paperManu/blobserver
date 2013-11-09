@@ -32,6 +32,7 @@
 #include "actuator.h"
 
 #include <memory>
+#include <map>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
@@ -122,6 +123,7 @@ class Actuator_GLSL : public Actuator
         std::vector<Texture> mTextures;
 
         std::shared_ptr<Shader> mShader;
+        std::map< std::string, std::vector<float> > mUniforms;
 
         GLuint mFBO;
         std::vector<GLuint> mFBOTextures;
