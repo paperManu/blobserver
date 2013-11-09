@@ -90,6 +90,13 @@
  * - exposureTime (float): time of the exposure, in us
  * - gain (float): gain applied to the sensor, in dB
  *
+ * \subsection source_2d_image_sec Image 2D sources (Source_2D_Image)
+ * 
+ * A source which loads a single image specified by its URL. Useful for masks.
+ *
+ * Available parameters:
+ * - url (string): URL to the file to load
+ *
  * \subsection source_2d_shmdata_sec shmdata 2D sources (Source_2D_Shmdata)
  * 
  * Available parameters:
