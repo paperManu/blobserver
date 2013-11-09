@@ -36,6 +36,7 @@
 #if HAVE_ARAVIS
 #include "source_2d_gige.h"
 #endif
+#include "source_2d_image.h"
 #include "source_2d_opencv.h"
 #include "source_2d_shmdata.h"
 #include "source_3d_shmdata.h"
@@ -314,6 +315,8 @@ void App::registerClasses()
     // Register sources
     mSourceFactory.register_class<Source_2D_OpenCV>(Source_2D_OpenCV::getClassName(),
         Source_2D_OpenCV::getDocumentation());
+    mSourceFactory.register_class<Source_2D_Image>(Source_2D_Image::getClassName(),
+        Source_2D_Image::getDocumentation());
 #if HAVE_ARAVIS
     mSourceFactory.register_class<Source_2D_Gige>(Source_2D_Gige::getClassName(),
         Source_2D_Gige::getDocumentation());

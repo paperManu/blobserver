@@ -54,7 +54,7 @@ bool Source_2D_OpenCV::connect()
     
     int channels;
     channels = (int)(mCamera.get(CV_CAP_PROP_FORMAT));
-    channels = (unsigned int)((channels >> 3) + 1); // See CV_MAKETYPE in types_c.h in OpenCV
+    mChannels = (unsigned int)((channels >> 3) + 1); // See CV_MAKETYPE in types_c.h in OpenCV
 
     mId = to_string((int)(mCamera.get(CV_CAP_PROP_GUID)));
 
