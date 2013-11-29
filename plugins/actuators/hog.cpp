@@ -61,11 +61,11 @@ class Parallel_Detect : public cv::ParallelLoopBody
                     float distance;
                     try
                     {
-                        g_log(NULL, G_LOG_LEVEL_ERROR, "%s - An exception happened during a call to CvSVM::predict. Is the model file correct?", Actuator_Hog::getClassName().c_str());
+                        distance = _svm->predict(descriptionMat, false);
                     }
                     catch (cv::Exception)
                     {
-                        g_log(NULL, G_LOG_LEVEL_WARNING, "error!");
+                        g_log(NULL, G_LOG_LEVEL_ERROR, "%s - An exception happened during a call to CvSVM::predict. Is the model file correct?", Actuator_Hog::getClassName().c_str());
                     }
                     if (distance == 1.f)
                     {

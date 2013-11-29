@@ -595,6 +595,7 @@ int App::loop()
                         for (int y = 0; y < displayMat.rows; ++y)
                             for (int c = 0; c < displayMat.channels(); ++c)
                                 maxValue = max(maxValue, displayMat.at<cv::Vec3f>(y, x)[c]);
+                    g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Maximum value for the HDR tonemapping: %f", __FUNCTION__, maxValue);
             
                     cv::Mat buffer = cv::Mat::zeros(displayMat.size(), CV_8UC3);
                     displayMat /= maxValue;
