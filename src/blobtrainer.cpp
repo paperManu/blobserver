@@ -60,9 +60,11 @@ static gchar* gBlockSize = NULL;
 static gchar* gRoiSize = NULL;
 static double gSigma = 0.0;
 static double gMargin = 0.0;
+static int gNegativeSubdivide = 5;
 
 static double gPca = 1.0;
 static double gCrossValidation = 1.0;
+
 
 int _svmCriteria;
 cv::Point_<int> _roiPosition;
@@ -94,6 +96,7 @@ static GOptionEntry gEntries[] =
     {"roi-size", 0, 0, G_OPTION_ARG_STRING, &gRoiSize, "Specifies the size (in pixels) of the ROI from which to create descriptors (default: '64x128')", NULL},
     {"sigma", 0, 0, G_OPTION_ARG_DOUBLE, &gSigma, "Specifies the sigma parameter for the gaussian kernel applied over blocks (default: 1.0)", NULL},
     {"margin", 0, 0, G_OPTION_ARG_DOUBLE, &gMargin, "Specifies the distance to the margin for positive images to be detected as such (default: 0.0)", NULL},
+    {"subdivide", 's', 0, G_OPTION_ARG_INT, &gNegativeSubdivide, "Specifies how many times negative images are subdivided in each direction (default: 5)", NULL},
     {"pca", 0, 0, G_OPTION_ARG_DOUBLE, &gPca, "Enables PCA and specifies the ratio of components to keep (default: 1.0)", NULL},
     {"crossValidation", 'C', 0, G_OPTION_ARG_DOUBLE, &gCrossValidation, "Enables cross validation if value is lower than 1.0 (default: 1.0)", NULL},
     {NULL}
@@ -255,9 +258,9 @@ void trainSVM(vector<string>& pPositiveFiles, vector<string>& pNegativeFiles, De
 
         cv::Mat image = cv::imread(pNegativeFiles[i]);
         pDescriptor.setImage(image);
-        for (int x = 0; x <= image.cols - _roiSize.x; x += image.cols/5)
+        for (int x = 0; x <= image.cols - _roiSize.x; x += image.cols/gNegativeSubdivide)
         {
-            for (int y = 0; y <= image.rows - _roiSize.y; y += image.rows/5)
+            for (int y = 0; y <= image.rows - _roiSize.y; y += image.rows/gNegativeSubdivide)
             {
                 vector<float> description = pDescriptor.getDescriptor(_roiPosition + cv::Point_<int>(x, y));
                 if (description.size() == 0)
@@ -390,9 +393,9 @@ void testSVM(vector<string>& pPositiveFiles, vector<string>& pNegativeFiles, Des
         chronoTime = chrono::duration_cast<chrono::microseconds>(chronoStart.time_since_epoch()).count();
         pDescriptor.setImage(image);
 
-        for (int x = 0; x <= image.cols - _roiSize.x; x += image.cols/5)
+        for (int x = 0; x <= image.cols - _roiSize.x; x += image.cols/gNegativeSubdivide)
         {
-            for (int y = 0; y <= image.rows - _roiSize.y; y += image.rows/5)
+            for (int y = 0; y <= image.rows - _roiSize.y; y += image.rows/gNegativeSubdivide)
             {
                 vector<float> description = pDescriptor.getDescriptor(_roiPosition + cv::Point_<int>(x, y));
                 cv::Mat descriptionMat(1, (int)description.size(), CV_32FC1, &description[0]);
