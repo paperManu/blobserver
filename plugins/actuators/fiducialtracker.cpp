@@ -106,7 +106,7 @@ atom::Message Actuator_FiducialTracker::detect(vector< Capture_Ptr > pCaptures)
 
     mLastMessage.clear();
     mLastMessage.push_back(atom::IntValue::create(fidCount));
-    mLastMessage.push_back(atom::IntValue::create(4));
+    mLastMessage.push_back(atom::IntValue::create(5));
 
     for (int i = 0; i < fidCount; ++i)
     {
@@ -119,6 +119,7 @@ atom::Message Actuator_FiducialTracker::detect(vector< Capture_Ptr > pCaptures)
         mLastMessage.push_back(atom::FloatValue::create(mFiducials[i].x));
         mLastMessage.push_back(atom::FloatValue::create(mFiducials[i].y));
         mLastMessage.push_back(atom::FloatValue::create(mFiducials[i].angle));
+        mLastMessage.push_back(atom::IntValue::create(fidCount));
     }
 
     mFrameNumber++;
