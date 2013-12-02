@@ -23,6 +23,7 @@ blobserver_SOURCES = \
     source.cpp \
     source_2d.cpp \
     source_2d_gige.cpp \
+    source_2d_image.cpp \
     source_2d_opencv.cpp \
     source_2d_shmdata.cpp \
     source_3d_shmdata.cpp \
@@ -51,6 +52,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/shmpointcloud.h \
     $(top_srcdir)/include/source_2d.h \
     $(top_srcdir)/include/source_2d_gige.h \
+    $(top_srcdir)/include/source_2d_image.h \
     $(top_srcdir)/include/source_2d_opencv.h \
     $(top_srcdir)/include/source_2d_shmdata.h \
     $(top_srcdir)/include/source_3d_shmdata.h \

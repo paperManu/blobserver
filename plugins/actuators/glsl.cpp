@@ -118,6 +118,22 @@ atom::Message Actuator_GLSL::detect(vector<Capture_Ptr> pCaptures)
 
     if (mShader->activate(this))
     {
+        for (map< string, vector<float> >::iterator it = mUniforms.begin(), it_end = mUniforms.end(); it != it_end; ++it)
+        {
+            string name = it->first;
+            vector<float> values = it->second;
+
+            int card = values.size();
+            if (card == 1)
+                mShader->setUniform(name, values[0]);
+            else if (card == 2)
+                mShader->setUniform(name, glm::dvec2(values[0], values[1]));
+            else if (card == 2)
+                mShader->setUniform(name, glm::dvec3(values[0], values[1], values[2]));
+            else if (card == 2)
+                mShader->setUniform(name, glm::dvec4(values[0], values[1], values[2], values[3]));
+        }
+
         glm::mat4 viewProjectionMatrix = glm::ortho(-1.f, 1.f, -1.f, 1.f);
         mShader->setViewProjectionMatrix(viewProjectionMatrix);
 
@@ -411,24 +427,17 @@ void Actuator_GLSL::setParameter(atom::Message pMessage)
     {
         string name;
         int card;
-        if (!readParam(pMessage, name, 1))
+        if (!readParam(pMessage, name, pMessage.size() - 1))
             return;
         card = pMessage.size() - 2;
 
         vector<float> values;
         values.resize(card);
         for (int i = 0; i < card; ++i)
-            if (!readParam(pMessage, values[i], i+2))
+            if (!readParam(pMessage, values[i], i+1))
                 return;
 
-        if (card == 1)
-            mShader->setUniform(name, values[0]);
-        else if (card == 2)
-            mShader->setUniform(name, glm::dvec2(values[0], values[1]));
-        else if (card == 2)
-            mShader->setUniform(name, glm::dvec3(values[0], values[1], values[2]));
-        else if (card == 2)
-            mShader->setUniform(name, glm::dvec4(values[0], values[1], values[2], values[3]));
+        mUniforms[name] = values;
     }
     else if (cmd == "outputNbr")
     {
@@ -536,7 +545,6 @@ Texture& Texture::operator=(const cv::Mat& pImg)
     {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, mGLTex);
-
         if (mType == CV_8UC3)
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, buffer.cols, buffer.rows, GL_BGR, GL_UNSIGNED_BYTE, buffer.data);
         else if (mType == CV_8UC1)

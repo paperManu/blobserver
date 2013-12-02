@@ -90,6 +90,13 @@
  * - exposureTime (float): time of the exposure, in us
  * - gain (float): gain applied to the sensor, in dB
  *
+ * \subsection source_2d_image_sec Image 2D sources (Source_2D_Image)
+ * 
+ * A source which loads a single image specified by its URL. Useful for masks.
+ *
+ * Available parameters:
+ * - url (string): URL to the file to load
+ *
  * \subsection source_2d_shmdata_sec shmdata 2D sources (Source_2D_Shmdata)
  * 
  * Available parameters:
@@ -203,7 +210,7 @@
  * - geometryFile (string): path to the geometry shader
  * - fragmentFile (string): path to the fragment shader
  * - glSize (float[2]): size of the rendering buffer. Parameters are: [width] [height]
- * - uniform (string float[n]): send the specified floats as a uniform to the shaders. (1 <= n <= 4) 
+ * - uniform (float[n] string): send the specified floats as a uniform to the shaders. (1 <= n <= 4) 
  * - outputNbr (int, default 1): specifies the number of outputs for the rendering (ie, the number of layout available in GLSL)
  * - visible (int, default 0): if set to 1, the OpenGL window will be visible in a view independent from the main blobserver window
  *

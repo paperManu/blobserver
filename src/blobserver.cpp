@@ -36,6 +36,7 @@
 #if HAVE_ARAVIS
 #include "source_2d_gige.h"
 #endif
+#include "source_2d_image.h"
 #include "source_2d_opencv.h"
 #include "source_2d_shmdata.h"
 #include "source_3d_shmdata.h"
@@ -314,6 +315,8 @@ void App::registerClasses()
     // Register sources
     mSourceFactory.register_class<Source_2D_OpenCV>(Source_2D_OpenCV::getClassName(),
         Source_2D_OpenCV::getDocumentation());
+    mSourceFactory.register_class<Source_2D_Image>(Source_2D_Image::getClassName(),
+        Source_2D_Image::getDocumentation());
 #if HAVE_ARAVIS
     mSourceFactory.register_class<Source_2D_Gige>(Source_2D_Gige::getClassName(),
         Source_2D_Gige::getDocumentation());
@@ -590,12 +593,14 @@ int App::loop()
                     float maxValue = 0.f;
                     for (int x = 0; x < displayMat.cols; ++x)
                         for (int y = 0; y < displayMat.rows; ++y)
-                            maxValue = max(maxValue, displayMat.at<cv::Vec3f>(y, x)[0]);
+                            for (int c = 0; c < displayMat.channels(); ++c)
+                                maxValue = max(maxValue, displayMat.at<cv::Vec3f>(y, x)[c]);
+                    g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Maximum value for the HDR tonemapping: %f", __FUNCTION__, maxValue);
             
                     cv::Mat buffer = cv::Mat::zeros(displayMat.size(), CV_8UC3);
                     displayMat /= maxValue;
-                    cv::pow(displayMat, 1.0 / 1.8, displayMat);
-                    displayMat *= 2.0 * 255.f;
+                    cv::pow(displayMat, 1.0 / 2.2, displayMat);
+                    displayMat *= 255.f;
                     displayMat.convertTo(buffer, CV_8UC3);
                     displayMat = buffer;
                 }

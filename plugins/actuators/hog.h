@@ -46,6 +46,8 @@ class Actuator_Hog : public Actuator
         atom::Message detect(const std::vector< Capture_Ptr > pCaptures);
         void setParameter(atom::Message pMessage);
 
+        std::vector<Capture_Ptr> getOutput() const;
+
     private:
         static std::string mClassName;
         static std::string mDocumentation;
@@ -94,6 +96,8 @@ class Actuator_Hog : public Actuator
         float mBlobMergeDistance; // Distance to considerer two blobs as one
         bool mSaveSamples; // If true, save samples older than mSaveSamplesAge
         unsigned long mSaveSamplesAge;
+
+        std::vector<cv::Mat> mOutputBuffers;
 
         // Methods
         void make();

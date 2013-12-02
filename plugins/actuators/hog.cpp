@@ -61,11 +61,11 @@ class Parallel_Detect : public cv::ParallelLoopBody
                     float distance;
                     try
                     {
-                        g_log(NULL, G_LOG_LEVEL_ERROR, "%s - An exception happened during a call to CvSVM::predict. Is the model file correct?", Actuator_Hog::getClassName().c_str());
+                        distance = _svm->predict(descriptionMat, false);
                     }
                     catch (cv::Exception)
                     {
-                        g_log(NULL, G_LOG_LEVEL_WARNING, "error!");
+                        g_log(NULL, G_LOG_LEVEL_ERROR, "%s - An exception happened during a call to CvSVM::predict. Is the model file correct?", Actuator_Hog::getClassName().c_str());
                     }
                     if (distance == 1.f)
                     {
@@ -312,7 +312,10 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
     {
         Blob::properties props = blob.getBlob();
         cv::Rect rect(props.position.x, props.position.y, mRoiSize.width, mRoiSize.height);
-        cv::rectangle(resultMat, rect, cv::Scalar(1, 1, 1), CV_FILLED);
+        if (blob.getAge() > mKeepOldBlobs)
+            cv::rectangle(resultMat, rect, cv::Scalar(1, 1, 1), CV_FILLED);
+        else
+            cv::rectangle(resultMat, rect, cv::Scalar(1, 1, 0), CV_FILLED);
 
         if (mSaveSamples && blob.getAge() == mSaveSamplesAge
             && rect.x >= 0 && rect.y >= 0 && input.cols - rect.width > rect.x && input.rows - rect.height > rect.y)
@@ -366,9 +369,24 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
         mLastMessage.push_back(atom::IntValue::create(lLost));
     }
 
-    mOutputBuffer = resultMat.clone();
+    //mOutputBuffer = resultMat.clone();
+    mOutputBuffers.clear();
+    mOutputBuffers.push_back(resultMat);
+    mOutputBuffers.push_back(mBgSubtractorBuffer);
 
     return mLastMessage;
+}
+
+/*************/
+vector<Capture_Ptr> Actuator_Hog::getOutput() const
+{
+    vector<Capture_Ptr> outputVec;
+    for_each (mOutputBuffers.begin(), mOutputBuffers.end(), [&] (const cv::Mat& buffer)
+    {
+        outputVec.push_back(Capture_2D_Mat_Ptr(new Capture_2D_Mat(buffer.clone())));
+    });
+
+    return outputVec;
 }
 
 /*************/
