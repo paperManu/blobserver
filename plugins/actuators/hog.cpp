@@ -154,7 +154,7 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
         return mLastMessage;
     }
 
-    unsigned long long timeStart = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch()).count();
+    mTimeStart = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch()).count();
 
     if (captures.size() == 0 || !mIsModelLoaded)
         return mLastMessage;
@@ -182,12 +182,18 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
         }
 
     // We draw rectangles to handle previously detected blobs
-    for_each (mBlobs.begin(), mBlobs.end(), [&] (Blob2D blob)
+    // except for the inner part which we will handle in priority
+    cv::Mat priorityMat = cv::Mat::zeros(mBgSubtractorBuffer.size(), CV_8U);
+    for (auto blob : mBlobs)
     {
         Blob::properties props = blob.getBlob();
         cv::Rect rect(props.position.x - props.size/2, props.position.y - props.size/2, props.size, props.size);
         cv::rectangle(mBgSubtractorBuffer, rect, 255, CV_FILLED);
-    } );
+
+        rect = cv::Rect(props.position.x - props.size/4, props.position.y - props.size/4, props.size/2, props.size/2);
+        cv::rectangle(mBgSubtractorBuffer, rect, 0, CV_FILLED);
+        cv::rectangle(priorityMat, rect, 255, CV_FILLED);
+    }
 
     // The result is resized according to cell size
     cv::Size outputSize;
@@ -196,6 +202,10 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
     cv::Mat resizedBuffer;
     cv::resize(mBgSubtractorBuffer, resizedBuffer, outputSize, 0, 0, cv::INTER_NEAREST);
 
+    // Same for priorityMat
+    cv::Mat resizedPriority;
+    cv::resize(priorityMat, resizedPriority, outputSize, 0, 0, cv::INTER_NEAREST);
+
     // We feed the image to the descriptor
     mDescriptor.setImage(input);
 
@@ -203,52 +213,11 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
     if (mSvmValidPositions.capacity() != outputSize.width * outputSize.height)
         mSvmValidPositions.reserve(outputSize.width * outputSize.height);
 
-    int validPositions = 0;
-    for (int x = 0; x < resizedBuffer.cols; ++x)
-        for (int y = 0; y < resizedBuffer.rows; ++y)
-        {
-            if (resizedBuffer.at<uchar>(y, x) < 255)
-                continue;
-
-            vector<cv::Point>::iterator it = mSvmValidPositions.begin() + validPositions;
-            *it = cv::Point(x, y);
-            validPositions++;
-        }
-    int totalSamples = validPositions;
-
-    // We go randomly through this list
     vector<cv::Point> samples;
-    vector<float> description;
-    cv::Mat descriptionMat;
-
-    unsigned long long timePresent = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch()).count();
-    while (validPositions && timePresent - timeStart < mMaxTimePerFrame)
-    {
-        vector<cv::Point> points;
-        int nbrPoints = min(mMaxThreads, validPositions);
-        for (int i = 0; i < nbrPoints; ++i)
-        {
-            unsigned int random = mRng();
-            unsigned int position = random % validPositions;
-            vector<cv::Point>::iterator it = mSvmValidPositions.begin() + position;
-            cv::Point point = *it;
-            vector<cv::Point>::iterator lastIt = mSvmValidPositions.begin() + validPositions - 1;
-            swap(*lastIt, *it);
-
-            point.x *= mCellSize.width;
-            point.y *= mCellSize.height;
-
-            validPositions--;
-            points.push_back(point);
-        }
-
-        if (mIsPcaLoaded)
-            cv::parallel_for_(cv::Range(0, nbrPoints), Parallel_Detect(&points, &samples, mSvmMargin, &mDescriptor, &mSvm, &mPca));
-        else
-            cv::parallel_for_(cv::Range(0, nbrPoints), Parallel_Detect(&points, &samples, mSvmMargin, &mDescriptor, &mSvm, NULL));
-
-        timePresent = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch()).count();
-    }
+    // Detection through previous known positions
+    detectThroughMask(resizedPriority, samples, false);
+    // Detection through positions given by the BG subtractor
+    detectThroughMask(resizedBuffer, samples, true);
 
     // A single object can be detected by multiple windows.
     // We need to merge them
@@ -308,7 +277,7 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
     }
 
     cv::Mat resultMat = cv::Mat::zeros(input.rows, input.cols, input.type());
-    for_each (mBlobs.begin(), mBlobs.end(), [&] (Blob2D blob)
+    for (auto blob : mBlobs)
     {
         Blob::properties props = blob.getBlob();
         cv::Rect rect(props.position.x, props.position.y, mRoiSize.width, mRoiSize.height);
@@ -325,13 +294,11 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
             sprintf(buffer, "sample_%i.png", blob.getId());
             cv::imwrite(buffer, cropSample);
         }
-    } );
+    }
 
     // The result is shown
     cv::multiply(input, resultMat, resultMat);
 
-    if (mVerbose && totalSamples != 0)
-        g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Evaluated ratio = %f", mClassName.c_str(), 1.f - (float)validPositions / (float)totalSamples);
 
     // Constructing the message
     mLastMessage.clear();
@@ -378,13 +345,63 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
 }
 
 /*************/
+void Actuator_Hog::detectThroughMask(cv::Mat& mask, vector<cv::Point>& samples, bool timeLimited)
+{
+    int validPositions = 0;
+    for (int x = 0; x < mask.cols; ++x)
+        for (int y = 0; y < mask.rows; ++y)
+            {
+                if (mask.at<uchar>(y, x) < 255)
+                    continue;
+
+                vector<cv::Point>::iterator it = mSvmValidPositions.begin() + validPositions;
+                *it = cv::Point(x, y);
+                validPositions++;
+            }
+    int totalSamples = validPositions;
+
+    unsigned long long timePresent = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch()).count();
+    while (validPositions && (timePresent - mTimeStart < mMaxTimePerFrame || !timeLimited))
+    {
+        vector<cv::Point> points;
+        int nbrPoints = min(mMaxThreads, validPositions);
+        for (int i = 0; i < nbrPoints; ++i)
+        {
+            unsigned int random = mRng();
+            unsigned int position = random % validPositions;
+            vector<cv::Point>::iterator it = mSvmValidPositions.begin() + position;
+            cv::Point point = *it;
+            vector<cv::Point>::iterator lastIt = mSvmValidPositions.begin() + validPositions - 1;
+            swap(*lastIt, *it);
+
+            point.x *= mCellSize.width;
+            point.y *= mCellSize.height;
+
+            validPositions--;
+            points.push_back(point);
+        }
+
+
+        if (mIsPcaLoaded)
+            cv::parallel_for_(cv::Range(0, nbrPoints), Parallel_Detect(&points, &samples, mSvmMargin, &mDescriptor, &mSvm, &mPca));
+        else
+            cv::parallel_for_(cv::Range(0, nbrPoints), Parallel_Detect(&points, &samples, mSvmMargin, &mDescriptor, &mSvm, NULL));
+
+        timePresent = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch()).count();
+    }
+
+    if (timeLimited && mVerbose && totalSamples != 0)
+        g_log(NULL, G_LOG_LEVEL_DEBUG, "%s - Evaluated ratio = %f", mClassName.c_str(), 1.f - (float)validPositions / (float)totalSamples);
+}
+
+/*************/
 vector<Capture_Ptr> Actuator_Hog::getOutput() const
 {
     vector<Capture_Ptr> outputVec;
-    for_each (mOutputBuffers.begin(), mOutputBuffers.end(), [&] (const cv::Mat& buffer)
+    for (auto buffer : mOutputBuffers)
     {
         outputVec.push_back(Capture_2D_Mat_Ptr(new Capture_2D_Mat(buffer.clone())));
-    });
+    }
 
     return outputVec;
 }

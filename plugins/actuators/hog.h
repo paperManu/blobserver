@@ -55,6 +55,8 @@ class Actuator_Hog : public Actuator
 
         std::vector<Blob2D> mBlobs; // Vector of detected and tracked blobs
 
+        unsigned long long mTimeStart; // Beginning of a detection frame
+
         // Some filtering parameters
         int mFilterSize;
         int mFilterDilateCoeff;
@@ -102,6 +104,7 @@ class Actuator_Hog : public Actuator
         // Methods
         void make();
         void updateDescriptorParams();
+        void detectThroughMask(cv::Mat& mask, std::vector<cv::Point>& samples, bool timeLimited);
 };
 
 REGISTER_ACTUATOR(Actuator_Hog)
