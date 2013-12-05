@@ -58,6 +58,7 @@ class Actuator_Hog : public Actuator
         unsigned long long mTimeStart; // Beginning of a detection frame
 
         // Some filtering parameters
+        float mBgScale = {1.f}; // Scale to resize the input image for Bg subtraction detection
         int mFilterSize;
         int mFilterDilateCoeff;
 

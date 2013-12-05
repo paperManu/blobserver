@@ -164,7 +164,16 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
 
     // We get windows of interest, using BG subtraction
     // and previous blobs positions
-    mBgSubtractor(input, mBgSubtractorBuffer);
+    if (mBgScale != 1.f)
+    {
+        cv::Mat bgInput, bgBuffer;
+        cv::Size bgSize(input.cols * mBgScale, input.rows * mBgScale);
+        cv::resize(input, bgInput, bgSize, 0, 0, cv::INTER_LINEAR);
+        mBgSubtractor(bgInput, bgBuffer);
+        cv::resize(bgBuffer, mBgSubtractorBuffer, cv::Size(input.cols, input.rows), 0, 0, cv::INTER_NEAREST);
+    }
+    else
+        mBgSubtractor(input, mBgSubtractorBuffer);
     // Erode and dilate to suppress noise
     cv::Mat lEroded;
     cv::threshold(mBgSubtractorBuffer, mBgSubtractorBuffer, 250, 255, cv::THRESH_BINARY);
@@ -461,6 +470,12 @@ void Actuator_Hog::setParameter(atom::Message pMessage)
         float distance;
         if (readParam(pMessage, distance))
             mBlobMergeDistance = max(16.f, distance);
+    }
+    else if (cmd == "bgScale")
+    {
+        float scale;
+        if (readParam(pMessage, scale))
+            mBgScale = min(1.f, max(0.f, scale));
     }
     else if (cmd == "filterSize")
     {

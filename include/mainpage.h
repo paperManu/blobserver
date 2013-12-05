@@ -227,6 +227,7 @@
  * - maxTimePerFrame (int, default 1e5): maximum time (in us) to allow for detection at each frame
  * - maxThreads (int, default 4): maximum number of threads to use
  * - mergeDistance (int, default 64): distance below which detected blobs are merged
+ * - bgScale (float, default 1.0): scaling applied to the input image for the background subtraction pass
  * - filterSize (int, default 3): size of the morphological filter used to filter noise in the background subtraction pass
  * - roiSize (int[2], default 64 128): size (in pixels) of the detection window
  * - blockSize (int[2], default 2 2): size (in cells) where normalization is applied
