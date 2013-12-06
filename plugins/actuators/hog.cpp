@@ -187,6 +187,7 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
             {
                 cv::Rect rect(x - mRoiSize.width / 2, y - mRoiSize.height / 2, mRoiSize.width, mRoiSize.height);
                 cv::rectangle(mBgSubtractorBuffer, rect, 255, CV_FILLED);
+                cv::rectangle(lEroded, rect, 0, CV_FILLED);
             }
         }
 
