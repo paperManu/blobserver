@@ -165,6 +165,7 @@ vector<float> Descriptor_Hog::getSingleScaleDescriptor(cv::Point_<int> pPos, con
     float anglePerBin = 180.f / (float)_binsPerCell;
     if (_signed)
         anglePerBin *= 2.f;
+    float binPerAngle = 1.f / anglePerBin;
 
     // Check if we have enough room to build a complete descriptor
     if (pPos.x + _roiSize.width > _image.cols || pPos.y + _roiSize.height > _image.rows)
@@ -192,8 +193,9 @@ vector<float> Descriptor_Hog::getSingleScaleDescriptor(cv::Point_<int> pPos, con
             for (int x = 0; x < pCellSize.width; ++x)
                 for (int y = 0; y < pCellSize.height; ++y)
                 {
-                    int index = _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[0] / anglePerBin;
-                    float subPos = _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[0] - index*anglePerBin;
+                    cv::Point position(topLeft.x + x, topLeft.y + y);
+                    int index = _gradients.at<cv::Vec2b>(position.y, position.x)[0] * binPerAngle;
+                    float subPos = _gradients.at<cv::Vec2b>(position.y, position.x)[0] - index*anglePerBin;
                     int shift = (subPos < anglePerBin*0.5f) ? -1 : 1;
                     if (shift + index < 0)
                         shift = _binsPerCell-1;
@@ -202,9 +204,9 @@ vector<float> Descriptor_Hog::getSingleScaleDescriptor(cv::Point_<int> pPos, con
                     else
                         shift += index;
 
-                    float ratio = abs(subPos - anglePerBin*0.5f)/anglePerBin;
-                    cellDescriptor[index] += _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[1] * (1.f - ratio);
-                    cellDescriptor[shift] += _gradients.at<cv::Vec2b>(topLeft.y + y, topLeft.x + x)[1] * ratio;
+                    float ratio = abs(subPos - anglePerBin*0.5f) * binPerAngle;
+                    cellDescriptor[index] += _gradients.at<cv::Vec2b>(position.y, position.x)[1] * (1.f - ratio);
+                    cellDescriptor[shift] += _gradients.at<cv::Vec2b>(position.y, position.x)[1] * ratio;
                 }
 
             // We normalize the cell
