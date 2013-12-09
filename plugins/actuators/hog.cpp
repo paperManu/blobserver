@@ -267,7 +267,7 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
     }
 
     // We want to track them
-    trackBlobs<Blob2D>(properties, mBlobs, mBlobLifetime, mKeepOldBlobs, mKeepMaxTime, mBlobTrackDistance);
+    trackBlobs<Blob2D>(properties, mBlobs, mBlobLifetime, mKeepOldBlobs, mKeepMaxTime, mBlobTrackDistance, mOcclusionDistance);
 
     // We make sure that the filtering parameters are set
     for (int i = 0; i < mBlobs.size(); ++i)
@@ -480,7 +480,12 @@ void Actuator_Hog::setParameter(atom::Message pMessage)
         if (readParam(pMessage, distance))
             mBlobTrackDistance = max(0.f, pow(distance, 2.f));
     }
-
+    else if (cmd == "occlusionDistance")
+    {
+        float distance;
+        if (readParam(pMessage, distance))
+            mOcclusionDistance = max(0.f, pow(distance, 2.f));
+    }
     else if (cmd == "bgScale")
     {
         float scale;

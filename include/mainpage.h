@@ -228,6 +228,7 @@
  * - maxThreads (int, default 4): maximum number of threads to use
  * - mergeDistance (int, default 64): distance below which detected blobs are merged
  * - maxTrackDistance (float, default 0): distance below which a new detection can be linked to an existing blob. 0 means no limit.
+ * - occlusionDistance (float, default 0): distance below two blobs are considered to be overlapping. This increases there lifetime.
  * - bgScale (float, default 1.0): scaling applied to the input image for the background subtraction pass
  * - filterSize (int, default 3): size of the morphological filter used to filter noise in the background subtraction pass
  * - roiSize (int[2], default 64 128): size (in pixels) of the detection window

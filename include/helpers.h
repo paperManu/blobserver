@@ -133,7 +133,7 @@ class BlobPair
 /*************/
 template<class T>
 void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs, int pLifetime = 30,
-                int pKeepOldBlobs = 0, int pKeepMaxTime = 0, float pMaxDistanceToLink = 0.f)
+                int pKeepOldBlobs = 0, int pKeepMaxTime = 0, float pMaxDistanceToLink = 0.f, float pOcclusionDistance = 0.f)
 {
     // First we update all the previous blobs we detected,
     // and keep their predicted new position
@@ -171,10 +171,6 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
             // blobs match. Indeed, no one matches the existing blob
             if (pMaxDistanceToLink == 0.f || nearest.getDist() <= pMaxDistanceToLink)
                 lPairs.push_back(nearest);
-            else
-            {
-                std::cout << "Too far! - " << nearest.getDist() << " " << pMaxDistanceToLink << std::endl;
-            }
 
             // Delete pairs with the same current blob
             // as well as pairs with the same new blob
@@ -224,6 +220,37 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
         else
             i++;
     }
+
+    // Also, we extend lifetime of blobs which may become occluded
+    if (pOcclusionDistance > 0.f)
+    {
+        std::vector<BlobPair<T>> lOcclusionPairs;
+
+        for (int i = 0; i < pBlobs.size(); ++i)
+            for (int j = 0; j < pBlobs.size(); ++j)
+            {
+                if (i == j)
+                    continue;
+
+                Blob::properties props = pBlobs[j].getBlob();
+                BlobPair<T> lPair(&pBlobs[i], &props);
+                lOcclusionPairs.push_back(lPair);
+            }
+
+        while (lOcclusionPairs.size())
+        {
+            std::make_heap(lOcclusionPairs.begin(), lOcclusionPairs.end());
+            std::pop_heap(lOcclusionPairs.begin(), lOcclusionPairs.end());
+            BlobPair<T> nearest = lOcclusionPairs.back();
+            lOcclusionPairs.pop_back();
+
+            if (nearest.getDist() <= pOcclusionDistance)
+                nearest.getCurrent()->renewLifetime();
+            else
+                break;
+        }
+    }
+
     // And we create new blobs for the new objects detected
     for (int i = 0; i < pProperties.size(); ++i)
     {

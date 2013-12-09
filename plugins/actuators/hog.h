@@ -101,6 +101,7 @@ class Actuator_Hog : public Actuator
         float mBlobTrackDistance; // Maximum distance to associate a blob with a new measure
         bool mSaveSamples; // If true, save samples older than mSaveSamplesAge
         unsigned long mSaveSamplesAge;
+        float mOcclusionDistance = {0.f};
 
         std::vector<cv::Mat> mOutputBuffers;
 
