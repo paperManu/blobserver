@@ -66,6 +66,7 @@ class Actuator_Hog : public Actuator
         int mBlobLifetime;
         int mKeepOldBlobs, mKeepMaxTime; // Parameters to set when we need blobs to be kept even when not detected anymore
         float mProcessNoiseCov, mMeasurementNoiseCov;
+        float mMaximumVelocity = {0.f}; // Maximum speed of the detected blobs
 
         // Descriptor to identify objects...
         Descriptor_Hog mDescriptor;
@@ -97,6 +98,7 @@ class Actuator_Hog : public Actuator
         cv::Mat mBgSubtractorBuffer;
         cv::RNG mRng;
         float mBlobMergeDistance; // Distance to considerer two blobs as one
+        float mBlobTrackDistance; // Maximum distance to associate a blob with a new measure
         bool mSaveSamples; // If true, save samples older than mSaveSamplesAge
         unsigned long mSaveSamplesAge;
 

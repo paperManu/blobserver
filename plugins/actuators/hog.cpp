@@ -1,5 +1,6 @@
 #include "hog.h"
 
+#include <cmath>
 #include <chrono>
 #include <memory>
 #include <mutex>
@@ -194,7 +195,7 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
     // We draw rectangles to handle previously detected blobs
     // except for the inner part which we will handle in priority
     cv::Mat priorityMat = cv::Mat::zeros(mBgSubtractorBuffer.size(), CV_8U);
-    for (auto blob : mBlobs)
+    for (auto& blob : mBlobs)
     {
         Blob::properties props = blob.getBlob();
         cv::Rect rect(props.position.x - props.size/2, props.position.y - props.size/2, props.size, props.size);
@@ -266,7 +267,7 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
     }
 
     // We want to track them
-    trackBlobs<Blob2D>(properties, mBlobs, mBlobLifetime, mKeepOldBlobs, mKeepMaxTime);
+    trackBlobs<Blob2D>(properties, mBlobs, mBlobLifetime, mKeepOldBlobs, mKeepMaxTime, mBlobTrackDistance);
 
     // We make sure that the filtering parameters are set
     for (int i = 0; i < mBlobs.size(); ++i)
@@ -287,9 +288,10 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
     }
 
     cv::Mat resultMat = cv::Mat::zeros(input.rows, input.cols, input.type());
-    for (auto blob : mBlobs)
+    for (auto& blob : mBlobs)
     {
         Blob::properties props = blob.getBlob();
+        // We draw a rectangle of visibility around the detected blobs
         cv::Rect rect(props.position.x, props.position.y, mRoiSize.width, mRoiSize.height);
         if (blob.getAge() > mKeepOldBlobs)
             cv::rectangle(resultMat, rect, cv::Scalar(1, 1, 1), CV_FILLED);
@@ -408,7 +410,7 @@ void Actuator_Hog::detectThroughMask(cv::Mat& mask, vector<cv::Point>& samples, 
 vector<Capture_Ptr> Actuator_Hog::getOutput() const
 {
     vector<Capture_Ptr> outputVec;
-    for (auto buffer : mOutputBuffers)
+    for (auto& buffer : mOutputBuffers)
     {
         outputVec.push_back(Capture_2D_Mat_Ptr(new Capture_2D_Mat(buffer.clone())));
     }
@@ -472,6 +474,13 @@ void Actuator_Hog::setParameter(atom::Message pMessage)
         if (readParam(pMessage, distance))
             mBlobMergeDistance = max(16.f, distance);
     }
+    else if (cmd == "maxTrackDistance")
+    {
+        float distance;
+        if (readParam(pMessage, distance))
+            mBlobTrackDistance = max(0.f, pow(distance, 2.f));
+    }
+
     else if (cmd == "bgScale")
     {
         float scale;

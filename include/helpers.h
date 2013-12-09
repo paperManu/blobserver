@@ -132,7 +132,8 @@ class BlobPair
 
 /*************/
 template<class T>
-void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs, int pLifetime = 30, int pKeepOldBlobs = 0, int pKeepMaxTime = 0)
+void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlobs, int pLifetime = 30,
+                int pKeepOldBlobs = 0, int pKeepMaxTime = 0, float pMaxDistanceToLink = 0.f)
 {
     // First we update all the previous blobs we detected,
     // and keep their predicted new position
@@ -165,7 +166,15 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
             std::pop_heap(lSearchPairs.begin(), lSearchPairs.end());
             BlobPair<T> nearest = lSearchPairs.back();
             lSearchPairs.pop_back();
-            lPairs.push_back(nearest);
+
+            // If the distance is higher than maxDistanceToLink, we don't consider that these
+            // blobs match. Indeed, no one matches the existing blob
+            if (pMaxDistanceToLink == 0.f || nearest.getDist() <= pMaxDistanceToLink)
+                lPairs.push_back(nearest);
+            else
+            {
+                std::cout << "Too far! - " << nearest.getDist() << " " << pMaxDistanceToLink << std::endl;
+            }
 
             // Delete pairs with the same current blob
             // as well as pairs with the same new blob
