@@ -58,7 +58,7 @@ class Actuator_Hog : public Actuator
         unsigned long long mTimeStart; // Beginning of a detection frame
 
         // Some filtering parameters
-        float mBgScale = {1.f}; // Scale to resize the input image for Bg subtraction detection
+        float mBgScale; // Scale to resize the input image for Bg subtraction detection
         int mFilterSize;
         int mFilterDilateCoeff;
 
@@ -66,7 +66,7 @@ class Actuator_Hog : public Actuator
         int mBlobLifetime;
         int mKeepOldBlobs, mKeepMaxTime; // Parameters to set when we need blobs to be kept even when not detected anymore
         float mProcessNoiseCov, mMeasurementNoiseCov;
-        float mMaximumVelocity = {0.f}; // Maximum speed of the detected blobs
+        float mMaximumVelocity; // Maximum speed of the detected blobs
 
         // Descriptor to identify objects...
         Descriptor_Hog mDescriptor;
@@ -101,7 +101,7 @@ class Actuator_Hog : public Actuator
         float mBlobTrackDistance; // Maximum distance to associate a blob with a new measure
         bool mSaveSamples; // If true, save samples older than mSaveSamplesAge
         unsigned long mSaveSamplesAge;
-        float mOcclusionDistance = {0.f};
+        float mOcclusionDistance;
 
         std::vector<cv::Mat> mOutputBuffers;
 

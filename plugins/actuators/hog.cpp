@@ -115,6 +115,7 @@ void Actuator_Hog::make()
     mName = mClassName;
     mOscPath = "hog";
 
+    mBgScale = 1.f;
     mFilterSize = 3;
     mFilterDilateCoeff = 3;
 
@@ -143,6 +144,9 @@ void Actuator_Hog::make()
     mBlobMergeDistance = 64.f;
     mSaveSamples = false;
     mSaveSamplesAge = 120;
+
+    mMaximumVelocity = 0.f;
+    mOcclusionDistance = 0.f;
 }
 
 /*************/
