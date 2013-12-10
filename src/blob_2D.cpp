@@ -48,6 +48,9 @@ void Blob2D::init(properties pNewBlob)
     mFilter.statePre.at<float>(3) = 0.f;
 
     mProperties = pNewBlob;
+
+    mPrediction.position.x = pNewBlob.position.x;
+    mPrediction.position.y = pNewBlob.position.y;
 }
 
 /*************/

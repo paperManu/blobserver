@@ -260,29 +260,26 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
     vector<Blob::properties> properties;
     for (int i = 0; i < samples.size(); ++i)
     {
-        Blob::properties propertie;
-        propertie.position.x = samples[i].x;
-        propertie.position.y = samples[i].y;
-        propertie.size = mRoiSize.width;
-        propertie.speed.x = 0.f;
-        propertie.speed.y = 0.f;
+        Blob::properties property;
+        property.position.x = samples[i].x;
+        property.position.y = samples[i].y;
+        property.size = mRoiSize.width;
+        property.speed.x = 0.f;
+        property.speed.y = 0.f;
 
-        properties.push_back(propertie);
+        properties.push_back(property);
     }
 
     // We want to track them
     trackBlobs<Blob2D>(properties, mBlobs, mBlobLifetime, mKeepOldBlobs, mKeepMaxTime, mBlobTrackDistance, mOcclusionDistance);
 
-    // We make sure that the filtering parameters are set
-    for (int i = 0; i < mBlobs.size(); ++i)
-    {
-        mBlobs[i].setParameter("processNoiseCov", mProcessNoiseCov);
-        mBlobs[i].setParameter("measurementNoiseCov", mMeasurementNoiseCov);
-    }
-
     // We delete blobs which are outside the frame
     for (int i = 0; i < mBlobs.size();)
     {
+        // also, we make sure that the filtering parameters are set
+        mBlobs[i].setParameter("processNoiseCov", mProcessNoiseCov);
+        mBlobs[i].setParameter("measurementNoiseCov", mMeasurementNoiseCov);
+
         Blob::properties prop = mBlobs[i].getBlob();
         if (prop.position.x + prop.size/2 > input.cols || prop.position.x + prop.size/2 < 0
             || prop.position.y + prop.size/2 > input.rows || prop.position.y + prop.size/2 < 0)

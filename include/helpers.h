@@ -140,7 +140,7 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
     for(int i = 0; i < pBlobs.size(); ++i)
         if (pBlobs[i].getLifetime() > 0)
             pBlobs[i].predict();
-    
+
     // Then we compare all these prediction with real measures and
     // associate them together
     std::vector< BlobPair<T> > lPairs;
@@ -192,6 +192,7 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
         lPairs[i].getCurrent()->setNewMeasures(*(lPairs[i].getMeasure()));
         lPairs[i].getCurrent()->renewLifetime();
     }
+
     // We delete the blobs we were not able to track
     // (unless we want to keep all blobs)
     for (int i = 0; i < pBlobs.size();)
