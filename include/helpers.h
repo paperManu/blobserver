@@ -244,7 +244,7 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
             BlobPair<T> nearest = lOcclusionPairs.back();
             lOcclusionPairs.pop_back();
 
-            if (nearest.getDist() <= pOcclusionDistance)
+            if (nearest.getDist() <= pOcclusionDistance && nearest.getCurrent()->getAge() > pLifetime * 2)
                 nearest.getCurrent()->renewLifetime();
             else
                 break;
