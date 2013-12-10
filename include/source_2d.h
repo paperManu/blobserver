@@ -202,6 +202,7 @@ class Source_2D : public Source
         float mScale;
         float mRotation;
         float mScaleValues;
+        cv::Rect mCrop;
 
         // Distorsion parameters
         bool mGammaCorrection; //!< Flag set if gamma correction is activated
@@ -262,6 +263,7 @@ class Source_2D : public Source
         // Basic geometric corrections
         void scale(cv::Mat& pImg);
         void rotate(cv::Mat& pImg);
+        void crop(cv::Mat& pImg);
 
         // Methods to correct the optical distortion
         void correctVignetting(cv::Mat& pImg);
