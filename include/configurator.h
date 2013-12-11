@@ -41,7 +41,7 @@
 class Configurator
 {
     public:
-        Configurator();
+        Configurator(int proto = LO_UDP);
         ~Configurator();
 
         void loadXML(const char* filename, bool distant = false);
@@ -49,6 +49,7 @@ class Configurator
     private:
         /*** Attributes ***/
         bool mReady;
+        int mProto;
 
         lo_server_thread mOscServer;
 

@@ -193,7 +193,7 @@ int App::init(int argc, char** argv)
     // Configuration file needs to be loaded in a thread
     if (gConfigFile != NULL)
     {
-        Configurator configurator;
+        Configurator configurator(lNetProto);
         configurator.loadXML((char*)gConfigFile);
     }
 
@@ -746,7 +746,7 @@ int App::oscHandlerSignIn(const char* path, const char* types, lo_arg** argv, in
     // Check wether this address is already signed in
     if (theApp->mClients.find(addressStr) == theApp->mClients.end())
     {
-        shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), port)));
+        shared_ptr<OscClient> address(new OscClient(lo_address_new_with_proto(gTcp ? LO_TCP : LO_UDP, addressStr.c_str(), port)));
         int error = lo_address_errno(address->get());
         if (error != 0)
         {
@@ -761,7 +761,7 @@ int App::oscHandlerSignIn(const char* path, const char* types, lo_arg** argv, in
     // If already connected, we send a message to say so
     else
     {
-        shared_ptr<OscClient> address(new OscClient(lo_address_new(addressStr.c_str(), port)));
+        shared_ptr<OscClient> address(new OscClient(lo_address_new_with_proto(gTcp ? LO_TCP : LO_UDP, addressStr.c_str(), port)));
         int error = lo_address_errno(address->get());
         if (error != 0)
         {
@@ -859,7 +859,7 @@ int App::oscHandlerChangePort(const char* path, const char* types, lo_arg** argv
     // Change the port number
     {
         lock_guard<mutex> lock(theApp->mFlowMutex);
-        theApp->mClients[addressStr]->replace(lo_address_new(addressStr.c_str(), port));
+        theApp->mClients[addressStr]->replace(lo_address_new_with_proto(gTcp ? LO_TCP : LO_UDP, addressStr.c_str(), port));
     }
 
     return 0;
@@ -914,7 +914,7 @@ int App::oscHandlerChangeIp(const char* path, const char* types, lo_arg** argv, 
     // Change the port number
     {
         lock_guard<mutex> lock(theApp->mFlowMutex);
-        theApp->mClients[addressStr]->replace(lo_address_new(newAddress.c_str(), port));
+        theApp->mClients[addressStr]->replace(lo_address_new_with_proto(gTcp ? LO_TCP : LO_UDP, newAddress.c_str(), port));
     }
 
     return 0;

@@ -8,13 +8,15 @@
 using namespace std;
 
 /*************/
-Configurator::Configurator():
+Configurator::Configurator(int proto):
     mReady(false),
     mVerbose(false),
-    mOscServer(NULL)
+    mOscServer(NULL),
+    mProto(proto)
 {
     mLastIndexReceived = 0;
 }
+
 
 /*************/
 Configurator::~Configurator()
@@ -134,7 +136,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool dist
         checkString(server, string("127.0.0.1"));
         checkString(serverPort, string("9002"));
 
-        address.reset(new OscClient(lo_address_new(server.c_str(), serverPort.c_str())));
+        address.reset(new OscClient(lo_address_new_with_proto(mProto, server.c_str(), serverPort.c_str())));
 
         // We know the client port, we can launch our own server to receive messages from blobserver
         int configuratorPort = clientPort;
@@ -144,7 +146,7 @@ bool Configurator::loadFlow(const xmlDocPtr doc, const xmlNodePtr cur, bool dist
             configuratorPort += 10;
             char buffer[8];
             sprintf(buffer, "%i", configuratorPort);
-            oscServer = lo_server_thread_new(buffer, Configurator::oscError);
+            oscServer = lo_server_thread_new_with_proto(buffer, mProto, Configurator::oscError);
         }
 
         lo_server_thread_add_method(oscServer, "/blobserver/connect", NULL, Configurator::oscHandlerConnect, this);
