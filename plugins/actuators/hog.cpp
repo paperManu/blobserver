@@ -316,11 +316,11 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
     // Constructing the message
     mLastMessage.clear();
     mLastMessage.push_back(atom::IntValue::create((int)mBlobs.size()));
-    mLastMessage.push_back(atom::IntValue::create(7));
+    mLastMessage.push_back(atom::IntValue::create(8));
 
     for(int i = 0; i < mBlobs.size(); ++i)
     {
-        int lX, lY, lSize, lId, lAge, lLost;
+        int lX, lY, lSize, lId, lAge, lLost, lOccluded;
         float ldX, ldY;
         Blob::properties properties = mBlobs[i].getBlob();
         lX = (int)(properties.position.x);
@@ -330,6 +330,7 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
         lId = (int)mBlobs[i].getId();
         lAge = (int)mBlobs[i].getAge();
         lLost = (int)mBlobs[i].getLostDuration();
+        lOccluded = (int)properties.occluded;
 
         // Print the blob number on the blob
         if (mVerbose)
@@ -347,6 +348,7 @@ atom::Message Actuator_Hog::detect(const vector< Capture_Ptr > pCaptures)
         mLastMessage.push_back(atom::FloatValue::create(ldY));
         mLastMessage.push_back(atom::IntValue::create(lAge));
         mLastMessage.push_back(atom::IntValue::create(lLost));
+        mLastMessage.push_back(atom::IntValue::create(lOccluded));
     }
 
     //mOutputBuffer = resultMat.clone();

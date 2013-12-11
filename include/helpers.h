@@ -228,6 +228,8 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
         std::vector<BlobPair<T>> lOcclusionPairs;
 
         for (int i = 0; i < pBlobs.size(); ++i)
+        {
+            pBlobs[i].setUnoccluded();
             for (int j = 0; j < pBlobs.size(); ++j)
             {
                 if (i == j)
@@ -237,6 +239,7 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
                 BlobPair<T> lPair(&pBlobs[i], &props);
                 lOcclusionPairs.push_back(lPair);
             }
+        }
 
         while (lOcclusionPairs.size())
         {
@@ -246,7 +249,10 @@ void trackBlobs(std::vector<Blob::properties> &pProperties, std::vector<T> &pBlo
             lOcclusionPairs.pop_back();
 
             if (nearest.getDist() <= pOcclusionDistance && nearest.getCurrent()->getAge() > pLifetime * 2)
+            {
                 nearest.getCurrent()->renewLifetime();
+                nearest.getCurrent()->setOccluded();
+            }
             else
                 break;
         }

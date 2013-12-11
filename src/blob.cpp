@@ -20,12 +20,6 @@ Blob::~Blob()
 }
 
 /*************/
-Blob::properties Blob::getBlob()
-{
-    return mProperties;
-}
-
-/*************/
 bool Blob::isUpdated()
 {
     return updated;

@@ -38,6 +38,9 @@ class Blob
         cv::Mat colorHist;
         float orientation;
         float size;
+        bool occluded;
+
+        properties() : occluded(false) {}
     };
 
     public:
@@ -72,7 +75,10 @@ class Blob
         unsigned long getAge() const {return mAge;}
         unsigned long getLostDuration() const {return mLostDuration;}
 
-        properties getBlob();
+        void setOccluded() {mProperties.occluded = true;}
+        void setUnoccluded() {mProperties.occluded = false;}
+
+        properties getBlob() {return mProperties;}
         bool isUpdated();
 
     protected:
