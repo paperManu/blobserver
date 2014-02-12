@@ -1,8 +1,12 @@
+AM_CPPFLAGS = \
+	-DDATADIR=\"$(datadir)/blobserver/\"
+
 pluginsdir = $(prefix)/lib/blobserver-@LIBBLOBSERVER_API_VERSION@
 
 plugins_LTLIBRARIES = \
 	libactuatorbgsubtractor.la \
 	libactuatordepthtouch.la \
+	libactuatorface.la \
 	libactuatorfiducialtracker.la \
 	libactuatorhog.la \
 	libactuatorlightspots.la \
@@ -56,6 +60,11 @@ endif
 #-------------#
 libactuatordepthtouch_la_SOURCES = depthtouch.cpp
 libactuatordepthtouch_la_CXXFLAGS = $(DEFAULT_CFLAGS)
+
+#-------------#
+libactuatorface_la_SOURCES = face.cpp
+libactuatorface_la_CXXFLAGS = $(DEFAULT_CFLAGS)
+libactuatorface_la_LIBADD = -L/usr/local/lib -lopencv_objdetect
 
 #-------------#
 libactuatorfiducialtracker_la_SOURCES = fiducialtracker.cpp

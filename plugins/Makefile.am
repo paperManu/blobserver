@@ -1,1 +1,3 @@
-SUBDIRS = actuators
+SUBDIRS = \
+	actuators \
+	data
