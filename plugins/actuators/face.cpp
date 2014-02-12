@@ -85,13 +85,12 @@ atom::Message Actuator_Face::detect(const vector< Capture_Ptr > pCaptures)
     cv::Mat resultMat = input.clone();
     for (auto& person : mPersons)
     {
-        cv::rectangle(input, person.face, cv::Scalar(1.0), 3);
+        cv::rectangle(resultMat, person.face, cv::Scalar(1.0), 3);
         for (auto& eye : person.eyes)
-            cv::rectangle(input, eye, cv::Scalar(1.0), 1);
+            cv::rectangle(resultMat, eye, cv::Scalar(1.0), 1);
     }
 
-
-    mOutputBuffer = resultMat;
+    mOutputBuffer = resultMat.clone();
 
     return mLastMessage;
 }
