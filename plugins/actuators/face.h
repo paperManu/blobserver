@@ -66,11 +66,13 @@ class Actuator_Face : public Actuator
         // Eye and face detection objects
         cv::CascadeClassifier mFaceCascade;
         cv::CascadeClassifier mEyeCascade;
+        cv::CascadeClassifier mMouthCascade;
 
         struct Person
         {
             cv::Rect face;
             std::vector<cv::Rect> eyes;
+            cv::Rect mouth;
         };
         std::vector<Person> mPersons;
 

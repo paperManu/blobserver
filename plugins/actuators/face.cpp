@@ -47,6 +47,7 @@ void Actuator_Face::make()
 
     mFaceCascade.load((string(DATADIR) + "haarcascade_frontalface_alt2.xml").c_str());
     mEyeCascade.load((string(DATADIR) + "haarcascade_eye.xml").c_str());
+    mMouthCascade.load((string(DATADIR) + "haarcascade_mcs_mouth.xml").c_str());
 }
 
 /*************/
@@ -56,7 +57,7 @@ atom::Message Actuator_Face::detect(const vector< Capture_Ptr > pCaptures)
     if (captures.size() < mSourceNbr)
         return mLastMessage;
 
-    if (mFaceCascade.empty() || mEyeCascade.empty())
+    if (mFaceCascade.empty() || mEyeCascade.empty() || mMouthCascade.empty())
         return mLastMessage;
 
     // For simplicity...
@@ -70,6 +71,9 @@ atom::Message Actuator_Face::detect(const vector< Capture_Ptr > pCaptures)
     mPersons.clear();
     for (auto& face : faces)
     {
+        face.y -= face.height / 2;
+        face.height *= 2;
+
         Person person;
         person.face = face;
 
@@ -77,6 +81,11 @@ atom::Message Actuator_Face::detect(const vector< Capture_Ptr > pCaptures)
         mEyeCascade.detectMultiScale(grayImg(face), eyes, 1.1, 2, CV_HAAR_SCALE_IMAGE, cv::Size(16, 16));
         for (auto& eye : eyes)
             person.eyes.push_back(eye + cv::Point(face.x, face.y));
+
+        vector<cv::Rect> mouth;
+        mMouthCascade.detectMultiScale(grayImg(face), mouth, 1.1, 2, CV_HAAR_SCALE_IMAGE, cv::Size(16, 16));
+        if (mouth.size() > 0)
+            person.mouth = mouth[0];
 
         mPersons.push_back(person);
     }
@@ -88,6 +97,7 @@ atom::Message Actuator_Face::detect(const vector< Capture_Ptr > pCaptures)
         cv::rectangle(resultMat, person.face, cv::Scalar(1.0), 3);
         for (auto& eye : person.eyes)
             cv::rectangle(resultMat, eye, cv::Scalar(1.0), 1);
+        cv::rectangle(resultMat, person.mouth, cv::Scalar(1.0), 1);
     }
 
     mOutputBuffer = resultMat.clone();
