@@ -141,6 +141,7 @@
  * - filterDilateCoeff (int, default 2): coefficient applied to filterSize value for dilation phase of the morphological operation
  * - learningTime (int, default 300): number of frames for a pixel to be considered background
  * - lifetime (int, default 30): time (in frames) during which a blob is kept even if not detected
+ * - maxForegroundPortion (float, default 1): maximum portion of pixels detected as foreground, above which detection is stopped (0.0 < value < 1.0)
  * - keepOldBlobs (int[2], default [0]): parameters to not delete blobs which have disappeared. Parameters are: [minAgeToKeep] [maxTimeToKeep]
  * - processNoiseCov (int, default 1e-6): noise of the movement of the tracked object. Used for filtering detection.
  * - measurementNoiseCov (int, default 1e-4): noise of the measurement (capture + detection) of the tracked object. Used for filtering detection.

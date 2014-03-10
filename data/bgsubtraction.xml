@@ -11,6 +11,10 @@
                 <Value>2</Value>
             </Param>
             <Param>
+                <Name>maxForegroundPortion</Name>
+                <Value>0.5</Value>
+            </Param>
+            <Param>
                 <Name>learningTime</Name>
                 <Value>300</Value>
             </Param>

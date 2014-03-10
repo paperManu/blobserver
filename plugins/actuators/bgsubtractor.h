@@ -55,6 +55,10 @@ class Actuator_BgSubtractor : public Actuator
         // Some filtering parameters
         int mFilterSize;
         int mFilterDilateCoeff;
+        
+        // Maximum portion of the image considered as FG, above which detection
+        // is not continued (to handle global lighting change for example)
+        float mMaxFGPortion;
 
         // Tracking and movement filtering parameters
         int mBlobLifetime;

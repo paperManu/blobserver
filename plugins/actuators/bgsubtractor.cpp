@@ -38,6 +38,8 @@ void Actuator_BgSubtractor::make()
     mFilterSize = 3;
     mFilterDilateCoeff = 2;
 
+    mMaxFGPortion = 1.f;
+
     mBlobLifetime = 30;
     mKeepOldBlobs = 0;
     mKeepMaxTime = 0;
@@ -90,6 +92,21 @@ atom::Message Actuator_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
     cv::erode(mBgSubtractorBuffer, lEroded, cv::Mat(), cv::Point(-1, -1), mFilterSize);
     cv::dilate(lEroded, mBgSubtractorBuffer, cv::Mat(), cv::Point(-1, -1), mFilterSize * mFilterDilateCoeff);
     cv::threshold(mBgSubtractorBuffer, mBgSubtractorBuffer, 250, 255, cv::THRESH_BINARY);
+
+    // Calculate the number of pixels detected as foreground
+    {
+        cv::Mat hist;
+        int histChannels[] = {0};
+        int histSize[] = {2};
+        float hRange[] = {0.f, 256.f};
+        const float* ranges[] = {hRange};
+        cv::calcHist(&mBgSubtractorBuffer, 1, histChannels, cv::Mat(), hist, 1, histSize, ranges, true, false);
+        if (hist.at<float>(1) / (float)(mBgSubtractorBuffer.cols * mBgSubtractorBuffer.rows) > mMaxFGPortion)
+        {
+            g_log(NULL, G_LOG_LEVEL_DEBUG, "%s: Too many pixels detected as foreground: no detection this round", mClassName.c_str());
+            return atom::Message();
+        }
+    }
 
     vector< vector<cv::Point> > contours;
     cv::Mat buffer = mBgSubtractorBuffer.clone();
@@ -230,6 +247,12 @@ void Actuator_BgSubtractor::setParameter(atom::Message pMessage)
         float filterSize;
         if (readParam(pMessage, filterSize))
             mFilterDilateCoeff = max(0, (int)filterSize);
+    }
+    else if (cmd == "maxForegroundPortion")
+    {
+        float portion;
+        if (readParam(pMessage, portion))
+            mMaxFGPortion = min(1.f, max(0.f, (float)portion));
     }
     else if (cmd == "lifetime")
     {
