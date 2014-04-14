@@ -43,7 +43,7 @@ void Actuator_FiducialTracker::initFidtracker()
     if (mDmap != NULL)
         delete mDmap;
     mDmap = new ShortPoint[mWidth * mHeight];
-    initialize_treeidmap(&mFidTreeidmap);
+    initialize_treeidmap_from_file(&mFidTreeidmap, (string(DATADIR) + "/fiducials_default.trees").c_str());
     initialize_segmenter(&mFidSegmenter, mWidth, mHeight, mFidTreeidmap.max_adjacencies);
     initialize_fidtrackerX(&mFidTrackerx, &mFidTreeidmap, mDmap);
 
