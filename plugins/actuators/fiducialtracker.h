@@ -57,6 +57,7 @@ class Actuator_FiducialTracker : public Actuator
         unsigned int mWidth, mHeight;
 
         // libfidtrack related attributes
+        std::string mTreesFilename;
         ShortPoint* mDmap;
         TreeIdMap mFidTreeidmap;
         Segmenter mFidSegmenter;

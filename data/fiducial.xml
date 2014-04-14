@@ -2,6 +2,10 @@
     <Flow>
         <Actuator>
             <Type>Actuator_FiducialTracker</Type>
+            <Param>
+                <Name>treesFilename</Name>
+                <Value>fiducials_default.trees</Value>
+            </Param>
         </Actuator>
         <Source>
             <Type>Source_2D_OpenCV</Type>

@@ -33,6 +33,7 @@ void Actuator_FiducialTracker::make()
     mFrameNumber = 0;
 
     // Initialize libfidtrack objects
+    mTreesFilename = "fiducials_default.tress";
     mDmap = NULL;
     initFidtracker();
 }
@@ -43,7 +44,12 @@ void Actuator_FiducialTracker::initFidtracker()
     if (mDmap != NULL)
         delete mDmap;
     mDmap = new ShortPoint[mWidth * mHeight];
-    initialize_treeidmap_from_file(&mFidTreeidmap, (string(DATADIR) + "/fiducials_default.trees").c_str());
+    initialize_treeidmap_from_file(&mFidTreeidmap, mTreesFilename.c_str());
+    // If the file was not found, try to find it in the DATADIR
+    if (&mFidTreeidmap == NULL)
+        initialize_treeidmap_from_file(&mFidTreeidmap, (string(DATADIR) + "/" + mTreesFilename).c_str());
+    if (&mFidTreeidmap == NULL)
+        return;
     initialize_segmenter(&mFidSegmenter, mWidth, mHeight, mFidTreeidmap.max_adjacencies);
     initialize_fidtrackerX(&mFidTrackerx, &mFidTreeidmap, mDmap);
 
@@ -130,5 +136,25 @@ atom::Message Actuator_FiducialTracker::detect(vector< Capture_Ptr > pCaptures)
 /*************/
 void Actuator_FiducialTracker::setParameter(atom::Message pMessage)
 {
-    setBaseParameter(pMessage);
+    std::string cmd;
+    try
+    {
+        cmd = toString(pMessage[0]);
+    }
+    catch (atom::BadTypeTagError error)
+    {
+        return;
+    }
+
+    if (cmd == "treesFilename")
+    {
+        string filename;
+        if (readParam(pMessage, filename))
+        {
+            mTreesFilename = filename;
+            initFidtracker();
+        }
+    }
+    else
+        setBaseParameter(pMessage);
 }
