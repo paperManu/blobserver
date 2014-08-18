@@ -121,6 +121,7 @@ void Source_2D_OpenCV::setParameter(atom::Message pParam)
     // Next parameters are all numbers
     else if (!readParam(pParam, paramValue))
     {
+        setBaseParameter(pParam);
         return;
     }
     else if (paramName == "width")
@@ -204,7 +205,9 @@ void Source_2D_OpenCV::setParameter(atom::Message pParam)
         mCamera.set(CV_CAP_PROP_WHITE_BALANCE_RED_V, paramValue);
     }
     else
+    {
         setBaseParameter(pParam);
+    }
 }
 
 /*************/
