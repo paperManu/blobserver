@@ -143,7 +143,7 @@ atom::Message Actuator_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
 
         cv::Mat crop = cv::Mat(input, box);
         cv::Mat hist;
-        cv::calcHist(&crop, 1, channels, cv::Mat(), hist, 3, histSize, ranges, true, false);
+        cv::calcHist(&crop, 1, channels, cv::Mat(), hist, input.channels(), histSize, ranges, true, false);
         property.colorHist = hist;
 
         properties.push_back(property);
@@ -170,7 +170,14 @@ atom::Message Actuator_BgSubtractor::detect(const vector< Capture_Ptr > pCapture
             i++;
     }
 
-    cv::Mat resultMat = cv::Mat::zeros(input.rows, input.cols, CV_8UC3);
+    cv::Mat resultMat;
+    if (input.channels() == 1)
+        resultMat = cv::Mat::zeros(input.rows, input.cols, CV_8U);
+    else if (input.channels() == 3)
+        resultMat = cv::Mat::zeros(input.rows, input.cols, CV_8UC3);
+    else
+        return {};
+
     for_each (mBlobs.begin(), mBlobs.end(), [&] (Blob2DColor blob)
     {
         Blob::properties props = blob.getBlob();
