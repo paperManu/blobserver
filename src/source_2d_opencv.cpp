@@ -197,11 +197,11 @@ void Source_2D_OpenCV::setParameter(atom::Message pParam)
     }
     else if (paramName == "whiteBalanceRed")
     {
-        mCamera.set(CV_CAP_PROP_WHITE_BALANCE_BLUE_U, paramValue);
+        mCamera.set(CV_CAP_PROP_WHITE_BALANCE_U, paramValue);
     }
     else if (paramName == "whiteBalanceBlue")
     {
-        mCamera.set(CV_CAP_PROP_WHITE_BALANCE_RED_V, paramValue);
+        mCamera.set(CV_CAP_PROP_WHITE_BALANCE_V, paramValue);
     }
     else
         setBaseParameter(pParam);
